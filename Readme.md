@@ -12,6 +12,8 @@ If you are running Grafana anywhere else, make sure you have `~/.oci` configured
 
 If you're using a version of Grafana that's older than 6.0, you will need to download the zip file and install this plugin manually, or chmod the binary that is downloaded to make it executable.
 
+
+
 ## Installation Documentation
 
 In order to simplify the installation process, we created detailed guides for you to follow:
@@ -25,6 +27,13 @@ In order to simplify the installation process, we created detailed guides for yo
 Once you have the data source installed, configure your datasource with your tenancy OCID, default region, and where you're running the plugin (Oracle Cloud or elsewhere).
 
 We also have documentation for how to use the newly installed and configured plugin in our [Using Grafana with Oracle Cloud Infrastructure Data Source](https://github.com/oracle/oci-grafana-plugin/blob/master/docs/using.md) walkthrough.
+
+
+If there is more than one unsigned plugin, please make sure that the id from the latest added plugin is added to the config.ini or grafana.ini  as 
+```allow_loading_unsigned_plugins = "previouspluginId, oci-datasource"``` 
+The plugin names must be separated by comma
+
+
 
 ## Development
 
