@@ -19,6 +19,7 @@ import (
 	"github.com/oracle/oci-go-sdk/common/auth"
 	"github.com/oracle/oci-go-sdk/identity"
 	"github.com/oracle/oci-go-sdk/monitoring"
+	"github.com/oracle/oci-go-sdk/loggingsearch"
 	"github.com/pkg/errors"
 )
 
@@ -29,6 +30,7 @@ var cacheRefreshTime = time.Minute
 type OCIDatasource struct {
 	plugin.NetRPCUnsupportedPlugin
 	metricsClient    monitoring.MonitoringClient
+	loggingSearchClient    loggingsearch.LogSearchClient
 	identityClient   identity.IdentityClient
 	config           common.ConfigurationProvider
 	logger           hclog.Logger
@@ -114,6 +116,8 @@ func (o *OCIDatasource) Query(ctx context.Context, tsdbReq *datasource.Datasourc
 		return o.regionsResponse(ctx, tsdbReq)
 	case "search":
 		return o.searchResponse(ctx, tsdbReq)
+	case "searchLogs":
+		return o.searchLogsResponse(ctx, tsdbReq)
 	case "test":
 		return o.testResponse(ctx, tsdbReq)
 	default:
@@ -598,3 +602,62 @@ func (o *OCIDatasource) regionsResponse(ctx context.Context, tsdbReq *datasource
 		},
 	}, nil
 }
+
+
+
+type responseAndLogSearchQuery struct {
+	ociRes loggingsearch.SearchLogsResponse
+	query  *datasource.Query
+	err    error
+}
+
+
+func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
+	results := make([]responseAndLogSearchQuery, 0, len(tsdbReq.Queries))
+
+	for _, query := range tsdbReq.Queries {
+		var ts GrafanaOCIRequest
+		json.Unmarshal([]byte(query.ModelJson), &ts)
+
+		start := time.Unix(tsdbReq.TimeRange.FromEpochMs/1000, (tsdbReq.TimeRange.FromEpochMs%1000)*1000000).UTC()
+		end := time.Unix(tsdbReq.TimeRange.ToEpochMs/1000, (tsdbReq.TimeRange.ToEpochMs%1000)*1000000).UTC()
+
+		start = start.Truncate(time.Millisecond)
+		end = end.Truncate(time.Millisecond)
+
+		req := loggingsearch.SearchLogsDetails{}
+		// hardcoded for now
+		o.logger.Info("*** debugging message ")
+		req.IsReturnFieldInfo = common.Bool(false)
+		req.TimeStart =  &common.SDKTime{start}
+		req.TimeEnd =  &common.SDKTime{end}
+		req.SearchQuery=  common.String("search \"ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a\"")
+		
+		reg := common.StringToRegion(ts.Region)
+		o.loggingSearchClient.SetRegion(string(reg))
+
+		request := loggingsearch.SearchLogsRequest{
+			SearchLogsDetails: req,
+			Limit:common.Int(1000),
+		}
+
+		res, err := o.loggingSearchClient.SearchLogs(ctx,request)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprint(spew.Sdump(query), spew.Sdump(request), spew.Sdump(res)))
+		}
+		results = append(results, responseAndLogSearchQuery{
+			res,
+			query,
+			err,
+		})
+	}
+	queryRes := make([]*datasource.QueryResult, 0, len(results))
+
+	response := &datasource.DatasourceResponse{
+		Results: queryRes,
+	}
+	
+
+	return response, nil
+}
+
