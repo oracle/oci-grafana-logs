@@ -681,17 +681,17 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 		
 		for _,item := range res.Results {
 
-			personMap := make(map[string]interface{})
-
-			err := json.Unmarshal([]byte(item.Data), &personMap)
-
-			if err != nil {
-				panic(err)
-			}
-
-			for key, value := range personMap {
-				fmt.Println("index : ", key, " value : ", value)
-			}
+			//personMap := make(map[string]interface{})
+			//
+			//err := json.Unmarshal([]byte(item.Data), &personMap)
+			//
+			//if err != nil {
+			//	panic(err)
+			//}
+			//
+			//for key, value := range personMap {
+			//	fmt.Println("index : ", key, " value : ", value)
+			//}
 		
 			return &datasource.DatasourceResponse{
 				Results: []*datasource.QueryResult{

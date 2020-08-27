@@ -34,10 +34,10 @@ if [[ ! -d ./vendor ]]; then
 fi
 
 echo "building go binary"
-GOOS=$GOOS go build -o ./dist/oci-plugin$POST
+#GOOS=$GOOS go build -o ./dist/oci-plugin$POST
 
 # For debugger
-# GOOS=$GOOS go build -o ./dist/oci-plugin$POST -gcflags="all=-N -l"
+ GOOS=$GOOS go build -o ./dist/oci-plugin$POST -gcflags="all=-N -l"
 
 # For release
 # GOOS=linux go build -o ./dist/oci-plugin_linux_amd64
