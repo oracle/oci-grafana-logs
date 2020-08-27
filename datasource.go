@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"sort"
 	"time"
@@ -18,8 +19,8 @@ import (
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/common/auth"
 	"github.com/oracle/oci-go-sdk/identity"
-	"github.com/oracle/oci-go-sdk/monitoring"
 	"github.com/oracle/oci-go-sdk/loggingsearch"
+	"github.com/oracle/oci-go-sdk/monitoring"
 	"github.com/pkg/errors"
 )
 
@@ -29,13 +30,13 @@ var cacheRefreshTime = time.Minute
 //OCIDatasource - pulls in data from telemtry/various oci apis
 type OCIDatasource struct {
 	plugin.NetRPCUnsupportedPlugin
-	metricsClient    monitoring.MonitoringClient
-	loggingSearchClient    loggingsearch.LogSearchClient
-	identityClient   identity.IdentityClient
-	config           common.ConfigurationProvider
-	logger           hclog.Logger
-	nameToOCID       map[string]string
-	timeCacheUpdated time.Time
+	metricsClient       monitoring.MonitoringClient
+	loggingSearchClient loggingsearch.LogSearchClient
+	identityClient      identity.IdentityClient
+	config              common.ConfigurationProvider
+	logger              hclog.Logger
+	nameToOCID          map[string]string
+	timeCacheUpdated    time.Time
 }
 
 //NewOCIDatasource - constructor
@@ -51,18 +52,18 @@ func NewOCIDatasource(pluginLogger hclog.Logger) (*OCIDatasource, error) {
 // GrafanaOCIRequest - Query Request comning in from the front end
 type GrafanaOCIRequest struct {
 	GrafanaCommonRequest
-	Query      string
-	Resolution string
-	Namespace  string
-	ResourceGroup  string
+	Query         string
+	Resolution    string
+	Namespace     string
+	ResourceGroup string
 }
 
 //GrafanaSearchRequest incoming request body for search requests
 type GrafanaSearchRequest struct {
 	GrafanaCommonRequest
-	Metric    string `json:"metric,omitempty"`
-	Namespace string
-	ResourceGroup  string
+	Metric        string `json:"metric,omitempty"`
+	Namespace     string
+	ResourceGroup string
 }
 
 type GrafanaCompartmentRequest struct {
@@ -98,9 +99,18 @@ func (o *OCIDatasource) Query(ctx context.Context, tsdbReq *datasource.Datasourc
 			log.Printf("error with client")
 			panic(err)
 		}
+
+
+		loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
+		if err != nil {
+			log.Printf("error with client")
+			panic(err)
+		}
+
 		o.identityClient = identityClient
 		o.metricsClient = metricsClient
 		o.config = configProvider
+		o.loggingSearchClient = loggingSearchClient
 	}
 
 	switch queryType {
@@ -121,7 +131,7 @@ func (o *OCIDatasource) Query(ctx context.Context, tsdbReq *datasource.Datasourc
 	case "test":
 		return o.testResponse(ctx, tsdbReq)
 	default:
-		return o.queryResponse(ctx, tsdbReq)
+		return o.searchLogsResponse(ctx, tsdbReq)
 	}
 }
 
@@ -364,7 +374,7 @@ func (o *OCIDatasource) searchHelper(ctx context.Context, region, compartment st
 		}
 		items = append(items, res.Items...)
 		// Only 0 - n-1  pages are to be fetched, as indexing starts from 0 (for page number
-		if res.OpcNextPage == nil  || pageNumber >= MAX_PAGES_TO_FETCH {
+		if res.OpcNextPage == nil || pageNumber >= MAX_PAGES_TO_FETCH {
 			break
 		}
 
@@ -603,61 +613,115 @@ func (o *OCIDatasource) regionsResponse(ctx context.Context, tsdbReq *datasource
 	}, nil
 }
 
-
-
 type responseAndLogSearchQuery struct {
 	ociRes loggingsearch.SearchLogsResponse
 	query  *datasource.Query
 	err    error
 }
 
-
 func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
-	results := make([]responseAndLogSearchQuery, 0, len(tsdbReq.Queries))
+	table := datasource.Table{
+		Columns: []*datasource.TableColumn{
+			&datasource.TableColumn{Name: "text"},
+		},
+		Rows: make([]*datasource.TableRow, 0),
+	}
 
+
+
+	f, err := os.OpenFile("text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+
+	logger := log.New(f, "prefix", log.LstdFlags)
+	logger.Println("text to append")
+	logger.Println("more text to append")
+	
 	for _, query := range tsdbReq.Queries {
-		var ts GrafanaOCIRequest
-		json.Unmarshal([]byte(query.ModelJson), &ts)
 
+		var ts GrafanaSearchRequest
+		json.Unmarshal([]byte(query.ModelJson), &ts)
 		start := time.Unix(tsdbReq.TimeRange.FromEpochMs/1000, (tsdbReq.TimeRange.FromEpochMs%1000)*1000000).UTC()
 		end := time.Unix(tsdbReq.TimeRange.ToEpochMs/1000, (tsdbReq.TimeRange.ToEpochMs%1000)*1000000).UTC()
 
-		start = start.Truncate(time.Millisecond)
-		end = end.Truncate(time.Millisecond)
+		req1 := loggingsearch.SearchLogsDetails{}
 
-		req := loggingsearch.SearchLogsDetails{}
+
+
 		// hardcoded for now
-		o.logger.Info("*** debugging message ")
-		req.IsReturnFieldInfo = common.Bool(false)
-		req.TimeStart =  &common.SDKTime{start}
-		req.TimeEnd =  &common.SDKTime{end}
-		req.SearchQuery=  common.String("search \"ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a\"")
-		
-		reg := common.StringToRegion(ts.Region)
-		o.loggingSearchClient.SetRegion(string(reg))
+		req1.IsReturnFieldInfo = common.Bool(false)
+		req1.TimeStart = &common.SDKTime{start}
+		req1.TimeEnd = &common.SDKTime{end}
+		req1.SearchQuery = common.String("search \"ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a\"")
 
 		request := loggingsearch.SearchLogsRequest{
-			SearchLogsDetails: req,
-			Limit:common.Int(1000),
+			SearchLogsDetails: req1,
+			Limit:             common.Int(50),
+		}
+		reg := common.StringToRegion(ts.Region)
+		o.loggingSearchClient.SetRegion(string(reg))
+		res, err1 := o.loggingSearchClient.SearchLogs(ctx, request)
+		
+		if err1 != nil {
+			
+			return &datasource.DatasourceResponse{
+				Results: []*datasource.QueryResult{
+					&datasource.QueryResult{
+						RefId:  "search-test" + err1.Error(),
+					},
+				},
+			}, nil
+			
 		}
 
-		res, err := o.loggingSearchClient.SearchLogs(ctx,request)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprint(spew.Sdump(query), spew.Sdump(request), spew.Sdump(res)))
+
+		
+		for _,item := range res.Results {
+
+			personMap := make(map[string]interface{})
+
+			err := json.Unmarshal([]byte(item.Data), &personMap)
+
+			if err != nil {
+				panic(err)
+			}
+
+			for key, value := range personMap {
+				fmt.Println("index : ", key, " value : ", value)
+			}
+		
+			return &datasource.DatasourceResponse{
+				Results: []*datasource.QueryResult{
+					&datasource.QueryResult{
+						RefId:    item.String(),
+						Tables:   []*datasource.Table{&table},
+					},
+				},
+			}, nil
+
 		}
-		results = append(results, responseAndLogSearchQuery{
-			res,
-			query,
-			err,
-		})
-	}
-	queryRes := make([]*datasource.QueryResult, 0, len(results))
 
-	response := &datasource.DatasourceResponse{
-		Results: queryRes,
-	}
-	
 
-	return response, nil
+		return &datasource.DatasourceResponse{
+			Results: []*datasource.QueryResult{
+				&datasource.QueryResult{
+					RefId:  "search-test " + err1.Error(),
+					Tables: []*datasource.Table{&table},
+				},
+			},
+		}, nil
+
+	}
+	return &datasource.DatasourceResponse{
+		Results: []*datasource.QueryResult{
+			&datasource.QueryResult{
+				RefId:  "search-test ",
+				Tables: []*datasource.Table{&table},
+			},
+		},
+	}, nil
+
 }
-
