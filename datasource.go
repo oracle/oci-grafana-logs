@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"sort"
 	"time"
@@ -130,7 +129,7 @@ func (o *OCIDatasource) Query(ctx context.Context, tsdbReq *datasource.Datasourc
 	case "test":
 		return o.testResponse(ctx, tsdbReq)
 	default:
-		return o.searchLogsResponse(ctx, tsdbReq)
+		return o.queryResponse(ctx, tsdbReq)
 	}
 }
 
@@ -621,21 +620,13 @@ type responseAndLogSearchQuery struct {
 func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
 	table := datasource.Table{
 		Columns: []*datasource.TableColumn{
-			&datasource.TableColumn{Name: "text"},
+			{Name: "text"},
 		},
 		Rows: make([]*datasource.TableRow, 0),
 	}
 
-	f, err := os.OpenFile("text.log",
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Println(err)
-	}
-	defer f.Close()
+	rows := make([]*datasource.TableRow, 0, 2)
 
-	logger := log.New(f, "prefix", log.LstdFlags)
-	logger.Println("text to append")
-	logger.Println("more text to append")
 	for _, query := range tsdbReq.Queries {
 
 		var ts GrafanaSearchRequest
@@ -661,49 +652,26 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 
 		if err1 != nil {
 
-			// Testing with a response   below , as logging doesn't work
-			return &datasource.DatasourceResponse{
-				Results: []*datasource.QueryResult{
-					&datasource.QueryResult{
-						RefId: "search-error" + err1.Error(),
-					},
-				},
-			}, nil
-
 		}
 
-		for _, item := range res.Results {
+		nr, nrerr := json.Marshal(res.Results)
 
-			//TODO create a map string [string]
-
-			// Put key value pairs from item into the above map
-
-			// the following is added just for testing.
-			return &datasource.DatasourceResponse{
-				Results: []*datasource.QueryResult{
-					&datasource.QueryResult{
-						RefId:  item.String(),
-						Tables: []*datasource.Table{&table},
+		if nrerr == nil {
+			table.Rows = append(rows, &datasource.TableRow{
+				Values: []*datasource.RowValue{
+					{
+						Kind:        datasource.RowValue_TYPE_STRING,
+						StringValue: string(nr),
 					},
 				},
-			}, nil
-
+			})
 		}
-
-		return &datasource.DatasourceResponse{
-			Results: []*datasource.QueryResult{
-				&datasource.QueryResult{
-					RefId:  "search-test " + err1.Error(),
-					Tables: []*datasource.Table{&table},
-				},
-			},
-		}, nil
 
 	}
 	return &datasource.DatasourceResponse{
 		Results: []*datasource.QueryResult{
-			&datasource.QueryResult{
-				RefId:  "search-test ",
+			{
+				RefId:  "searchResults",
 				Tables: []*datasource.Table{&table},
 			},
 		},
