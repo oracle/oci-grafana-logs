@@ -3,11 +3,12 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/grafana/grafana_plugin_model/go/datasource"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"log"
-	"os"
 )
 
 var pluginLogger = hclog.New(&hclog.LoggerOptions{
@@ -17,8 +18,7 @@ var pluginLogger = hclog.New(&hclog.LoggerOptions{
 
 func main() {
 
-
-	f, err := os.OpenFile("text.log",
+	f, err := os.OpenFile("/Users/athmural/oci/go/src/oci-grafana-logstext.log",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Println(err)
@@ -28,8 +28,7 @@ func main() {
 	logger := log.New(f, "prefix", log.LstdFlags)
 	logger.Println("text to append")
 	logger.Println("more text to append")
-	
-	
+
 	pluginLogger.Debug("Running GRPC server")
 	// fetch all out variables
 

@@ -100,7 +100,6 @@ func (o *OCIDatasource) Query(ctx context.Context, tsdbReq *datasource.Datasourc
 			panic(err)
 		}
 
-
 		loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			log.Printf("error with client")
@@ -627,8 +626,6 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 		Rows: make([]*datasource.TableRow, 0),
 	}
 
-
-
 	f, err := os.OpenFile("text.log",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -639,7 +636,6 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 	logger := log.New(f, "prefix", log.LstdFlags)
 	logger.Println("text to append")
 	logger.Println("more text to append")
-	
 	for _, query := range tsdbReq.Queries {
 
 		var ts GrafanaSearchRequest
@@ -648,8 +644,6 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 		end := time.Unix(tsdbReq.TimeRange.ToEpochMs/1000, (tsdbReq.TimeRange.ToEpochMs%1000)*1000000).UTC()
 
 		req1 := loggingsearch.SearchLogsDetails{}
-
-
 
 		// hardcoded for now
 		req1.IsReturnFieldInfo = common.Bool(false)
@@ -664,46 +658,37 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 		reg := common.StringToRegion(ts.Region)
 		o.loggingSearchClient.SetRegion(string(reg))
 		res, err1 := o.loggingSearchClient.SearchLogs(ctx, request)
-		
+
 		if err1 != nil {
-			
+
+			// Testing with a response   below , as logging doesn't work
 			return &datasource.DatasourceResponse{
 				Results: []*datasource.QueryResult{
 					&datasource.QueryResult{
-						RefId:  "search-test" + err1.Error(),
-					},
-				},
-			}, nil
-			
-		}
-
-
-		
-		for _,item := range res.Results {
-
-			//personMap := make(map[string]interface{})
-			//
-			//err := json.Unmarshal([]byte(item.Data), &personMap)
-			//
-			//if err != nil {
-			//	panic(err)
-			//}
-			//
-			//for key, value := range personMap {
-			//	fmt.Println("index : ", key, " value : ", value)
-			//}
-		
-			return &datasource.DatasourceResponse{
-				Results: []*datasource.QueryResult{
-					&datasource.QueryResult{
-						RefId:    item.String(),
-						Tables:   []*datasource.Table{&table},
+						RefId: "search-error" + err1.Error(),
 					},
 				},
 			}, nil
 
 		}
 
+		for _, item := range res.Results {
+
+			//TODO create a map string [string]
+
+			// Put key value pairs from item into the above map
+
+			// the following is added just for testing.
+			return &datasource.DatasourceResponse{
+				Results: []*datasource.QueryResult{
+					&datasource.QueryResult{
+						RefId:  item.String(),
+						Tables: []*datasource.Table{&table},
+					},
+				},
+			}, nil
+
+		}
 
 		return &datasource.DatasourceResponse{
 			Results: []*datasource.QueryResult{
