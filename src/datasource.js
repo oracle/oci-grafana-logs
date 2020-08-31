@@ -317,6 +317,8 @@ export default class OCIDatasource {
         refId: t.refId,
         hide: t.hide,
         type: t.type || "timeserie",
+        searchQuery:
+          'search "ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a"',
         region: _.isEmpty(region) ? this.defaultRegion : region,
         compartment: compartmentId,
         namespace: this.getVariableValue(t.namespace, options.scopedVars),

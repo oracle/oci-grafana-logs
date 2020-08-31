@@ -65,6 +65,14 @@ type GrafanaSearchRequest struct {
 	ResourceGroup string
 }
 
+type GrafanaSearchLogsRequest struct {
+	GrafanaCommonRequest
+	Metric        string `json:"metric,omitempty"`
+	Namespace     string
+	ResourceGroup string
+	SearchQuery   string
+}
+
 type GrafanaCompartmentRequest struct {
 	GrafanaCommonRequest
 }
@@ -76,11 +84,12 @@ type GrafanaCommonRequest struct {
 	QueryType   string
 	Region      string
 	TenancyOCID string `json:"tenancyOCID"`
+	SearchQuery string
 }
 
 // Query - Determine what kind of query we're making
 func (o *OCIDatasource) Query(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
-	var ts GrafanaCommonRequest
+	var ts GrafanaSearchLogsRequest
 	json.Unmarshal([]byte(tsdbReq.Queries[0].ModelJson), &ts)
 
 	queryType := ts.QueryType
@@ -629,10 +638,11 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 
 	for _, query := range tsdbReq.Queries {
 
-		var ts GrafanaSearchRequest
+		var ts GrafanaSearchLogsRequest
 		json.Unmarshal([]byte(query.ModelJson), &ts)
 		start := time.Unix(tsdbReq.TimeRange.FromEpochMs/1000, (tsdbReq.TimeRange.FromEpochMs%1000)*1000000).UTC()
 		end := time.Unix(tsdbReq.TimeRange.ToEpochMs/1000, (tsdbReq.TimeRange.ToEpochMs%1000)*1000000).UTC()
+		searchQuery := ts.SearchQuery
 
 		req1 := loggingsearch.SearchLogsDetails{}
 
@@ -640,7 +650,7 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 		req1.IsReturnFieldInfo = common.Bool(false)
 		req1.TimeStart = &common.SDKTime{start}
 		req1.TimeEnd = &common.SDKTime{end}
-		req1.SearchQuery = common.String("search \"ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a\"")
+		req1.SearchQuery = common.String(searchQuery)
 
 		request := loggingsearch.SearchLogsRequest{
 			SearchLogsDetails: req1,
