@@ -78,7 +78,7 @@ export default class OCIDatasource {
           {
             name: "content",
             type: FieldType.string,
-            labels: { filename: "file.txt" },
+            labels: { type: "data.message" },
           },
           { name: "level", type: FieldType.string },
           { name: "type", type: FieldType.string },
@@ -107,7 +107,7 @@ export default class OCIDatasource {
       searchResults.forEach((sr) => {
         frame.add({
           time: sr["time"],
-          content: sr["type"],
+          content: sr["data.message"],
           level: sr["data.response.status"] === "200" ? "info" : "debug",
           id: sr["id"],
           status: sr["data.response.status"],
