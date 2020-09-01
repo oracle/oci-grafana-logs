@@ -58,6 +58,7 @@ export default class OCIDatasource {
    */
 
   async query(options) {
+    console.log(" * I am here ");
     var query = await this.buildQueryParameters(options);
     if (query.targets.length <= 0) {
       return this.q.when({ data: [] });
@@ -225,13 +226,13 @@ export default class OCIDatasource {
       .filter(
         (t) =>
           !_.isEmpty(this.getVariableValue(t.resourcegroup, options.scopedVars))
-      )
-      .filter(
-        (t) =>
-          (!_.isEmpty(this.getVariableValue(t.metric, options.scopedVars)) &&
-            t.metric !== SELECT_PLACEHOLDERS.METRIC) ||
-          !_.isEmpty(this.getVariableValue(t.target))
       );
+    // .filter(
+    //   (t) =>
+    //     (!_.isEmpty(this.getVariableValue(t.metric, options.scopedVars)) &&
+    //       t.metric !== SELECT_PLACEHOLDERS.METRIC) ||
+    //     !_.isEmpty(this.getVariableValue(t.target))
+    // );
 
     queries.forEach((t) => {
       t.dimensions = (t.dimensions || [])
@@ -317,8 +318,8 @@ export default class OCIDatasource {
         refId: t.refId,
         hide: t.hide,
         type: t.type || "timeserie",
-        searchQuery:
-          'search "ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a"',
+        searchQuery: t.searchQuery || "no search query given",
+        // 'search "ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a"',
         region: _.isEmpty(region) ? this.defaultRegion : region,
         compartment: compartmentId,
         namespace: this.getVariableValue(t.namespace, options.scopedVars),

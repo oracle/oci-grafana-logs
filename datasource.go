@@ -658,9 +658,10 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, tsdbReq *datasou
 		}
 		reg := common.StringToRegion(ts.Region)
 		o.loggingSearchClient.SetRegion(string(reg))
-		res, err1 := o.loggingSearchClient.SearchLogs(ctx, request)
+		res, err := o.loggingSearchClient.SearchLogs(ctx, request)
 
-		if err1 != nil {
+		if err != nil {
+			return nil, errors.Wrap(err, "error fetching logs")
 
 		}
 
