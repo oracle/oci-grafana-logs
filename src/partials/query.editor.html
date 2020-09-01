@@ -44,11 +44,12 @@
      </div>
 
      <div class="gf-form-inline">
-      <div class="gf-form max-width-90">
-        <label class="gf-form-label width-10"> Query </label>
-          <input class="gf-form-input " 
+      <div class="gf-form max-width-100">
+        <label class="gf-form-label max-width-10 "> Query </label>
+          <input class="gf-form-input  max-width-90" 
           type="text" 
           ng-required="true"
+          onblur="ctrl.onChangeInternal()"
           ng-model="ctrl.target.searchQuery">
         </input>
         </div>
