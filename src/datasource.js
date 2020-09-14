@@ -106,7 +106,7 @@ export default class OCIDatasource {
       searchResults.forEach((sr) => {
         frame.add({
           time: sr['time'],
-          content: sr['data.message'],
+          content: sr['logContent'],
           level: sr['data.response.status'] === '200' ? 'info' : 'debug',
           id: sr['id'],
           status: sr['data.response.status'],
