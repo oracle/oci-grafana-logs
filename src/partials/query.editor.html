@@ -13,44 +13,23 @@
               on-change="ctrl.onChangeInternal()">
             </gf-form-dropdown>
           </div>
-          <label class="gf-form-label query-keyword width-10">Compartment</label>
-          <div class="gf-form-select-wrapper width-10">
-            <gf-form-dropdown
-              model="ctrl.target.compartment"
-              get-options="ctrl.getCompartments()"
-              on-change="ctrl.onChangeInternal()">
-            </gf-form-dropdown>
+
           </div>
-          <label class="gf-form-label query-keyword width-10">Namespace</label>
-          <div class="gf-form-select-wrapper width-10">
-			<gf-form-dropdown
-			  model="ctrl.target.namespace"
-			  get-options="ctrl.getNamespaces()"
-			  on-change="ctrl.onChangeInternal()">
-            </gf-form-dropdown>
           </div>
-          <label class="gf-form-label query-keyword width-10">ResourceGroup</label>
-          <div class="gf-form-select-wrapper width-10">
-            <gf-form-dropdown
-                    model="ctrl.target.resourcegroup"
-                    get-options="ctrl.getResourceGroups()"
-                    on-change="ctrl.onChangeInternal()">
-            </gf-form-dropdown>
-          </div>
-        </div>
+    </div>
 
-
-
-     </div>
-
-     <div class="gf-form-inline">
-      <div class="gf-form max-width-100">
-        <label class="gf-form-label max-width-10 "> Query </label>
-          <input class="gf-form-input  max-width-90" 
+<div class="gf-form">
+  <div class="gf-form max-width-100 width-100">
+    <label class="gf-form-label max-width-10 query-keyword"> Query </label>
+      <input class="gf-form-input"  
+      type="text" 
           type="text" 
-          ng-required="true"
-          onblur="ctrl.onChangeInternal()"
-          ng-model="ctrl.target.searchQuery">
-        </input>
-        </div>
+      type="text" 
+          type="text" 
+      type="text" 
+      ng-required="true"
+      ng-model="ctrl.target.searchQuery">
+    </input>
+    </div>
+    </div>
 </query-editor-row>
