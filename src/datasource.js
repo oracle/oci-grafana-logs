@@ -86,28 +86,13 @@ export default class OCIDatasource {
         ]
       })
 
-      // frame.add({
-      //   time: 1589189388597,
-      //   content: "user registered",
-      //   level: "info",
-      //   id: "d3b07384d113edec49eaa6238ad5ff00",
-      //   type: "N/A",
-      //   status: "200",
-      // });
-      // frame.add({
-      //   time: 1589189406480,
-      //   content: "unknown error",
-      //   level: "error",
-      //   id: "c157a79031e1c40f85931829bc5fc552",
-      //   type: "N/A",
-      //   status: "200",
-      // });
-
       searchResults.forEach((sr) => {
         frame.add({
           time: sr['time'],
           content: sr['logContent'],
-          level: sr['data.response.status'] === '200' ? 'info' : 'debug',
+          level: sr['data'] && sr['data.response'] && sr['data.response.status']
+            ? (Number(sr['data.response.status']) < 400 ? 'info' : 'error') : 'debug',
+
           id: sr['id'],
           status: sr['data.response.status'],
           type: sr['type']
@@ -299,28 +284,15 @@ export default class OCIDatasource {
         )}[${window}]${dimension}.${t.aggregation}`
       }
 
-      const compartmentId = await this.getCompartmentId(
-        this.getVariableValue(t.compartment, options.scopedVars)
-      )
       const result = {
-        resolution,
         environment: this.environment,
         datasourceId: this.id,
-        tenancyOCID: this.tenancyOCID,
         queryType: 'searchLogs',
         refId: t.refId,
         hide: t.hide,
         type: t.type || 'timeserie',
         searchQuery: t.searchQuery || 'no search query given',
-        // 'search "ocid1.tenancy.oc1..aaaaaaaaz2sotiosb2xwnoxuaipxzise6m23kqqlma7rsbpd6yibnltqed2a"',
-        region: _.isEmpty(region) ? this.defaultRegion : region,
-        compartment: compartmentId,
-        namespace: this.getVariableValue(t.namespace, options.scopedVars),
-        resourcegroup: this.getVariableValue(
-          t.resourcegroup,
-          options.scopedVars
-        ),
-        query: query
+        region: _.isEmpty(region) ? this.defaultRegion : region
       }
       results.push(result)
     }
