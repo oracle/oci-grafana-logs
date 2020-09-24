@@ -1,6 +1,6 @@
 {
-  "name": "Oracle Cloud Infrastructure",
-  "id": "oci-datasource",
+  "name": "Oracle Cloud Infrastructure Logs",
+  "id": "oci-logs-datasource",
   "type": "datasource",
 
   "partials": {
@@ -11,6 +11,7 @@
   "annotations": false,
   "alerting": false,
   "backend": true,
+  "logs": true,
   "executable": "oci-plugin",
 
   "info": {
@@ -31,7 +32,7 @@
   },
 
   "dependencies": {
-    "grafanaVersion": "3.x.x",
+    "grafanaVersion": "7.x.x",
     "plugins": [ ]
   }
 }

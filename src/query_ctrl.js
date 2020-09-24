@@ -1,9 +1,9 @@
 /*
-** Copyright © 2019 Oracle and/or its affiliates. All rights reserved.
-** Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
-*/
-import { QueryCtrl } from 'app/plugins/sdk'
-import './css/query-editor.css!'
+ ** Copyright © 2018, 2020 Oracle and/or its affiliates. All rights reserved.
+ ** Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+ */
+import { QueryCtrl } from "app/plugins/sdk";
+import "./css/query-editor.css!";
 import {
   windows,
   namespacesQueryRegex,
@@ -13,42 +13,59 @@ import {
   compartmentsQueryRegex,
   dimensionKeysQueryRegex,
   dimensionValuesQueryRegex,
-  windowsAndResolutionRegex, resolutions, AUTO
-} from './constants'
+  windowsAndResolutionRegex,
+  resolutions,
+  AUTO,
+} from "./constants";
 
 export const SELECT_PLACEHOLDERS = {
-  DIMENSION_KEY: 'select dimension',
-  DIMENSION_VALUE: 'select value',
-  COMPARTMENT: 'select compartment',
-  REGION: 'select region',
-  NAMESPACE: 'select namespace',
-  RESOURCEGROUP: 'select resource group',
-  METRIC: 'select metric',
-  WINDOW: 'select window'
-}
+  DIMENSION_KEY: "select dimension",
+  DIMENSION_VALUE: "select value",
+  COMPARTMENT: "select compartment",
+  REGION: "select region",
+  NAMESPACE: "select namespace",
+  RESOURCEGROUP: "select resource group",
+  METRIC: "select metric",
+  WINDOW: "select window",
+};
 
 export class OCIDatasourceQueryCtrl extends QueryCtrl {
   constructor($scope, $injector, $q, uiSegmentSrv) {
-    super($scope, $injector)
+    super($scope, $injector);
 
     this.q = $q;
     this.uiSegmentSrv = uiSegmentSrv;
 
     this.target.region = this.target.region || SELECT_PLACEHOLDERS.REGION;
-    this.target.compartment = this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
-    this.target.namespace = this.target.namespace || SELECT_PLACEHOLDERS.NAMESPACE;
-    this.target.resourcegroup = this.target.resourcegroup || SELECT_PLACEHOLDERS.RESOURCEGROUP;
+    this.target.compartment =
+      this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
+    this.target.namespace =
+      this.target.namespace || SELECT_PLACEHOLDERS.NAMESPACE;
+    this.target.resourcegroup =
+      this.target.resourcegroup || SELECT_PLACEHOLDERS.RESOURCEGROUP;
     this.target.metric = this.target.metric || SELECT_PLACEHOLDERS.METRIC;
     this.target.resolution = this.target.resolution || AUTO;
     this.target.window = this.target.window || AUTO;
-    this.target.aggregation = this.target.aggregation || 'mean()'
+    this.target.aggregation = this.target.aggregation || "mean()";
     this.target.dimensions = this.target.dimensions || [];
+    this.target.searchQuery = this.target.searchQuery || "";
 
     this.dimensionSegments = [];
-    this.removeDimensionSegment = uiSegmentSrv.newSegment({ fake: true, value: '-- remove dimension --' });
-    this.getSelectDimensionKeySegment = () => uiSegmentSrv.newSegment({ value: SELECT_PLACEHOLDERS.DIMENSION_KEY, type: 'key' });
-    this.getDimensionOperatorSegment = () => this.uiSegmentSrv.newOperator('=');
-    this.getSelectDimensionValueSegment = () => uiSegmentSrv.newSegment({ value: SELECT_PLACEHOLDERS.DIMENSION_VALUE, type: 'value' });
+    this.removeDimensionSegment = uiSegmentSrv.newSegment({
+      fake: true,
+      value: "-- remove dimension --",
+    });
+    this.getSelectDimensionKeySegment = () =>
+      uiSegmentSrv.newSegment({
+        value: SELECT_PLACEHOLDERS.DIMENSION_KEY,
+        type: "key",
+      });
+    this.getDimensionOperatorSegment = () => this.uiSegmentSrv.newOperator("=");
+    this.getSelectDimensionValueSegment = () =>
+      uiSegmentSrv.newSegment({
+        value: SELECT_PLACEHOLDERS.DIMENSION_VALUE,
+        type: "value",
+      });
 
     this.dimensionsCache = {};
 
@@ -56,88 +73,111 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     for (let i = 0; i < this.target.dimensions.length; i++) {
       const dim = this.target.dimensions[i];
       if (i > 0) {
-        this.dimensionSegments.push(this.uiSegmentSrv.newCondition(','))
+        this.dimensionSegments.push(this.uiSegmentSrv.newCondition(","));
       }
-      this.dimensionSegments.push(this.uiSegmentSrv.newSegment({ value: dim.key, type: 'key' }));
-      this.dimensionSegments.push(this.uiSegmentSrv.newSegment({ value: dim.operator, type: 'operator' }));
-      this.dimensionSegments.push(this.uiSegmentSrv.newSegment({ value: dim.value, type: 'value' }));
+      this.dimensionSegments.push(
+        this.uiSegmentSrv.newSegment({ value: dim.key, type: "key" })
+      );
+      this.dimensionSegments.push(
+        this.uiSegmentSrv.newSegment({ value: dim.operator, type: "operator" })
+      );
+      this.dimensionSegments.push(
+        this.uiSegmentSrv.newSegment({ value: dim.value, type: "value" })
+      );
     }
-    this.dimensionSegments.push(this.uiSegmentSrv.newPlusButton())
+    this.dimensionSegments.push(this.uiSegmentSrv.newPlusButton());
   }
 
   // ****************************** Options **********************************
 
   getRegions() {
-    return this.datasource.getRegions().then(regions => {
-      return this.appendVariables([ ...regions], regionsQueryRegex);
+    return this.datasource.getRegions().then((regions) => {
+      return this.appendVariables([...regions], regionsQueryRegex);
     });
   }
 
   getCompartments() {
-    return this.datasource.getCompartments().then(compartments => {
+    return this.datasource.getCompartments().then((compartments) => {
       return this.appendVariables([...compartments], compartmentsQueryRegex);
     });
   }
 
   getNamespaces() {
-    return this.datasource.getNamespaces(this.target).then(namespaces => {
+    return this.datasource.getNamespaces(this.target).then((namespaces) => {
       return this.appendVariables([...namespaces], namespacesQueryRegex);
     });
   }
 
   getResourceGroups() {
-    return this.datasource.getResourceGroups(this.target).then(resourcegroups => {
-      return this.appendVariables([...resourcegroups], resourcegroupsQueryRegex);
-    });
+    return this.datasource
+      .getResourceGroups(this.target)
+      .then((resourcegroups) => {
+        return this.appendVariables(
+          [...resourcegroups],
+          resourcegroupsQueryRegex
+        );
+      });
   }
 
   getMetrics() {
-    return this.datasource.metricFindQuery(this.target).then(metrics => {
+    return this.datasource.metricFindQuery(this.target).then((metrics) => {
       return this.appendVariables([...metrics], metricsQueryRegex);
     });
   }
 
   getAggregations() {
-    return this.datasource.getAggregations().then(aggs => {
+    return this.datasource.getAggregations().then((aggs) => {
       return aggs.map((val) => ({ text: val, value: val }));
     });
   }
 
-  getWindows () {
-    return this.appendWindowsAndResolutionVariables([...windows], windowsAndResolutionRegex)
+  getWindows() {
+    return this.appendWindowsAndResolutionVariables(
+      [...windows],
+      windowsAndResolutionRegex
+    );
   }
 
-  getResolutions () {
-    return this.appendWindowsAndResolutionVariables([...resolutions], windowsAndResolutionRegex)
+  getResolutions() {
+    return this.appendWindowsAndResolutionVariables(
+      [...resolutions],
+      windowsAndResolutionRegex
+    );
   }
 
   /**
    * Get options for the dimension segment: of type 'key' or type 'value'
-   * @param segment 
-   * @param index 
+   * @param segment
+   * @param index
    */
   getDimensionOptions(segment, index) {
-    if (segment.type === 'key' || segment.type === 'plus-button') {
-      return this.getDimensionsCache().then(cache => {
+    if (segment.type === "key" || segment.type === "plus-button") {
+      return this.getDimensionsCache().then((cache) => {
         const keys = Object.keys(cache);
-        const vars = this.datasource.getVariables(dimensionKeysQueryRegex) || [];
+        const vars =
+          this.datasource.getVariables(dimensionKeysQueryRegex) || [];
         const keysWithVariables = vars.concat(keys);
-        const segments = keysWithVariables.map(key => this.uiSegmentSrv.newSegment({ value: key }));
+        const segments = keysWithVariables.map((key) =>
+          this.uiSegmentSrv.newSegment({ value: key })
+        );
         segments.unshift(this.removeDimensionSegment);
         return segments;
       });
     }
 
-    if (segment.type === 'value') {
-      return this.getDimensionsCache().then(cache => {
+    if (segment.type === "value") {
+      return this.getDimensionsCache().then((cache) => {
         const keySegment = this.dimensionSegments[index - 2];
         const key = this.datasource.getVariableValue(keySegment.value);
         const options = cache[key] || [];
 
         // return all the values for the key
-        const vars = this.datasource.getVariables(dimensionValuesQueryRegex) || [];
+        const vars =
+          this.datasource.getVariables(dimensionValuesQueryRegex) || [];
         const optionsWithVariables = vars.concat(options);
-        const segments = optionsWithVariables.map(v => this.uiSegmentSrv.newSegment({ value: v }));
+        const segments = optionsWithVariables.map((v) =>
+          this.uiSegmentSrv.newSegment({ value: v })
+        );
         return segments;
       });
     }
@@ -150,42 +190,44 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
       region: this.datasource.getVariableValue(this.target.region),
       compartment: this.datasource.getVariableValue(this.target.compartment),
       namespace: this.datasource.getVariableValue(this.target.namespace),
-      resourcegroup: this.datasource.getVariableValue(this.target.resourcegroup),
-      metric: this.datasource.getVariableValue(this.target.metric)
+      resourcegroup: this.datasource.getVariableValue(
+        this.target.resourcegroup
+      ),
+      metric: this.datasource.getVariableValue(this.target.metric),
     });
 
     if (this.dimensionsCache[targetSelector]) {
       return this.q.when(this.dimensionsCache[targetSelector]);
     }
 
-    return this.datasource.getDimensions(this.target).then(dimensions => {
+    return this.datasource.getDimensions(this.target).then((dimensions) => {
       const cache = dimensions.reduce((data, item) => {
-        const values = item.value.split('=') || [];
+        const values = item.value.split("=") || [];
         const key = values[0] || item.value;
         const value = values[1];
 
         if (!data[key]) {
-          data[key] = []
+          data[key] = [];
         }
         data[key].push(value);
         return data;
       }, {});
       this.dimensionsCache[targetSelector] = cache;
       return this.dimensionsCache[targetSelector];
-    })
+    });
   }
 
   appendVariables(options, varQeueryRegex) {
     const vars = this.datasource.getVariables(varQeueryRegex) || [];
-    vars.forEach(value => {
+    vars.forEach((value) => {
       options.unshift({ value, text: value });
     });
     return options;
   }
 
-  appendWindowsAndResolutionVariables (options, varQeueryRegex) {
-    const vars = this.datasource.getVariables(varQeueryRegex) || []
-    return [...options, ...vars].map(value => ({ value, text: value }))
+  appendWindowsAndResolutionVariables(options, varQeueryRegex) {
+    const vars = this.datasource.getVariables(varQeueryRegex) || [];
+    return [...options, ...vars].map((value) => ({ value, text: value }));
   }
   // ****************************** Callbacks **********************************
 
@@ -199,8 +241,8 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
 
   /**
    * On dimension segment change callback
-   * @param segment 
-   * @param index 
+   * @param segment
+   * @param index
    */
   onDimensionsChange(segment, index) {
     if (segment.value === this.removeDimensionSegment.value) {
@@ -210,23 +252,29 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
       if (this.dimensionSegments.length > 2) {
         this.dimensionSegments.splice(Math.max(index - 1, 0), 1);
       }
-    } else if (segment.type === 'plus-button') {
+    } else if (segment.type === "plus-button") {
       if (index > 2) {
         // add comma in front of plus button
-        this.dimensionSegments.splice(index, 0, this.uiSegmentSrv.newCondition(','))
+        this.dimensionSegments.splice(
+          index,
+          0,
+          this.uiSegmentSrv.newCondition(",")
+        );
       }
       // replace plus button with key segment
-      segment.type = 'key';
-      segment.cssClass = 'query-segment-key';
+      segment.type = "key";
+      segment.cssClass = "query-segment-key";
       this.dimensionSegments.push(this.getDimensionOperatorSegment());
       this.dimensionSegments.push(this.getSelectDimensionValueSegment());
-    } else if (segment.type === 'key') {
-      this.getDimensionsCache().then(cache => {
+    } else if (segment.type === "key") {
+      this.getDimensionsCache().then((cache) => {
         //update value to be part of the available options
         const value = this.dimensionSegments[index + 2].value;
         const options = cache[segment.value] || [];
         if (!this.datasource.isVariable(value) && options.indexOf(value) < 0) {
-          this.dimensionSegments[index + 2] = this.getSelectDimensionValueSegment();
+          this.dimensionSegments[
+            index + 2
+          ] = this.getSelectDimensionValueSegment();
         }
 
         this.updateQueryWithDimensions();
@@ -234,7 +282,11 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     }
 
     // add plus button at the end
-    if (this.dimensionSegments.length === 0 || this.dimensionSegments[this.dimensionSegments.length - 1].type !== 'plus-button') {
+    if (
+      this.dimensionSegments.length === 0 ||
+      this.dimensionSegments[this.dimensionSegments.length - 1].type !==
+        "plus-button"
+    ) {
       this.dimensionSegments.push(this.uiSegmentSrv.newPlusButton());
     }
 
@@ -248,19 +300,19 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     const dimensions = [];
     let index;
 
-    this.dimensionSegments.forEach(s => {
-      if (s.type === 'key') {
+    this.dimensionSegments.forEach((s) => {
+      if (s.type === "key") {
         if (dimensions.length === 0) {
           dimensions.push({});
           index = 0;
         }
         dimensions[index].key = s.value;
-      } else if (s.type === 'value') {
+      } else if (s.type === "value") {
         dimensions[index].value = s.value;
-      } else if (s.type === 'condition') {
+      } else if (s.type === "condition") {
         dimensions.push({});
         index++;
-      } else if (s.type === 'operator') {
+      } else if (s.type === "operator") {
         dimensions[index].operator = s.value;
       }
     });
@@ -270,4 +322,4 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
   }
 }
 
-OCIDatasourceQueryCtrl.templateUrl = 'partials/query.editor.html'
+OCIDatasourceQueryCtrl.templateUrl = "partials/query.editor.html";
