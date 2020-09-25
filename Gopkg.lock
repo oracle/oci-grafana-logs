@@ -10,8 +10,16 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:38c537dca3034658912a9ed95ae5d0d300a6a37cd04ca53143e056a5170a3c83"
+  name = "github.com/fatih/color"
+  packages = ["."]
+  pruneopts = ""
+  revision = "daf2830f2741ebb735b21709a520c5f37d642d85"
+  version = "v1.9.0"
+
+[[projects]]
   branch = "master"
-  digest = "1:e7a63d1fca4abe974d91ed8c720fed05daec96d3de4e60af9deb931f5df55625"
+  digest = "1:10735f9f026de7570611dadf61a266444f34e44ee806a320b046568a28b11246"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -21,7 +29,7 @@
     "ptypes/timestamp",
   ]
   pruneopts = ""
-  revision = "1918e1ff6ffd2be7bed0553df8650672c3bfe80d"
+  revision = "3860b2764ff25e103fbe1db40f22248fe7a6dc20"
 
 [[projects]]
   branch = "renderer"
@@ -32,12 +40,12 @@
   revision = "84176c64269d8060f99e750ee8aba6f062753336"
 
 [[projects]]
-  branch = "master"
-  digest = "1:3a69e25efed2066afab18f7dd44d5eb2192ce2c11eaffa327d15057e465a150a"
+  digest = "1:6524e1ebf700150c6a0dbdef53c6576eb707c479257a0055d9e93ba35b4f91f7"
   name = "github.com/hashicorp/go-hclog"
   packages = ["."]
   pruneopts = ""
-  revision = "61d530d6c27f994fb6c83b80f99a69c54125ec8a"
+  revision = "4a9e55fb9e7db75382c419e20dd1eb26821ec85e"
+  version = "v0.14.1"
 
 [[projects]]
   digest = "1:de20979176f5f326a028fd0d3698f4ec18f6921b46c9d68a35200355c6e8e6b9"
@@ -48,40 +56,57 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f9a62feb8295380942889460d0008f9fc34c4ad288821efb2ec15168a91b3404"
+  digest = "1:9ed2bf445521b38a8c3d46a3ab18287ef0c4ebc1ec2f575d7794274f5cd88311"
   name = "github.com/hashicorp/yamux"
   packages = ["."]
   pruneopts = ""
-  revision = "2f1d1f20f75d5404f53b9edf6b53ed5505508675"
+  revision = "aecfd211c9ce5303cd19780c8fc96a01b42fa298"
 
 [[projects]]
-  digest = "1:9adf43f9a17af07a6d587e3b493e2111ad8e07283d5cd58e44e70d23bf6dc644"
+  digest = "1:a947becd67c07396eb5e9fe6c3a14964b4987faf96b988e271a980e6a3ad2d0d"
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  pruneopts = ""
+  revision = "f6c00982823144337e56cdb71c712eaac151d29c"
+  version = "v0.1.7"
+
+[[projects]]
+  digest = "1:87fecb4f5564bd9bc810e4c83d4ac434fd17599edc7b35e27580c2cfc48cdb7c"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = ""
+  revision = "7b513a986450394f7bbf1476909911b3aa3a55ce"
+  version = "v0.0.12"
+
+[[projects]]
+  digest = "1:7fe7a8fc8e73eb84c85a4bb6ddcd6e16d7f72ab0f38c896ea95e0674f4acfd72"
   name = "github.com/mitchellh/go-testing-interface"
   packages = ["."]
   pruneopts = ""
-  revision = "6d0b8010fcc857872e42fc6c931227569016843c"
-  version = "v1.0.0"
+  revision = "93f0c65740d3e21a23304be03030037f06e933ea"
+  version = "v1.14.1"
 
 [[projects]]
-  digest = "1:94e9081cc450d2cdf4e6886fc2c06c07272f86477df2d74ee5931951fa3d2577"
+  digest = "1:396c2ed5c96e6934e3d4aae3c7843fd74010911e608614c9db83560e01226671"
   name = "github.com/oklog/run"
   packages = ["."]
   pruneopts = ""
-  revision = "4dadeb3030eda0273a12382bb2348ffc7c9d1a39"
-  version = "v1.0.0"
+  revision = "9c53bcd6fefd554246da88d55efcc283aff63659"
+  version = "v1.1.0"
 
 [[projects]]
-  digest = "1:c4278784afedcf2a253314c567e659c13b46ead950c3bc92b66fc6557fc1c64c"
+  digest = "1:53fa3ae2aff8e77f4fd59fc37afdca49927c269b43acb9b477e7b5333308813e"
   name = "github.com/oracle/oci-go-sdk"
   packages = [
     "common",
     "common/auth",
     "identity",
+    "loggingsearch",
     "monitoring",
   ]
   pruneopts = ""
-  revision = "967e8c3dc33982d871496c044633ee10798f4659"
-  version = "v15.7.0"
+  revision = "2e10e2a480882956ea101da0e590f17b51a81472"
+  version = "v24.3.0"
 
 [[projects]]
   digest = "1:1d7e1867c49a6dd9856598ef7c3123604ea3daabf5b83f303ff457bcbc410b1d"
@@ -93,7 +118,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:41055845ee2a3f0b0fbf94f12b7a6c5322ae66c166d192e38156e0d63a6e2993"
+  digest = "1:1dc26ecbc65e58c7ede63c7fdd87fee00e2e47671814b776f44b3a8b0df475cb"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -105,24 +130,29 @@
     "trace",
   ]
   pruneopts = ""
-  revision = "c44066c5c816ec500d459a2a324a753f78531ae0"
+  revision = "328152dc79b1547da63f950cd4cdd9afd50b2774"
 
 [[projects]]
   branch = "master"
-  digest = "1:ff65401e40494de90fddaecf09b2954179d872a45d9c68b9b31da60f35e4ea73"
+  digest = "1:da0df32477415d1b6d1c5186dfff17c937baaed38f82312cf6e2729401cb62fc"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "internal/unsafeheader",
+    "unix",
+  ]
   pruneopts = ""
-  revision = "7e31e0c00fa05cb5fbf4347b585621d6709e19a4"
+  revision = "d9f96fdee20d1e5115ee34ba4016eae6cfb66eb9"
 
 [[projects]]
-  digest = "1:5acd3512b047305d49e8763eef7ba423901e85d5dd2fd1e71778a0ea8de10bd4"
+  digest = "1:fccda34e4c58111b1908d8d69bf8d57c41c8e2542bc18ec8cd38c4fa21057f71"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
     "internal/colltab",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
     "internal/tag",
     "internal/triegen",
     "internal/ucd",
@@ -135,25 +165,29 @@
     "unicode/rangetable",
   ]
   pruneopts = ""
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
+  revision = "23ae387dee1f90d29a23c0e87ee0b46038fbed0e"
+  version = "v0.3.3"
 
 [[projects]]
   branch = "master"
-  digest = "1:5bc459e4630e2f2adcd04005a06d6f9cdf614c6ffa751309497096efcab79150"
+  digest = "1:ca68079639aabd02ca72a8aa853fa83f11319b1f920f479187a7e6b2d3af1ef9"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = ""
-  revision = "b69ba1387ce2108ac9bc8e8e5e5a46e7d5c72313"
+  revision = "a14c0a98937d0bdd5d9991ad32920ee224e68b8f"
 
 [[projects]]
-  digest = "1:1293087271e314cfa2b3decededba2ecba0ff327e7b7809e00f73f616449191c"
+  digest = "1:9dbe66e5227cd9d3d9fee0931311704782d38a2e4a284d153e7422d7e7db8c73"
   name = "google.golang.org/grpc"
   packages = [
     ".",
+    "attributes",
+    "backoff",
     "balancer",
     "balancer/base",
+    "balancer/grpclb/state",
     "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
     "credentials",
@@ -164,24 +198,72 @@
     "health/grpc_health_v1",
     "internal",
     "internal/backoff",
+    "internal/balancerload",
+    "internal/binarylog",
+    "internal/buffer",
     "internal/channelz",
+    "internal/credentials",
     "internal/envconfig",
+    "internal/grpclog",
     "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/grpcutil",
+    "internal/resolver/dns",
+    "internal/resolver/passthrough",
+    "internal/serviceconfig",
+    "internal/status",
+    "internal/syscall",
     "internal/transport",
     "keepalive",
     "metadata",
-    "naming",
     "peer",
     "resolver",
-    "resolver/dns",
-    "resolver/passthrough",
+    "serviceconfig",
     "stats",
     "status",
     "tap",
   ]
   pruneopts = ""
-  revision = "2e463a05d100327ca47ac218281906921038fd95"
-  version = "v1.16.0"
+  revision = "5e8f83304c0563d1ba74db05fee83d9c18ab9a58"
+  version = "v1.32.0"
+
+[[projects]]
+  digest = "1:0d049ff01749ce1d6092c85cb90a02dfdb3b401939b13415b7e608f36bc8ecee"
+  name = "google.golang.org/protobuf"
+  packages = [
+    "encoding/prototext",
+    "encoding/protowire",
+    "internal/descfmt",
+    "internal/descopts",
+    "internal/detrand",
+    "internal/encoding/defval",
+    "internal/encoding/messageset",
+    "internal/encoding/tag",
+    "internal/encoding/text",
+    "internal/errors",
+    "internal/fieldsort",
+    "internal/filedesc",
+    "internal/filetype",
+    "internal/flags",
+    "internal/genid",
+    "internal/impl",
+    "internal/mapsort",
+    "internal/pragma",
+    "internal/set",
+    "internal/strs",
+    "internal/version",
+    "proto",
+    "reflect/protoreflect",
+    "reflect/protoregistry",
+    "runtime/protoiface",
+    "runtime/protoimpl",
+    "types/known/anypb",
+    "types/known/durationpb",
+    "types/known/timestamppb",
+  ]
+  pruneopts = ""
+  revision = "3f7a61f89bb6813f89d981d1870ed68da0b3c3f1"
+  version = "v1.25.0"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -194,6 +276,7 @@
     "github.com/oracle/oci-go-sdk/common",
     "github.com/oracle/oci-go-sdk/common/auth",
     "github.com/oracle/oci-go-sdk/identity",
+    "github.com/oracle/oci-go-sdk/loggingsearch",
     "github.com/oracle/oci-go-sdk/monitoring",
     "github.com/pkg/errors",
   ]
