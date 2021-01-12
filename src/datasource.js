@@ -75,9 +75,8 @@ export default class OCIDatasource {
         fields: [
           { name: 'time', type: FieldType.time },
           {
-            name: 'content',
-            type: FieldType.string,
-            labels: { type: 'data.message' }
+            name: 'data',
+            type: FieldType.string
           },
           { name: 'level', type: FieldType.string },
           { name: 'type', type: FieldType.string },
@@ -89,7 +88,7 @@ export default class OCIDatasource {
       searchResults.forEach((sr) => {
         frame.add({
           time: sr['time'],
-          content: sr && sr.logContent && sr.logContent.data,
+          data: sr && sr.logContent && JSON.stringify(sr.logContent.data),
           level: sr['data'] && sr['data.response'] && sr['data.response.status']
             ? (Number(sr['data.response.status']) < 400 ? 'info' : 'error') : 'debug',
 
