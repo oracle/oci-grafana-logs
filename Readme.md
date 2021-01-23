@@ -1,3 +1,6 @@
+# About OCI Grafana logs plugin  
+
+
 # Oracle Cloud Infrastructure Logging Data Source
 
 ## Introduction
@@ -46,6 +49,45 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 * `allow dynamicgroup DynamicGroupForGrafanaInstances to read log-content in tenancy`
 
 ![alt text](docs/images/dgPolicy.png?raw=true)
+
+
+
+## Documentation
+
+> Please refer to  <https://docs.oracle.com>.
+
+
+
+## Help
+
+> Inform users on where to get help or how to receive official support from Oracle
+  (if applicable).
+
+
+
+## Contributing
+
+This project welcomes contributions from the community. Before submitting a pull
+request, please [review our contribution guide](./CONTRIBUTING.md).
+
+## Security
+
+Please consult the [security guide](./SECURITY.md) for our responsible security
+vulnerability disclosure process.
+
+## License
+
+> The correct copyright notice format for both documentation and software
+  is `Copyright (c) [year,] year Oracle and/or its affiliates.`
+  You must include the year the content was first released (on any platform) and
+  the most recent year in which it was revised.
+
+Copyright (c) 2021 Oracle and/or its affiliates.
+
+Released under the Universal Permissive License v1.0 as shown at
+<https://oss.oracle.com/licenses/upl/>.
+
+
 
 
 
