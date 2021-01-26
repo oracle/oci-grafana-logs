@@ -54,13 +54,13 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 
 ## Documentation
 
-> Please refer to  <https://docs.oracle.com>.
+ Please refer to  <https://docs.oracle.com>.
 
 
 
 ## Help
 
->   Issues and questions about this plugin can be posted [here](https://github.com/oracle/oci-grafana-plugin/issues)
+Issues and questions about this plugin can be posted [here](https://github.com/oracle/oci-grafana-plugin/issues)
 
 
 ## Contributing
@@ -74,11 +74,6 @@ Please consult the [security guide](./SECURITY.md) for our responsible security
 vulnerability disclosure process.
 
 ## License
-
-> The correct copyright notice format for both documentation and software
-  is `Copyright (c) [year,] year Oracle and/or its affiliates.`
-  You must include the year the content was first released (on any platform) and
-  the most recent year in which it was revised.
 
 Copyright (c) 2021 Oracle and/or its affiliates.
 
