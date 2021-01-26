@@ -60,9 +60,7 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 
 ## Help
 
-> Inform users on where to get help or how to receive official support from Oracle
-  (if applicable).
-
+>   Issues and questions about this plugin can be posted [here](https://github.com/oracle/oci-grafana-plugin/issues)
 
 
 ## Contributing
