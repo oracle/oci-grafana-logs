@@ -1,3 +1,5 @@
+# About OCI Grafana logs plugin  
+
 # Oracle Cloud Infrastructure Logging Data Source
 
 ## Introduction
@@ -47,5 +49,27 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 
 ![alt text](docs/images/dgPolicy.png?raw=true)
 
+## Documentation
 
+ Please refer to the [docs folder in this GitHub repository](./docs)
 
+## Help
+
+Issues and questions about this plugin can be posted [as an issue in this GitHub repository](https://github.com/oracle/oci-grafana-plugin/issues)
+
+## Contributing
+
+This project welcomes contributions from the community. Before submitting a pull
+request, please [review our contribution guide](./CONTRIBUTING.md).
+
+## Security
+
+Please consult the [security guide](./SECURITY.md) for our responsible security
+vulnerability disclosure process.
+
+## License
+
+Copyright (c) 2021 Oracle and/or its affiliates.
+
+Released under the Universal Permissive License v1.0 as shown at
+<https://oss.oracle.com/licenses/upl/>.
