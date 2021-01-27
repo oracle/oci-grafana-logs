@@ -54,7 +54,7 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 
 ## Documentation
 
- Please refer to  <https://docs.oracle.com>.
+ Please refer to the [docs folder in this repo](./docs)
 
 
 
