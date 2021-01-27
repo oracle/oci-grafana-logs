@@ -51,11 +51,11 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 
 ## Documentation
 
- Please refer to the [docs folder in this repo](./docs)
+ Please refer to the [docs folder in this GitHub repository](./docs)
 
 ## Help
 
-Issues and questions about this plugin can be posted [here](https://github.com/oracle/oci-grafana-plugin/issues)
+Issues and questions about this plugin can be posted [as an issue in this GitHub repository](https://github.com/oracle/oci-grafana-plugin/issues)
 
 ## Contributing
 
