@@ -1,6 +1,5 @@
 # About OCI Grafana logs plugin  
 
-
 # Oracle Cloud Infrastructure Logging Data Source
 
 ## Introduction
@@ -50,18 +49,13 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 
 ![alt text](docs/images/dgPolicy.png?raw=true)
 
-
-
 ## Documentation
 
  Please refer to the [docs folder in this repo](./docs)
 
-
-
 ## Help
 
 Issues and questions about this plugin can be posted [here](https://github.com/oracle/oci-grafana-plugin/issues)
-
 
 ## Contributing
 
