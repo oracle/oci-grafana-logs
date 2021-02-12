@@ -122,4 +122,4 @@ Released under the Universal Permissive License v1.0 as shown at
 [8]: https://docs.cloud.oracle.com/iaas/Content/Network/Tasks/managingVCNs.htm
 [9]: https://docs.cloud.oracle.com/iaas/Content/Identity/Tasks/managingdynamicgroups.htm
 [10]: https://docs.cloud.oracle.com/iaas/Content/Identity/Concepts/policygetstarted.htm
-[11]: https://github.com/oracle/oci-grafana-plugin/issues
+[11]: https://github.com/oracle/oci-grafana-logs/issues
