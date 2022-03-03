@@ -19,6 +19,7 @@ import {
 import retryOrThrow from './util/retry'
 import { SELECT_PLACEHOLDERS } from './query_ctrl'
 import { resolveAutoWinRes } from './util/utilFunctions'
+import { toDataQueryResponse } from '@grafana/runtime'; // This import is required to transform each of the response so that it can be mapped to the query sent in the request. When migrating to grafana 8 with react , this is not required as it will be handled by the constructor itself
 
 const DEFAULT_RESOURCE_GROUP = 'NoResourceGroup'
 
@@ -39,8 +40,8 @@ export default class OCIDatasource {
     this.compartmentsCache = []
     this.regionsCache = []
 
-    this.getRegions()
-    this.getCompartments()
+    // this.getRegions()
+    // this.getCompartments()
   }
 
   /**
@@ -59,13 +60,14 @@ export default class OCIDatasource {
 
   async query (options) {
     var query = await this.buildQueryParameters(options)
-    if (query.targets.length <= 0) {
+    const {targets} = query
+    if (targets.length <= 0 || !targets[0].searchQuery) {
       return this.q.when({ data: [] })
-    }
+    } 
 
     return this.doRequest(query).then((result) => {
       const searchResults = JSON.parse(
-        result.data.results.searchResults.tables[0].rows[0]
+        result.data[0].fields[0].values.toArray()[0]
       ).map((obj) => obj.data)
 
       const MutableDataFrame = graf.MutableDataFrame
@@ -87,14 +89,14 @@ export default class OCIDatasource {
 
       searchResults.forEach((sr) => {
         frame.add({
-          time: sr['time'],
-          data: sr && sr.logContent && JSON.stringify(sr.logContent.data),
-          level: sr['data'] && sr['data.response'] && sr['data.response.status']
-            ? (Number(sr['data.response.status']) < 400 ? 'info' : 'error') : 'debug',
-
-          id: sr['id'],
-          status: sr['data.response.status'],
-          type: sr['type']
+          time: sr.time || sr.logContent && sr.logContent.time,
+          data: JSON.stringify(sr.logContent && sr.logContent.data),
+          level: sr.data && sr.data.response
+            ? (Number(sr.data.response.status) < 400 ? 'info' : 'error') : sr.logContent && sr.logContent.data && sr.logContent.data.response && sr.logContent.data.response.status
+            ? (Number(sr.logContent.data.response.status ) < 400 ? 'info' : 'error') : 'debug',
+          id: sr['id'] || sr.logContent && sr.logContent.id,
+          status: sr.data && sr.data.response && sr.data.response.status || sr.logContent && sr.logContent.data && sr.logContent.data.response && sr.logContent.data.response.status,
+          type: sr.type || sr.logContent && sr.logContent.type
         })
       })
       result.data = [frame]
@@ -113,7 +115,6 @@ export default class OCIDatasource {
           queryType: 'test',
           region: this.defaultRegion,
           tenancyOCID: this.tenancyOCID,
-          compartment: '',
           environment: this.environment,
           datasourceId: this.id
         }
@@ -194,23 +195,8 @@ export default class OCIDatasource {
   async buildQueryParameters (options) {
     let queries = options.targets
       .filter((t) => !t.hide)
-      // .filter(
-      //   (t) =>
-      //     !_.isEmpty(
-      //       this.getVariableValue(t.compartment, options.scopedVars)
-      //     ) && t.compartment !== SELECT_PLACEHOLDERS.COMPARTMENT
-      // )
-      // .filter(
-      //   (t) =>
-      //     !_.isEmpty(this.getVariableValue(t.namespace, options.scopedVars)) &&
-      //     t.namespace !== SELECT_PLACEHOLDERS.NAMESPACE
-      // )
-      // .filter(
-      //   (t) =>
-      //     !_.isEmpty(this.getVariableValue(t.resourcegroup, options.scopedVars))
-      // );
 
-    queries.forEach((t) => {
+      queries.forEach((t) => {
       t.dimensions = (t.dimensions || [])
         .filter(
           (dim) =>
@@ -290,7 +276,7 @@ export default class OCIDatasource {
         refId: t.refId,
         hide: t.hide,
         type: t.type || 'timeserie',
-        searchQuery: t.searchQuery || 'no search query given',
+        searchQuery: t.searchQuery,
         region: _.isEmpty(region) ? this.defaultRegion : region
       }
       results.push(result)
@@ -746,7 +732,7 @@ export default class OCIDatasource {
     let _this = this
     return retryOrThrow(() => {
       return _this.backendSrv.datasourceRequest({
-        url: '/api/tsdb/query',
+        url: '/api/ds/query',
         method: 'POST',
         data: {
           from: options.range.from.valueOf().toString(),
@@ -754,33 +740,39 @@ export default class OCIDatasource {
           queries: options.targets
         }
       })
-    }, 10)
+    }, 10).then((res) => toDataQueryResponse(res, options));
   }
 
   /**
    * Converts data from grafana backend to UI format
    */
   mapToTextValue (result, searchField) {
-    if (_.isEmpty(result) || _.isEmpty(searchField)) {
-      return []
-    }
+    if (_.isEmpty(result)) return [];
 
-    var table = result.data.results[searchField].tables[0]
-    if (!table) {
-      return []
-    }
+    // All drop-downs send a request to the backend and based on the query type, the backend sends a response
+    // Depending on the data available , options are shaped
+    // Values in fields are of type vectors (Based on the info from Grafana)
 
-    var map = _.map(table.rows, (row, i) => {
-      if (row.length > 1) {
-        return { text: row[0], value: row[1] }
-      } else if (_.isObject(row[0])) {
-        return { text: row[0], value: i }
-      }
-      return { text: row[0], value: row[0] }
-    })
-    return map
+    switch (searchField) {
+      case "compartments":
+        return result.data[0].fields[0].values.toArray().map((name, i) => ({
+          text: name,
+          value: result.data[0].fields[1].values.toArray()[i],
+        }));
+      case "regions":
+      case "namespaces":
+      case "resourcegroups":
+      case "search":
+      case "dimensions":
+        return result.data[0].fields[0].values.toArray().map((name) => ({
+          text: name,
+          value: name,
+        }));
+      // remaining  cases will be completed once the fix works for the above two
+      default:
+        return {};
+    }
   }
-
   // **************************** Template variables helpers ****************************
 
   /**

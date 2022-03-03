@@ -38,3 +38,7 @@ dist/
 # Internal files
 yarn-error.log
 .gitlab-ci.yml
+
+# Build files
+oci-logs-datasource.zip
+plugin.tar

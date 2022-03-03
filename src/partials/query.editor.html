@@ -20,15 +20,15 @@
 
 <div class="gf-form">
   <div class="gf-form max-width-100 width-100">
-    <label class="gf-form-label max-width-10 query-keyword"> Query </label>
-
-  
+    <label class="gf-form-label max-width-10 query-keyword">Query</label>
       <textarea class="gf-form-input"
                 type="text"
                 cols="40" rows="5"
                 maxlength="1024"
       ng-required="true"
-      ng-model="ctrl.target.searchQuery">
+      ng-model="ctrl.target.searchQuery"
+      ng-blur="ctrl.onChangeInternal()"
+      >
     </textarea>
     </div>
     </div>
