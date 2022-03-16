@@ -32,6 +32,7 @@ node_modules
 dist/oci-plugin_*
 coverage/
 dist/
+oci-logs-datasource/
 *_orig
 .idea
 
