@@ -13,6 +13,7 @@ you a single pane of glass for your application monitoring needs.
 
 For custom logs from your application, see [Custom Logging on OCI][2].
 
+![OCI Logs Plugin](https://github.com/oracle/oci-grafana-logs/blob/main/src/img/OCI_Logs.png)
 ## Prerequisites
 
 We will discuss two different Grafana IAM configurations that needs to be in
@@ -42,7 +43,7 @@ In the OCI console under **Identity > Groups** click **Create Group** and create
 a new group called **GrafanaLoggingUserGroup**. Add the user configured in the
 OCI CLI to the newly-created group.
 
-![alt text](docs/images/usrGp.png?raw=true)
+![alt text](https://github.com/oracle/oci-grafana-logs/blob/main/docs/images/usrGp.png?raw=true)
 
 Under the **Policy** tab switch to the root compartment and click **Create Policy**.
 Create a policy allowing the group to read tenancy metrics. Add the following
@@ -51,7 +52,7 @@ policy statements:
 - `allow group GrafanaLoggingUserGroup to read log-groups in tenancy`
 - `allow group GrafanaLoggingUserGroup to read log-content in tenancy`
 
-![alt text](docs/images/usrPolicy.png?raw=true)
+![alt text](https://github.com/oracle/oci-grafana-logs/blob/main/docs/images/usrPolicy.png?raw=true)
 
 ### For compute-instance/VM on Oracle Cloud Infrastructure
 
@@ -73,7 +74,7 @@ to user groups).
 
 You can define the dynamic group similar to below, where your instance is part
 of the compartment given in the definition of the dynamic group.
-![alt text](docs/images/dgGroup.png?raw=true)
+![alt text](https://github.com/oracle/oci-grafana-logs/blob/main/docs/images/dgGroup.png?raw=true)
 
 #### Create IAM policy for Dynamic Group for your instance
 
@@ -84,11 +85,11 @@ Oracle Cloud Infrastructure services. Add the following policy statements:
 - `allow dynamicgroup DynamicGroupForGrafanaInstances to read log-groups in tenancy`
 - `allow dynamicgroup DynamicGroupForGrafanaInstances to read log-content in tenancy`
 
-![alt text](docs/images/dgPolicy.png?raw=true)
+![alt text](https://github.com/oracle/oci-grafana-logs/blob/main/docs/images/dgPolicy.png?raw=true)
 
 ## Documentation
 
- Please refer to the [docs folder in this GitHub repository](./docs)
+ Please refer to the [docs folder in this GitHub repository](https://github.com/oracle/oci-grafana-logs/tree/main/docs)
 
 ## Help
 
@@ -98,11 +99,11 @@ Issues and questions about this plugin can be posted
 ## Contributing
 
 This project welcomes contributions from the community. Before submitting a pull
-request, please [review our contribution guide](./CONTRIBUTING.md).
+request, please [review our contribution guide](https://github.com/oracle/oci-grafana-logs/blob/main/CONTRIBUTING.md).
 
 ## Security
 
-Please consult the [security guide](./SECURITY.md) for our responsible security
+Please consult the [security guide](https://github.com/oracle/oci-grafana-logs/blob/main/SECURITY.md) for our responsible security
 vulnerability disclosure process.
 
 ## License
