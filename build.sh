@@ -6,7 +6,7 @@ if [[ ! -d ./node_modules ]]; then
   echo "dependencies not installed try running: npm install"
   exit 1
 fi
-
+rm -rf ./oci-logs-datasource
 ./node_modules/.bin/grunt
 
 # build go
@@ -44,8 +44,10 @@ echo "building go binary"
 GOOS=$GOOS go build -o ./dist/oci-logs-plugin$POST
 GOOS=linux go build -o ./dist/oci-logs-plugin_linux_amd64
 GOOS=windows GOARCH=amd64 go build -o ./dist/oci-logs-plugin_windows_amd64.exe
-tar cvf plugin.tar ./dist
-zip -r oci-logs-datasource ./dist
+grafana-toolkit plugin:sign
+mv ./dist ./oci-logs-datasource
+tar cvf plugin.tar ./oci-logs-datasource
+zip -r oci-logs-datasource ./oci-logs-datasource
 
 # Instructions for signing
 # Please make sure

@@ -13,6 +13,7 @@ you a single pane of glass for your application monitoring needs.
 
 For custom logs from your application, see [Custom Logging on OCI][2].
 
+![OCI Logs Plugin](docs/images/OCI_Logs.png?raw=true)
 ## Prerequisites
 
 We will discuss two different Grafana IAM configurations that needs to be in
@@ -88,7 +89,7 @@ Oracle Cloud Infrastructure services. Add the following policy statements:
 
 ## Documentation
 
- Please refer to the [docs folder in this GitHub repository](./docs)
+ Please refer to the [docs folder in this GitHub repository](https://github.com/oracle/oci-grafana-logs/tree/main/docs)
 
 ## Help
 
@@ -98,11 +99,11 @@ Issues and questions about this plugin can be posted
 ## Contributing
 
 This project welcomes contributions from the community. Before submitting a pull
-request, please [review our contribution guide](./CONTRIBUTING.md).
+request, please [review our contribution guide](https://github.com/oracle/oci-grafana-logs/blob/main/CONTRIBUTING.md).
 
 ## Security
 
-Please consult the [security guide](./SECURITY.md) for our responsible security
+Please consult the [security guide](https://github.com/oracle/oci-grafana-logs/blob/main/SECURITY.md) for our responsible security
 vulnerability disclosure process.
 
 ## License
