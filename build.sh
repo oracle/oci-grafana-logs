@@ -41,9 +41,10 @@ echo "building go binary"
 #  GOOS=$GOOS go build -o ./dist/oci-logs-plugin$POST -gcflags="all=-N -l"
 
 # For release
-GOOS=linux GOARCH=amd64 go build -o ./dist/oci-metrics-plugin_linux_amd64
-GOOS=linux GOARCH=arm64 go build -o ./dist/oci-metrics-plugin_linux_arm64
-GOOS=windows GOARCH=amd64 go build -o ./dist/oci-metrics-plugin_windows_amd64.exe
+GOOS=$GOOS go build -o ./dist/oci-logs-plugin$POST
+GOOS=linux GOARCH=amd64 go build -o ./dist/oci-logs-plugin_linux_amd64
+GOOS=linux GOARCH=arm64 go build -o ./dist/oci-logs-plugin_linux_arm64
+GOOS=windows GOARCH=amd64 go build -o ./dist/oci-logs-plugin_windows_amd64.exe
 grafana-toolkit plugin:sign
 mv ./dist ./oci-logs-datasource
 tar cvf plugin.tar ./oci-logs-datasource
