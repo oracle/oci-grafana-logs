@@ -1,5 +1,5 @@
 /*
- ** Copyright © 2018, 2020 Oracle and/or its affiliates.
+ ** Copyright © 2018, 2022 Oracle and/or its affiliates.
  ** The Universal Permissive License (UPL), Version 1.0
  */
 import _ from 'lodash'
@@ -57,44 +57,12 @@ export default class OCIDatasource {
       return this.q.when({ data: [] })
     } 
 
-    return this.doRequest(query).then((result) => {
-      const searchResults = JSON.parse(
-        result.data[0].fields[0].values.toArray()[0]
-      ).map((obj) => obj.data)
+    /*
+     * Keep the logic for creating the data frames within the backend logic
+     */
+    return this.doRequest(query)
 
-      const MutableDataFrame = graf.MutableDataFrame
-      const FieldType = graf.FieldType
-      const frame = new MutableDataFrame({
-        refId: query.refId,
-        fields: [
-          { name: 'time', type: FieldType.time },
-          {
-            name: 'data',
-            type: FieldType.string
-          },
-          { name: 'level', type: FieldType.string },
-          { name: 'type', type: FieldType.string },
-          { name: 'status', type: FieldType.string },
-          { name: 'id', type: FieldType.string }
-        ]
-      })
-
-      searchResults.forEach((sr) => {
-        frame.add({
-          time: sr.time || sr.logContent && sr.logContent.time,
-          data: JSON.stringify(sr.logContent && sr.logContent.data),
-          level: sr.data && sr.data.response
-            ? (Number(sr.data.response.status) < 400 ? 'info' : 'error') : sr.logContent && sr.logContent.data && sr.logContent.data.response && sr.logContent.data.response.status
-            ? (Number(sr.logContent.data.response.status ) < 400 ? 'info' : 'error') : 'debug',
-          id: sr['id'] || sr.logContent && sr.logContent.id,
-          status: sr.data && sr.data.response && sr.data.response.status || sr.logContent && sr.logContent.data && sr.logContent.data.response && sr.logContent.data.response.status,
-          type: sr.type || sr.logContent && sr.logContent.type
-        })
-      })
-      result.data = [frame]
-      return result
-    })
-  }
+   }
 
   /**
    * Required method
@@ -177,6 +145,17 @@ export default class OCIDatasource {
       .filter((t) => !t.hide)
 
     const results = []
+    // When a user is in the Explore window the panel ID value is a string but when the user is on
+    // a dashboard the panel ID value is numeric so convert all panel IDs to be strings so that the
+    // plugin backend gets a consistently formatted panel ID
+    let panelIdStr = ''
+    const parsed = parseInt(request.panelId, 10);
+    if (isNaN(parsed)) {
+      panelIdStr = request.panelId
+    } else {
+      panelIdStr = request.panelId.toString()
+    }
+
     for (let t of queries) {
       const region =
         t.region === SELECT_PLACEHOLDERS.REGION
@@ -192,7 +171,9 @@ export default class OCIDatasource {
         hide: t.hide,
         type: t.type || 'timeserie',
         searchQuery: t.searchQuery,
-        region: _.isEmpty(region) ? this.defaultRegion : region
+        region: _.isEmpty(region) ? this.defaultRegion : region,
+        maxDataPoints: request.maxDataPoints,
+        panelId: panelIdStr
       }
       results.push(result)
     }

@@ -1,5 +1,5 @@
 /*
- ** Copyright © 2018, 2020 Oracle and/or its affiliates.
+ ** Copyright © 2018, 2022 Oracle and/or its affiliates.
  ** The Universal Permissive License (UPL), Version 1.0
  */
 import { QueryCtrl } from "app/plugins/sdk";
