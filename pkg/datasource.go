@@ -22,17 +22,17 @@ import (
 
 const MaxPagesToFetch = 20
 
-var	cacheRefreshTime = time.Minute // how often to refresh our compartmentID cache
+var cacheRefreshTime = time.Minute // how often to refresh our compartmentID cache
 
 //OCIDatasource - pulls in data from telemtry/various oci apis
 type OCIDatasource struct {
 	loggingSearchClient loggingsearch.LogSearchClient
-	identityClient   identity.IdentityClient
-	config           common.ConfigurationProvider
-	cmptid           string
-	logger           log.Logger
-	nameToOCID       map[string]string
-	timeCacheUpdated time.Time
+	identityClient      identity.IdentityClient
+	config              common.ConfigurationProvider
+	cmptid              string
+	logger              log.Logger
+	nameToOCID          map[string]string
+	timeCacheUpdated    time.Time
 }
 
 //NewOCIDatasource - constructor
@@ -43,29 +43,20 @@ func NewOCIDatasource(_ backend.DataSourceInstanceSettings) (instancemgmt.Instan
 	}, nil
 }
 
-// GrafanaOCIRequest - Query Request comning in from the front end
+// GrafanaOCIRequest - regions Query Request comning in from the front end
 type GrafanaOCIRequest struct {
 	GrafanaCommonRequest
-	Query         string
-	Resolution    string
-	Namespace     string
-	ResourceGroup string
 }
 
-//GrafanaSearchRequest incoming request body for search requests
+//GrafanaSearchRequest incoming request body for compartment search requests
 type GrafanaSearchRequest struct {
 	GrafanaCommonRequest
-	Metric        string `json:"metric,omitempty"`
-	Namespace     string
-	ResourceGroup string
 }
 
+// GrafanaSearchLogsRequest Incoming request for a search logs query
 type GrafanaSearchLogsRequest struct {
 	GrafanaCommonRequest
-	Metric        string `json:"metric,omitempty"`
-	Namespace     string
-	ResourceGroup string
-	SearchQuery   string
+	SearchQuery string
 }
 
 // GrafanaCommonRequest - captures the common parts of the search and metricsRequests
@@ -336,9 +327,7 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 			respD := resp.Responses[query.RefID]
 			respD.Frames = append(respD.Frames, frame)
 			resp.Responses[query.RefID] = respD
-			}		
 		}
-		return resp, nil
 	}
-
-
+	return resp, nil
+}
