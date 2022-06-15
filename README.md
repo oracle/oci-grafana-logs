@@ -12,8 +12,6 @@ Once these logs are in Grafana, they can be analysed along with metrics, giving
 you a single pane of glass for your application monitoring needs.
 
 For custom logs from your application, see [Custom Logging on OCI][2].
-
-![OCI Logs Plugin](https://github.com/oracle/oci-grafana-logs/blob/main/src/img/OCI_Logs.png)
 ## Prerequisites
 
 We will discuss two different Grafana IAM configurations that needs to be in
