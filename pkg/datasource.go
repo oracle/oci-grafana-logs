@@ -36,6 +36,7 @@ const LogSearchResponseField_timestamp = "timestamp"
 const MaxLogMetricsDataPoints = 10
 const DefaultLogMetricsDataPoints = 5
 const MinLogMetricsDataPoints = 2
+const numMaxResults = 20000
 
 var cacheRefreshTime = time.Minute // how often to refresh our compartmentID cache
 
@@ -470,6 +471,9 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 
 	var queryRefId string = query.RefID
 	var queryPanelId string = searchLogsReq.PanelId
+	var numpage = 1
+	var indexCountPag = 0
+	var resultCountPag = 0
 
 	// Implicit assumption that the request contains this field, must be set by the plugin frontend
 	searchQuery := searchLogsReq.SearchQuery
@@ -503,105 +507,133 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 	reg := common.StringToRegion(searchLogsReq.Region)
 	o.loggingSearchClient.SetRegion(string(reg))
 	// Perform the logs search operation
-	res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+	// res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+	for res, err := o.loggingSearchClient.SearchLogs(ctx, request); ; res, err = o.loggingSearchClient.SearchLogs(ctx, request) {
+		if err != nil {
+			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, queryPanelId = %s, refId = %s, err = %s",
+				queryPanelId, queryRefId, err))
+			return errors.Wrap(err, "error fetching logs")
+		}
+		o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId)
 
-	if err != nil {
-		o.logger.Debug(fmt.Sprintf("Log search operation FAILED, queryPanelId = %s, refId = %s, err = %s",
-			queryPanelId, queryRefId, err))
-		return errors.Wrap(err, "error fetching logs")
-	}
-	o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId)
+		// Determine how many rows were returned in the search results
+		resultCount := *res.SearchResponse.Summary.ResultCount
 
-	// Determine how many rows were returned in the search results
-	resultCount := *res.SearchResponse.Summary.ResultCount
+		if resultCount > 0 {
+			resultCountPag += resultCount
+			// Loop through each row of the results and add data values for each of encountered fields
+			for rowCount, logSearchResult := range res.SearchResponse.Results {
+				var fieldDefn *DataFieldElements
+				searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
+				if ok == true {
+					if logContent, ok := searchResultData[LogSearchResultsField_LogContent]; ok {
+						mLogContent, ok := logContent.(map[string]interface{})
+						if ok == true {
+							for key, value := range mLogContent {
 
-	if resultCount > 0 {
-
-		// Loop through each row of the results and add data values for each of encountered fields
-		for rowCount, logSearchResult := range res.SearchResponse.Results {
-			var fieldDefn *DataFieldElements
-			searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-			if ok == true {
-				if logContent, ok := searchResultData[LogSearchResultsField_LogContent]; ok {
-					mLogContent, ok := logContent.(map[string]interface{})
-					if ok == true {
-						for key, value := range mLogContent {
-
-							// Only three special case fields within a log record: 1) time, 2) data, and 3) oracle
-							// Treat all other logContent fields as strings
-							if key == LogSearchResultsField_Time {
-								fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, resultCount,
-									LogSearchResponseField_timestamp, LogSearchResponseField_timestamp,
-									ValueType_Time)
-								timestamp, errStr := time.Parse(time.RFC3339, value.(string))
-								if errStr != nil {
-									o.logger.Debug("Error parsing timestamp string", "panelId", queryPanelId,
-										"refId", queryRefId, LogSearchResponseField_timestamp,
-										mLogContent[LogSearchResultsField_Time],
-										"error", errStr)
-								}
-								fieldDefn.Values.([]*time.Time)[rowCount] = &timestamp
-							} else if key == LogSearchResultsField_Data || key == LogSearchResultsField_Oracle {
-								var logData string = ""
-								fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, resultCount,
-									key, key, ValueType_String)
-
-								logJSON, marerr := json.Marshal(value)
-								if marerr == nil {
-									logData = string(logJSON)
-								} else {
-									o.logger.Debug("Error marshalling log record data string, log data variable type",
-										"panelId", queryPanelId, "refId", queryRefId, "type", fmt.Sprintf("%T", value))
-									logData = "UNKNOWN"
-								}
-								fieldDefn.Values.([]*string)[rowCount] = &logData
-
-								// Skip the subject field since it seems to always be an empty string
-								// For all other keys treat them generically as string type
-							} else if key != LogSearchResultsField_Subject {
-								var stringFieldValue string
-								fieldDefn = nil
-
-								if stringFieldValue, ok = value.(string); ok {
-									// If the field value is non-zero length string then proceed to get/create the data
-									// field definition. But if the field value is a zero length string then skip
-									// creating the data field definition, this is to avoid creating a data field for a
-									// log record field that is always empty.
-									if len(stringFieldValue) > 0 {
-										fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, resultCount,
-											key, key, ValueType_String)
+								// Only three special case fields within a log record: 1) time, 2) data, and 3) oracle
+								// Treat all other logContent fields as strings
+								if key == LogSearchResultsField_Time {
+									fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, numMaxResults,
+										LogSearchResponseField_timestamp, LogSearchResponseField_timestamp,
+										ValueType_Time)
+									timestamp, errStr := time.Parse(time.RFC3339, value.(string))
+									if errStr != nil {
+										o.logger.Debug("Error parsing timestamp string", "panelId", queryPanelId,
+											"refId", queryRefId, LogSearchResponseField_timestamp,
+											mLogContent[LogSearchResultsField_Time],
+											"error", errStr)
 									}
-								} else {
-									o.logger.Debug("Error parsing string field value", "panelId", queryPanelId,
-										"refId", queryRefId, "key", key, "value", value)
-									fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, resultCount,
+									fieldDefn.Values.([]*time.Time)[indexCountPag] = &timestamp
+								} else if key == LogSearchResultsField_Data || key == LogSearchResultsField_Oracle {
+									var logData string = ""
+									fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, numMaxResults,
 										key, key, ValueType_String)
-									stringFieldValue = "UNKNOWN"
-								}
-								if fieldDefn != nil {
-									fieldDefn.Values.([]*string)[rowCount] = &stringFieldValue
-								}
-							} // endif key name
-						} // for each field key in the logContent field
 
+									logJSON, marerr := json.Marshal(value)
+									if marerr == nil {
+										logData = string(logJSON)
+									} else {
+										o.logger.Debug("Error marshalling log record data string, log data variable type",
+											"panelId", queryPanelId, "refId", queryRefId, "type", fmt.Sprintf("%T", value))
+										logData = "UNKNOWN"
+									}
+									fieldDefn.Values.([]*string)[indexCountPag] = &logData
+
+									// Skip the subject field since it seems to always be an empty string
+									// For all other keys treat them generically as string type
+								} else if key != LogSearchResultsField_Subject {
+									var stringFieldValue string
+									fieldDefn = nil
+
+									if stringFieldValue, ok = value.(string); ok {
+										// If the field value is non-zero length string then proceed to get/create the data
+										// field definition. But if the field value is a zero length string then skip
+										// creating the data field definition, this is to avoid creating a data field for a
+										// log record field that is always empty.
+										if len(stringFieldValue) > 0 {
+											fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, numMaxResults,
+												key, key, ValueType_String)
+										}
+									} else {
+										o.logger.Debug("Error parsing string field value", "panelId", queryPanelId,
+											"refId", queryRefId, "key", key, "value", value)
+										fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, numMaxResults,
+											key, key, ValueType_String)
+										stringFieldValue = "UNKNOWN"
+									}
+									if fieldDefn != nil {
+										fieldDefn.Values.([]*string)[indexCountPag] = &stringFieldValue
+									}
+								} // endif key name
+							} // for each field key in the logContent field
+
+						} else {
+							o.logger.Debug("Unable to get logContent map", "panelId", queryPanelId,
+								"refId", queryRefId, "row", rowCount)
+						}
 					} else {
-						o.logger.Debug("Unable to get logContent map", "panelId", queryPanelId,
-							"refId", queryRefId, "row", rowCount)
+						o.logger.Debug("Encountered log record without a logContent element",
+							"panelId", queryPanelId, "refId", queryRefId, "row", rowCount)
 					}
 				} else {
-					o.logger.Debug("Encountered log record without a logContent element",
-						"panelId", queryPanelId, "refId", queryRefId, "row", rowCount)
+					o.logger.Debug("Encountered row without a log record", "panelId", queryPanelId,
+						"refId", queryRefId, "row", rowCount)
 				}
-			} else {
-				o.logger.Debug("Encountered row without a log record", "panelId", queryPanelId,
-					"refId", queryRefId, "row", rowCount)
+				indexCountPag++
 			}
-		}
-	} else {
-		o.logger.Warn("Logging search query returned no results", "panelId", queryPanelId,
-			"refId", queryRefId)
-	}
 
+		} else {
+			o.logger.Warn("Logging search query returned no results", "panelId", queryPanelId,
+				"refId", queryRefId)
+		}
+		if res.OpcNextPage != nil && numpage < MaxPagesToFetch {
+			// if there are more items in next page, fetch items from next page
+			request.Page = res.OpcNextPage
+			numpage++
+		} else {
+			o.logger.Debug("numpage :", "numpage", numpage)
+			o.logger.Debug("resultCountPag :", "resultCountPag", resultCountPag)
+			o.logger.Debug("Reducing data field values", "resultsCount", resultCountPag-1)
+			for _, dataFieldDefn := range mFieldDefns {
+				if dataFieldDefn.Type == ValueType_Time {
+					timeValuesSlice, _ := dataFieldDefn.Values.([]*time.Time)
+					dataFieldDefn.Values = timeValuesSlice[:resultCountPag-1]
+				} else if dataFieldDefn.Type == ValueType_Float64 {
+					floatValuesSlice, _ := dataFieldDefn.Values.([]*float64)
+					dataFieldDefn.Values = floatValuesSlice[:resultCountPag-1]
+				} else if dataFieldDefn.Type == ValueType_Int {
+					intValuesSlice, _ := dataFieldDefn.Values.([]*int)
+					dataFieldDefn.Values = intValuesSlice[:resultCountPag-1]
+				} else { // Treat all other data types as a string (including string fields)
+					stringValuesSlice, _ := dataFieldDefn.Values.([]*string)
+					dataFieldDefn.Values = stringValuesSlice[:resultCountPag-1]
+				}
+			}
+			// no more result, break the loop
+			break
+		}
+	}
 	return nil
 }
 
@@ -628,6 +660,9 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 	var intervalMs float64
 	var queryRefId string = query.RefID
 	var queryPanelId string = searchLogsReq.PanelId
+	var numpage = 1
+	var indexCountPag = 0
+	var resultCountPag = 0
 
 	// Implicit assumption that the request contains this field, must be set by the plugin frontend
 	searchQuery := searchLogsReq.SearchQuery
@@ -721,161 +756,188 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 		o.loggingSearchClient.SetRegion(string(reg))
 
 		// Perform the logs search operation
-		res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+		// res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+		for res, err := o.loggingSearchClient.SearchLogs(ctx, request); ; res, err = o.loggingSearchClient.SearchLogs(ctx, request) {
 
-		if err != nil {
-			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
-				queryPanelId, queryRefId, err))
-			return errors.Wrap(err, "error fetching logs")
-		}
-		o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId,
-			"interval", intervalCnt)
+			if err != nil {
+				o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
+					queryPanelId, queryRefId, err))
+				return errors.Wrap(err, "error fetching logs")
+			}
+			o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId,
+				"interval", intervalCnt)
 
-		// Determine how many rows were returned in the search results
-		resultCount := *res.SearchResponse.Summary.ResultCount
+			// Determine how many rows were returned in the search results
+			resultCount := *res.SearchResponse.Summary.ResultCount
 
-		if resultCount > 0 {
+			if resultCount > 0 {
+				resultCountPag += resultCount
+				searchResultData, ok := (*res.SearchResponse.Results[0].Data).(map[string]interface{})
+				if ok == true {
 
-			searchResultData, ok := (*res.SearchResponse.Results[0].Data).(map[string]interface{})
-			if ok == true {
+					if _, ok := searchResultData[LogSearchResultsField_LogContent]; !ok {
 
-				if _, ok := searchResultData[LogSearchResultsField_LogContent]; !ok {
+						// Prepare regular expression filters once for processing all results, using
+						// a raw string to simplify escaping
+						reFunc, _ := regexp.Compile(`^([a-zA-Z]+)\((.+)\)`)
 
-					// Prepare regular expression filters once for processing all results, using
-					// a raw string to simplify escaping
-					reFunc, _ := regexp.Compile(`^([a-zA-Z]+)\((.+)\)`)
+						labelFieldKey := ""
+						numericFieldKey := ""
+						numericFieldType := ValueType_Undefined
+						metricFieldName := ""
 
-					labelFieldKey := ""
-					numericFieldKey := ""
-					numericFieldType := ValueType_Undefined
-					metricFieldName := ""
+						var fieldDefn *DataFieldElements
+						var labelValue string
+						var convOk bool
 
-					var fieldDefn *DataFieldElements
-					var labelValue string
-					var convOk bool
+						// There needs to be a timestamp field but there is none returned in the
+						// logging query results, so create the timestamp field if it doesn't already
+						// exist and use the end time range for the current query interval as the
+						// timestamp value
+						fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, numMaxResults,
+							LogSearchResponseField_timestamp, LogSearchResponseField_timestamp,
+							ValueType_Time)
 
-					// There needs to be a timestamp field but there is none returned in the
-					// logging query results, so create the timestamp field if it doesn't already
-					// exist and use the end time range for the current query interval as the
-					// timestamp value
-					fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, int(numDataPoints),
-						LogSearchResponseField_timestamp, LogSearchResponseField_timestamp,
-						ValueType_Time)
+						// This needs to be the 'To' time for the current interval in time.Time format
+						currToTime := time.UnixMilli(currToMs).UTC()
+						fieldDefn.Values.([]*time.Time)[intervalCnt] = &currToTime
 
-					// This needs to be the 'To' time for the current interval in time.Time format
-					currToTime := time.UnixMilli(currToMs).UTC()
-					fieldDefn.Values.([]*time.Time)[intervalCnt] = &currToTime
-
-					for rowCount, logSearchResult := range res.SearchResponse.Results {
-						searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-						if ok == true {
-							// If this is the first row then inspect the values of the elements to
-							// speed up the processing of the remaining rows
-							if rowCount == 0 {
-								// Loop through the keys for the entries in the results data item
-								// to determine what kind of fields we have in the results
-								for key, value := range searchResultData {
-									// Check whether the key contains one of the aggregation functions
-									if key == "count" {
-										metricFieldName = "count"
-										numericFieldKey = key
-										// In the JSON content for the log record the count appears as an
-										// integer but when converted becomes a float value
-										numericFieldType = ValueType_Float64
-									} else if reFunc.Match([]byte(key)) == true {
-										metricFieldName = key
-										numericFieldKey = key
-										if _, ok := value.(float64); ok {
+						for rowCount, logSearchResult := range res.SearchResponse.Results {
+							searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
+							if ok == true {
+								// If this is the first row then inspect the values of the elements to
+								// speed up the processing of the remaining rows
+								if rowCount == 0 {
+									// Loop through the keys for the entries in the results data item
+									// to determine what kind of fields we have in the results
+									for key, value := range searchResultData {
+										// Check whether the key contains one of the aggregation functions
+										if key == "count" {
+											metricFieldName = "count"
+											numericFieldKey = key
+											// In the JSON content for the log record the count appears as an
+											// integer but when converted becomes a float value
 											numericFieldType = ValueType_Float64
-										} else if _, ok := value.(int); ok {
-											numericFieldType = ValueType_Int
+										} else if reFunc.Match([]byte(key)) == true {
+											metricFieldName = key
+											numericFieldKey = key
+											if _, ok := value.(float64); ok {
+												numericFieldType = ValueType_Float64
+											} else if _, ok := value.(int); ok {
+												numericFieldType = ValueType_Int
+											} else {
+												o.logger.Error("Unable to determine numeric data type for field value",
+													"panelId", queryPanelId, "refId", queryRefId, "value", value)
+												numericFieldType = ValueType_Undefined
+											}
 										} else {
-											o.logger.Error("Unable to determine numeric data type for field value",
-												"panelId", queryPanelId, "refId", queryRefId, "value", value)
-											numericFieldType = ValueType_Undefined
+											labelFieldKey = key
 										}
+									}
+								} // end if first row
+
+								if numericFieldType == ValueType_Float64 {
+
+									metricFieldCombKey := metricFieldName
+									if labelFieldKey != "" {
+										// On rare occasions the identified label field will have no value so need
+										// to protect against that case by checking the conversion result
+										if labelValue, convOk = searchResultData[labelFieldKey].(string); !convOk {
+											labelValue = "null"
+										}
+										metricFieldCombKey = metricFieldName + "_" + labelValue
+									}
+									// Get or create the data field elements structure for this field
+									fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, numMaxResults,
+										metricFieldCombKey, metricFieldName, ValueType_Float64)
+
+									if floatValue, ok := searchResultData[numericFieldKey].(float64); ok {
+										fieldDefn.Values.([]*float64)[intervalCnt] = &floatValue
 									} else {
-										labelFieldKey = key
+										o.logger.Error("Unable to extract float field value",
+											"panelId", queryPanelId, "refId", queryRefId, "field", numericFieldKey)
 									}
-								}
-							} // end if first row
-
-							if numericFieldType == ValueType_Float64 {
-
-								metricFieldCombKey := metricFieldName
-								if labelFieldKey != "" {
-									// On rare occasions the identified label field will have no value so need
-									// to protect against that case by checking the conversion result
-									if labelValue, convOk = searchResultData[labelFieldKey].(string); !convOk {
-										labelValue = "null"
+									if labelFieldKey != "" {
+										fieldDefn.Labels[labelFieldKey] = labelValue
 									}
-									metricFieldCombKey = metricFieldName + "_" + labelValue
-								}
-								// Get or create the data field elements structure for this field
-								fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, int(numDataPoints),
-									metricFieldCombKey, metricFieldName, ValueType_Float64)
 
-								if floatValue, ok := searchResultData[numericFieldKey].(float64); ok {
-									fieldDefn.Values.([]*float64)[intervalCnt] = &floatValue
+								} else if numericFieldType == ValueType_Int {
+
+									metricFieldCombKey := metricFieldName
+									if labelFieldKey != "" {
+										// On rare occasions the identified label field will have no value so need
+										// to protect against that case by checking the conversion result
+										if labelValue, convOk = searchResultData[labelFieldKey].(string); !convOk {
+											labelValue = "null"
+										}
+										metricFieldCombKey = metricFieldName + "_" + labelValue
+									}
+									// Get or create the data field elements structure for this field
+									fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, numMaxResults,
+										metricFieldCombKey, metricFieldName, ValueType_Int)
+
+									if intValue, ok := searchResultData[numericFieldKey].(int); ok {
+										fieldDefn.Values.([]*int)[intervalCnt] = &intValue
+									} else {
+										o.logger.Error("Unable to extract int value for ",
+											"panelId", queryPanelId, "refId", queryRefId, "field", numericFieldKey)
+									}
+
+									if labelFieldKey != "" {
+										fieldDefn.Labels[labelFieldKey] = labelValue
+									}
+
 								} else {
-									o.logger.Error("Unable to extract float field value",
-										"panelId", queryPanelId, "refId", queryRefId, "field", numericFieldKey)
-								}
-								if labelFieldKey != "" {
-									fieldDefn.Labels[labelFieldKey] = labelValue
-								}
-
-							} else if numericFieldType == ValueType_Int {
-
-								metricFieldCombKey := metricFieldName
-								if labelFieldKey != "" {
-									// On rare occasions the identified label field will have no value so need
-									// to protect against that case by checking the conversion result
-									if labelValue, convOk = searchResultData[labelFieldKey].(string); !convOk {
-										labelValue = "null"
-									}
-									metricFieldCombKey = metricFieldName + "_" + labelValue
-								}
-								// Get or create the data field elements structure for this field
-								fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, int(numDataPoints),
-									metricFieldCombKey, metricFieldName, ValueType_Int)
-
-								if intValue, ok := searchResultData[numericFieldKey].(int); ok {
-									fieldDefn.Values.([]*int)[intervalCnt] = &intValue
-								} else {
-									o.logger.Error("Unable to extract int value for ",
-										"panelId", queryPanelId, "refId", queryRefId, "field", numericFieldKey)
-								}
-
-								if labelFieldKey != "" {
-									fieldDefn.Labels[labelFieldKey] = labelValue
+									o.logger.Debug("Encountered unexpected field value type for numeric results logging query",
+										"panelId", queryPanelId, "refId", queryRefId)
 								}
 
 							} else {
-								o.logger.Debug("Encountered unexpected field value type for numeric results logging query",
-									"panelId", queryPanelId, "refId", queryRefId)
+								o.logger.Error("Unable to map result data elements",
+									"panelId", queryPanelId, "refId", queryRefId, "row", rowCount)
 							}
-
-						} else {
-							o.logger.Error("Unable to map result data elements",
-								"panelId", queryPanelId, "refId", queryRefId, "row", rowCount)
 						}
+					} else {
+						o.logger.Debug("Log search results should NOT contain log records",
+							"panelId", queryPanelId, "refId", queryRefId)
 					}
 				} else {
-					o.logger.Debug("Log search results should NOT contain log records",
+					o.logger.Debug("Unable to assert search result data is a string map",
 						"panelId", queryPanelId, "refId", queryRefId)
 				}
-			} else {
-				o.logger.Debug("Unable to assert search result data is a string map",
-					"panelId", queryPanelId, "refId", queryRefId)
+				indexCountPag++
+			} else { // result count is <= 0
+				o.logger.Debug("No results returned by query", "panelId", queryPanelId,
+					"refId", queryRefId, "resultCount", *res.SearchResponse.Summary.ResultCount)
 			}
-		} else { // result count is <= 0
-			o.logger.Debug("No results returned by query", "panelId", queryPanelId,
-				"refId", queryRefId, "resultCount", *res.SearchResponse.Summary.ResultCount)
-		}
-
-	} // end for the required number of data intervals
-
+			if res.OpcNextPage != nil && numpage < MaxPagesToFetch {
+				// if there are more items in next page, fetch items from next page
+				request.Page = res.OpcNextPage
+				numpage++
+			} else {
+				o.logger.Debug("numpage :", "numpage", numpage)
+				o.logger.Debug("resultCountPag :", "resultCountPag", resultCountPag)
+				o.logger.Debug("Reducing data field values", "resultsCount", resultCountPag-1)
+				for _, dataFieldDefn := range mFieldDefns {
+					if dataFieldDefn.Type == ValueType_Time {
+						timeValuesSlice, _ := dataFieldDefn.Values.([]*time.Time)
+						dataFieldDefn.Values = timeValuesSlice[:resultCountPag-1]
+					} else if dataFieldDefn.Type == ValueType_Float64 {
+						floatValuesSlice, _ := dataFieldDefn.Values.([]*float64)
+						dataFieldDefn.Values = floatValuesSlice[:resultCountPag-1]
+					} else if dataFieldDefn.Type == ValueType_Int {
+						intValuesSlice, _ := dataFieldDefn.Values.([]*int)
+						dataFieldDefn.Values = intValuesSlice[:resultCountPag-1]
+					} else { // Treat all other data types as a string (including string fields)
+						stringValuesSlice, _ := dataFieldDefn.Values.([]*string)
+						dataFieldDefn.Values = stringValuesSlice[:resultCountPag-1]
+					}
+				}
+				// no more result, break the loop
+				break
+			}
+		} // end for the required number of data intervals
+	}
 	return nil
 }
 
