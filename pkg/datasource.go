@@ -473,7 +473,6 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 	var queryPanelId string = searchLogsReq.PanelId
 	var numpage = 1
 	var indexCountPag = 0
-	var resultCountPag = 0
 
 	// Implicit assumption that the request contains this field, must be set by the plugin frontend
 	searchQuery := searchLogsReq.SearchQuery
@@ -507,7 +506,6 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 	reg := common.StringToRegion(searchLogsReq.Region)
 	o.loggingSearchClient.SetRegion(string(reg))
 	// Perform the logs search operation
-	// res, err := o.loggingSearchClient.SearchLogs(ctx, request)
 	for res, err := o.loggingSearchClient.SearchLogs(ctx, request); ; res, err = o.loggingSearchClient.SearchLogs(ctx, request) {
 		if err != nil {
 			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, queryPanelId = %s, refId = %s, err = %s",
@@ -520,7 +518,6 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 		resultCount := *res.SearchResponse.Summary.ResultCount
 
 		if resultCount > 0 {
-			resultCountPag += resultCount
 			// Loop through each row of the results and add data values for each of encountered fields
 			for rowCount, logSearchResult := range res.SearchResponse.Results {
 				var fieldDefn *DataFieldElements
@@ -612,22 +609,21 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 			request.Page = res.OpcNextPage
 			numpage++
 		} else {
-			o.logger.Debug("numpage :", "numpage", numpage)
-			o.logger.Debug("resultCountPag :", "resultCountPag", resultCountPag)
-			o.logger.Debug("Reducing data field values", "resultsCount", resultCountPag-1)
+			o.logger.Debug("indexCountPag :", "indexCountPag", indexCountPag)
+			o.logger.Debug("Reducing data field values", "resultsCount", indexCountPag-1)
 			for _, dataFieldDefn := range mFieldDefns {
 				if dataFieldDefn.Type == ValueType_Time {
 					timeValuesSlice, _ := dataFieldDefn.Values.([]*time.Time)
-					dataFieldDefn.Values = timeValuesSlice[:resultCountPag-1]
+					dataFieldDefn.Values = timeValuesSlice[:indexCountPag-1]
 				} else if dataFieldDefn.Type == ValueType_Float64 {
 					floatValuesSlice, _ := dataFieldDefn.Values.([]*float64)
-					dataFieldDefn.Values = floatValuesSlice[:resultCountPag-1]
+					dataFieldDefn.Values = floatValuesSlice[:indexCountPag-1]
 				} else if dataFieldDefn.Type == ValueType_Int {
 					intValuesSlice, _ := dataFieldDefn.Values.([]*int)
-					dataFieldDefn.Values = intValuesSlice[:resultCountPag-1]
+					dataFieldDefn.Values = intValuesSlice[:indexCountPag-1]
 				} else { // Treat all other data types as a string (including string fields)
 					stringValuesSlice, _ := dataFieldDefn.Values.([]*string)
-					dataFieldDefn.Values = stringValuesSlice[:resultCountPag-1]
+					dataFieldDefn.Values = stringValuesSlice[:indexCountPag-1]
 				}
 			}
 			// no more result, break the loop
