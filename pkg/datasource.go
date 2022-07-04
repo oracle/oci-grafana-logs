@@ -21,7 +21,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const MaxPagesToFetch = 20
+const MaxPagesToFetch = 10
+const LimitPerPage = 1000
 
 // Constants for the log search result field names processed by the plugin
 const LogSearchResultsField_LogContent = "logContent"
@@ -36,7 +37,7 @@ const LogSearchResponseField_timestamp = "timestamp"
 const MaxLogMetricsDataPoints = 10
 const DefaultLogMetricsDataPoints = 5
 const MinLogMetricsDataPoints = 2
-const numMaxResults = (MaxPagesToFetch * 500) + 1
+const numMaxResults = (MaxPagesToFetch * LimitPerPage) + 1
 
 var cacheRefreshTime = time.Minute // how often to refresh our compartmentID cache
 
@@ -501,7 +502,7 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 	// Construct the Logging service SearchLogs request structure
 	request := loggingsearch.SearchLogsRequest{
 		SearchLogsDetails: req1,
-		Limit:             common.Int(500),
+		Limit:             common.Int(LimitPerPage),
 	}
 	reg := common.StringToRegion(searchLogsReq.Region)
 	o.loggingSearchClient.SetRegion(string(reg))
@@ -610,20 +611,20 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context, searchLogsReq Gra
 			numpage++
 		} else {
 			o.logger.Debug("indexCountPag :", "indexCountPag", indexCountPag)
-			o.logger.Debug("Reducing data field values", "resultsCount", indexCountPag-1)
+			o.logger.Debug("Reducing data field values", "resultsCount", indexCountPag)
 			for _, dataFieldDefn := range mFieldDefns {
 				if dataFieldDefn.Type == ValueType_Time {
 					timeValuesSlice, _ := dataFieldDefn.Values.([]*time.Time)
-					dataFieldDefn.Values = timeValuesSlice[:indexCountPag-1]
+					dataFieldDefn.Values = timeValuesSlice[:indexCountPag]
 				} else if dataFieldDefn.Type == ValueType_Float64 {
 					floatValuesSlice, _ := dataFieldDefn.Values.([]*float64)
-					dataFieldDefn.Values = floatValuesSlice[:indexCountPag-1]
+					dataFieldDefn.Values = floatValuesSlice[:indexCountPag]
 				} else if dataFieldDefn.Type == ValueType_Int {
 					intValuesSlice, _ := dataFieldDefn.Values.([]*int)
-					dataFieldDefn.Values = intValuesSlice[:indexCountPag-1]
+					dataFieldDefn.Values = intValuesSlice[:indexCountPag]
 				} else { // Treat all other data types as a string (including string fields)
 					stringValuesSlice, _ := dataFieldDefn.Values.([]*string)
-					dataFieldDefn.Values = stringValuesSlice[:indexCountPag-1]
+					dataFieldDefn.Values = stringValuesSlice[:indexCountPag]
 				}
 			}
 			// no more result, break the loop
@@ -743,7 +744,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 		// Construct the Logging service SearchLogs request structure
 		request := loggingsearch.SearchLogsRequest{
 			SearchLogsDetails: req1,
-			Limit:             common.Int(500),
+			Limit:             common.Int(LimitPerPage),
 		}
 		reg := common.StringToRegion(searchLogsReq.Region)
 		o.loggingSearchClient.SetRegion(string(reg))
