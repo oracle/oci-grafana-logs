@@ -36,7 +36,7 @@ const LogSearchResponseField_timestamp = "timestamp"
 const MaxLogMetricsDataPoints = 10
 const DefaultLogMetricsDataPoints = 5
 const MinLogMetricsDataPoints = 2
-const numMaxResults = 20000
+const numMaxResults = (MaxPagesToFetch * 500) + 1
 
 var cacheRefreshTime = time.Minute // how often to refresh our compartmentID cache
 
