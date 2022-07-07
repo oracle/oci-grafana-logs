@@ -143,15 +143,26 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 			o.logger.Error("Error creating logging search client", "error", err)
 			return nil, errors.Wrap(err, "Error creating logging search client")
 		}
+<<<<<<< HEAD
 		loggingMgmtClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			o.logger.Error("Error creating logging search client", "error", err)
 			return nil, errors.Wrap(err, "Error creating logging search client")
+=======
+		loggingClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+		if err != nil {
+			o.logger.Error("error with client")
+			panic(err)
+>>>>>>> daa9d9e (rewritten test function)
 		}
 		o.identityClient = identityClient
 		o.config = configProvider
 		o.loggingSearchClient = loggingSearchClient
+<<<<<<< HEAD
 		o.loggingMgmtClient = loggingMgmtClient
+=======
+		o.loggingClient = loggingClient
+>>>>>>> daa9d9e (rewritten test function)
 		if ts.Compartment != "" {
 			o.cmptid = ts.Compartment
 		}
@@ -170,6 +181,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+<<<<<<< HEAD
 
 	// GrafanaCommonRequest - captures the common parts of the search and metricsRequests
 	// the structure is used here to retrieve the TenancyOCID and CompartmentOCID
@@ -239,6 +251,83 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 	}
 
 	return &backend.QueryDataResponse{}, err
+=======
+	var ts GrafanaCommonRequest
+	query0 := req.Queries[0]
+
+	if err := json.Unmarshal(query0.JSON, &ts); err != nil {
+		return &backend.QueryDataResponse{}, err
+	}
+	o.logger.Debug("ts.TenancyOCID:", "*ts.TenancyOCID", ts.TenancyOCID)
+
+	compreq := identity.ListCompartmentsRequest{AccessLevel: identity.ListCompartmentsAccessLevelAny,
+		CompartmentIdInSubtree: common.Bool(true),
+		Limit:                  common.Int(185),
+		CompartmentId:          common.String(ts.TenancyOCID)}
+
+	ListCompartments, err := o.identityClient.ListCompartments(ctx, compreq)
+	o.logger.Debug("ListCompartments:", "*ListCompartments", ListCompartments.Items)
+
+	if err == nil {
+		for _, compartitem := range ListCompartments.Items {
+			listLogsGroup := logging.ListLogGroupsRequest{
+				CompartmentId: common.String(*compartitem.Id),
+			}
+			o.logger.Debug("*compartitem.Id :", "*compartitem.Id", *compartitem.Id)
+			listLogsGroups, err := o.loggingClient.ListLogGroups(ctx, listLogsGroup)
+			if err == nil {
+				for _, loggroupitem := range listLogsGroups.Items {
+					if &loggroupitem.Id != nil {
+						listLog := logging.ListLogsRequest{
+							LogGroupId: common.String(*loggroupitem.Id),
+						}
+						listLogs, err := o.loggingClient.ListLogs(ctx, listLog)
+						o.logger.Debug("*loggroupitem.Id:", "*loggroupitem.Id", *loggroupitem.Id)
+						if err == nil {
+							for _, logitem := range listLogs.Items {
+								o.logger.Debug("*loggroupitem.Id:", "*logitem.Id", *logitem.Id)
+								if &logitem.Id != nil {
+									query := `search "` + *compartitem.Id + `/` + *loggroupitem.Id + `/` + *logitem.Id + `"`
+									t := time.Now()
+									t2 := t.Add(-time.Minute * 30)
+									start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+									end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+									request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
+										TimeStart:         &common.SDKTime{Time: start},
+										TimeEnd:           &common.SDKTime{Time: end},
+										IsReturnFieldInfo: common.Bool(false)},
+										Limit: common.Int(10)}
+									res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+									if err == nil {
+										resultCount := *res.SearchResponse.Summary.ResultCount
+										status := res.RawResponse.StatusCode
+										o.logger.Debug("status :", "status", status)
+										if status >= 200 && status < 300 {
+											return &backend.QueryDataResponse{}, nil
+										}
+									} else {
+										// return &backend.QueryDataResponse{}, err
+										continue
+									}
+								}
+							}
+						} else {
+							// return &backend.QueryDataResponse{}, err
+							continue
+						}
+					}
+				}
+			} else {
+				// return &backend.QueryDataResponse{}, err
+				continue
+			}
+		}
+	} else {
+		return &backend.QueryDataResponse{}, err
+	}
+
+	return nil, err
+>>>>>>> daa9d9e (rewritten test function)
 }
 
 func getConfigProvider(environment string) (common.ConfigurationProvider, error) {
