@@ -10,7 +10,6 @@ import {
 } from './constants'
 import retryOrThrow from './util/retry'
 import { SELECT_PLACEHOLDERS } from './query_ctrl'
-import { resolveAutoWinRes } from './util/utilFunctions'
 import { toDataQueryResponse } from '@grafana/runtime'; // This import is required to transform each of the response so that it can be mapped to the query sent in the request. When migrating to grafana 8 with react , this is not required as it will be handled by the constructor itself
 
 const DEFAULT_RESOURCE_GROUP = 'NoResourceGroup'

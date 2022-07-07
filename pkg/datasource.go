@@ -126,13 +126,13 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 		}
 		identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 		if err != nil {
-			o.logger.Error("error with client")
-			panic(err)
+			o.logger.Error("Error creating identity client", "error", err)
+			return nil, errors.Wrap(err, "Error creating identity client")
 		}
 		loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 		if err != nil {
-			o.logger.Error("error with client")
-			panic(err)
+			o.logger.Error("Error creating logging search client", "error", err)
+			return nil, errors.Wrap(err, "Error creating logging search client")
 		}
 		o.identityClient = identityClient
 		o.config = configProvider
