@@ -25,7 +25,7 @@ The [Oracle Cloud Infrastructure CLI][3] provides you with a way to perform
 tasks in OCI from your command line rather than the OCI Console. It does so by
 making REST calls to the [OCI APIs][4]. We will be using the CLI to authenticate
 between our local environment hosting Grafana and OCI in order to pull in
-metrics. The CLI is built on Python (version 2.7.5 or 3.5 or later), running on
+log content. The CLI is built on Python (version 2.7.5 or 3.6 or later), running on
 macOS, Windows, or Linux.
 
 Begin by [installing the Oracle Cloud Infrastructure CLI][5]. Follow the
@@ -44,7 +44,7 @@ OCI CLI to the newly-created group.
 ![alt text](https://github.com/oracle/oci-grafana-logs/blob/main/docs/images/usrGp.png?raw=true)
 
 Under the **Policy** tab switch to the root compartment and click **Create Policy**.
-Create a policy allowing the group to read tenancy metrics. Add the following
+Create a policy allowing the group to read tenancy log groups and log content. Add the following
 policy statements:
 
 - `allow group GrafanaLoggingUserGroup to read log-groups in tenancy`
@@ -87,7 +87,7 @@ Oracle Cloud Infrastructure services. Add the following policy statements:
 
 ## Documentation
 
- Please refer to the [docs folder in this GitHub repository](https://github.com/oracle/oci-grafana-logs/tree/main/docs)
+Please refer to the [docs folder in this GitHub repository](https://github.com/oracle/oci-grafana-logs/tree/main/docs) for more information on installing and using the OCI Logging data source.
 
 ## Help
 
