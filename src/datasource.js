@@ -2,38 +2,65 @@
  ** Copyright © 2018, 2022 Oracle and/or its affiliates.
  ** The Universal Permissive License (UPL), Version 1.0
  */
- import _ from 'lodash'
- import * as graf from '@grafana/data'
- import {
-   compartmentsQueryRegex,
-   regionsQueryRegex
- } from './constants'
- import retryOrThrow from './util/retry'
- import { SELECT_PLACEHOLDERS } from './query_ctrl'
- import { toDataQueryResponse } from '@grafana/runtime'; // This import is required to transform each of the response so that it can be mapped to the query sent in the request. When migrating to grafana 8 with react , this is not required as it will be handled by the constructor itself
- 
- const DEFAULT_RESOURCE_GROUP = 'NoResourceGroup'
- 
- export default class OCIDatasource {
-   constructor (instanceSettings, $q, backendSrv, templateSrv, timeSrv) {
-     this.type = instanceSettings.type
-     this.url = instanceSettings.url
-     this.name = instanceSettings.name
-     this.id = instanceSettings.id
-     this.tenancyOCID = instanceSettings.jsonData.tenancyOCID
-     this.defaultRegion = instanceSettings.jsonData.defaultRegion
-     this.compartmentOCID = instanceSettings.jsonData.compartmentOCID
-     this.environment = instanceSettings.jsonData.environment
-     this.q = $q
-     this.backendSrv = backendSrv
-     this.templateSrv = templateSrv
-     this.timeSrv = timeSrv
- 
-     this.compartmentsCache = []
-     this.regionsCache = []
- 
-     // this.getRegions()
-     // this.getCompartments()
+import _ from 'lodash'
+import * as graf from '@grafana/data'
+import {
+  compartmentsQueryRegex,
+  regionsQueryRegex
+} from './constants'
+import retryOrThrow from './util/retry'
+import { SELECT_PLACEHOLDERS } from './query_ctrl'
+import { toDataQueryResponse } from '@grafana/runtime'; // This import is required to transform each of the response so that it can be mapped to the query sent in the request. When migrating to grafana 8 with react , this is not required as it will be handled by the constructor itself
+
+const DEFAULT_RESOURCE_GROUP = 'NoResourceGroup'
+
+export default class OCIDatasource {
+  constructor (instanceSettings, $q, backendSrv, templateSrv, timeSrv) {
+    this.type = instanceSettings.type
+    this.url = instanceSettings.url
+    this.name = instanceSettings.name
+    this.id = instanceSettings.id
+    this.tenancyOCID = instanceSettings.jsonData.tenancyOCID
+    this.defaultRegion = instanceSettings.jsonData.defaultRegion
+    this.environment = instanceSettings.jsonData.environment
+    this.q = $q
+    this.backendSrv = backendSrv
+    this.templateSrv = templateSrv
+    this.timeSrv = timeSrv
+
+    this.compartmentsCache = []
+    this.regionsCache = []
+
+    // this.getRegions()
+    // this.getCompartments()
+  }
+
+  /**
+   * Each Grafana Data source should contain the following functions:
+   *  - query(request) //used by panels to get data
+   *  - testDatasource() //used by data source configuration page to make sure the connection is working
+   *  - annotationQuery(options) // used by dashboards to get annotations
+   *  - metricFindQuery(options) // used by query editor to get metric suggestions.
+   * More information: https://grafana.com/docs/plugins/developing/datasources/
+   */
+
+  /**
+   * Required method
+   * Used by panels to get data
+   */
+
+  async query (request) {
+    var query = await this.buildQueryParameters(request)
+    const {targets} = query
+    if (targets.length <= 0 || !targets[0].searchQuery) {
+      return this.q.when({ data: [] })
+    } 
+
+    /*
+     * Keep the logic for creating the data frames within the backend logic
+     */
+    return this.doRequest(query)
+
    }
  
    /**
