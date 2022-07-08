@@ -44,6 +44,7 @@ var cacheRefreshTime = time.Minute // how often to refresh our compartmentID cac
 type OCIDatasource struct {
 	loggingSearchClient loggingsearch.LogSearchClient
 	identityClient      identity.IdentityClient
+	loggingMgmtClient   logging.LoggingManagementClient
 	config              common.ConfigurationProvider
 	cmptid              string
 	logger              log.Logger
@@ -133,7 +134,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 			o.logger.Error("error with client")
 			panic(err)
 		}
-		loggingClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+		loggingMgmtClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			o.logger.Error("error with client")
 			panic(err)
@@ -141,7 +142,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 		o.identityClient = identityClient
 		o.config = configProvider
 		o.loggingSearchClient = loggingSearchClient
-		o.loggingClient = loggingClient
+		o.loggingMgmtClient = loggingMgmtClient
 		if ts.Compartment != "" {
 			o.cmptid = ts.Compartment
 		}
@@ -160,40 +161,38 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+
+	// GrafanaCommonRequest - captures the common parts of the search and metricsRequests
+	// the structure is used here to retrieve the TenancyID
 	var ts GrafanaCommonRequest
 	query0 := req.Queries[0]
 
 	if err := json.Unmarshal(query0.JSON, &ts); err != nil {
 		return &backend.QueryDataResponse{}, err
 	}
-	o.logger.Debug("ts.TenancyOCID:", "*ts.TenancyOCID", ts.TenancyOCID)
+	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID", ts.TenancyOCID)
 
 	compreq := identity.ListCompartmentsRequest{AccessLevel: identity.ListCompartmentsAccessLevelAny,
 		CompartmentIdInSubtree: common.Bool(true),
-		Limit:                  common.Int(185),
 		CompartmentId:          common.String(ts.TenancyOCID)}
 
 	ListCompartments, err := o.identityClient.ListCompartments(ctx, compreq)
-	o.logger.Debug("ListCompartments:", "*ListCompartments", ListCompartments.Items)
 
 	if err == nil {
 		for _, compartitem := range ListCompartments.Items {
 			listLogsGroup := logging.ListLogGroupsRequest{
 				CompartmentId: common.String(*compartitem.Id),
 			}
-			o.logger.Debug("*compartitem.Id :", "*compartitem.Id", *compartitem.Id)
-			listLogsGroups, err := o.loggingClient.ListLogGroups(ctx, listLogsGroup)
+			listLogsGroups, err := o.loggingMgmtClient.ListLogGroups(ctx, listLogsGroup)
 			if err == nil {
 				for _, loggroupitem := range listLogsGroups.Items {
 					if &loggroupitem.Id != nil {
 						listLog := logging.ListLogsRequest{
 							LogGroupId: common.String(*loggroupitem.Id),
 						}
-						listLogs, err := o.loggingClient.ListLogs(ctx, listLog)
-						o.logger.Debug("*loggroupitem.Id:", "*loggroupitem.Id", *loggroupitem.Id)
+						listLogs, err := o.loggingMgmtClient.ListLogs(ctx, listLog)
 						if err == nil {
 							for _, logitem := range listLogs.Items {
-								o.logger.Debug("*loggroupitem.Id:", "*logitem.Id", *logitem.Id)
 								if &logitem.Id != nil {
 									query := `search "` + *compartitem.Id + `/` + *loggroupitem.Id + `/` + *logitem.Id + `"`
 									t := time.Now()
@@ -207,7 +206,6 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 										Limit: common.Int(10)}
 									res, err := o.loggingSearchClient.SearchLogs(ctx, request)
 									if err == nil {
-										resultCount := *res.SearchResponse.Summary.ResultCount
 										status := res.RawResponse.StatusCode
 										o.logger.Debug("status :", "status", status)
 										if status >= 200 && status < 300 {
@@ -234,7 +232,7 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 		return &backend.QueryDataResponse{}, err
 	}
 
-	return nil, err
+	return &backend.QueryDataResponse{}, err
 }
 
 func getConfigProvider(environment string) (common.ConfigurationProvider, error) {
