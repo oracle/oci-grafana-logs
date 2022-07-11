@@ -82,7 +82,7 @@ type GrafanaSearchLogsRequest struct {
 
 // GrafanaCommonRequest - captures the common parts of the search and metricsRequests
 type GrafanaCommonRequest struct {
-	Compartment string
+	Compartment string `json:"compartmentOCID"`
 	Environment string
 	QueryType   string
 	Region      string
@@ -163,7 +163,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 
 	// GrafanaCommonRequest - captures the common parts of the search and metricsRequests
-	// the structure is used here to retrieve the TenancyID
+	// the structure is used here to retrieve the TenancyOCID and CompartmentOCID
 	var ts GrafanaCommonRequest
 	query0 := req.Queries[0]
 
@@ -171,61 +171,49 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 		return &backend.QueryDataResponse{}, err
 	}
 	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID", ts.TenancyOCID)
+	o.logger.Debug("Testing OCI logs datasource", "CompartmentOCID", ts.Compartment)
 
-	compreq := identity.ListCompartmentsRequest{AccessLevel: identity.ListCompartmentsAccessLevelAny,
-		CompartmentIdInSubtree: common.Bool(true),
-		CompartmentId:          common.String(ts.TenancyOCID)}
-
-	ListCompartments, err := o.identityClient.ListCompartments(ctx, compreq)
-
+	listLogsGroup := logging.ListLogGroupsRequest{
+		CompartmentId: common.String(ts.Compartment),
+	}
+	listLogsGroups, err := o.loggingMgmtClient.ListLogGroups(ctx, listLogsGroup)
 	if err == nil {
-		for _, compartitem := range ListCompartments.Items {
-			listLogsGroup := logging.ListLogGroupsRequest{
-				CompartmentId: common.String(*compartitem.Id),
-			}
-			listLogsGroups, err := o.loggingMgmtClient.ListLogGroups(ctx, listLogsGroup)
-			if err == nil {
-				for _, loggroupitem := range listLogsGroups.Items {
-					if &loggroupitem.Id != nil {
-						listLog := logging.ListLogsRequest{
-							LogGroupId: common.String(*loggroupitem.Id),
-						}
-						listLogs, err := o.loggingMgmtClient.ListLogs(ctx, listLog)
-						if err == nil {
-							for _, logitem := range listLogs.Items {
-								if &logitem.Id != nil {
-									query := `search "` + *compartitem.Id + `/` + *loggroupitem.Id + `/` + *logitem.Id + `"`
-									t := time.Now()
-									t2 := t.Add(-time.Minute * 30)
-									start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
-									end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
-									request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
-										TimeStart:         &common.SDKTime{Time: start},
-										TimeEnd:           &common.SDKTime{Time: end},
-										IsReturnFieldInfo: common.Bool(false)},
-										Limit: common.Int(10)}
-									res, err := o.loggingSearchClient.SearchLogs(ctx, request)
-									if err == nil {
-										status := res.RawResponse.StatusCode
-										o.logger.Debug("status :", "status", status)
-										if status >= 200 && status < 300 {
-											return &backend.QueryDataResponse{}, nil
-										}
-									} else {
-										// return &backend.QueryDataResponse{}, err
-										continue
-									}
+		for _, loggroupitem := range listLogsGroups.Items {
+			if &loggroupitem.Id != nil {
+				listLog := logging.ListLogsRequest{
+					LogGroupId: common.String(*loggroupitem.Id),
+				}
+				listLogs, err := o.loggingMgmtClient.ListLogs(ctx, listLog)
+				if err == nil {
+					for _, logitem := range listLogs.Items {
+						if &logitem.Id != nil {
+							query := `search "` + ts.Compartment + `/` + *loggroupitem.Id + `/` + *logitem.Id + `"`
+							t := time.Now()
+							t2 := t.Add(-time.Minute * 30)
+							start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+							end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+							request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
+								TimeStart:         &common.SDKTime{Time: start},
+								TimeEnd:           &common.SDKTime{Time: end},
+								IsReturnFieldInfo: common.Bool(false)},
+								Limit: common.Int(10)}
+							res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+							if err == nil {
+								status := res.RawResponse.StatusCode
+								o.logger.Debug("status :", "status", status)
+								if status >= 200 && status < 300 {
+									return &backend.QueryDataResponse{}, nil
 								}
+							} else {
+								// return &backend.QueryDataResponse{}, err
+								continue
 							}
-						} else {
-							// return &backend.QueryDataResponse{}, err
-							continue
 						}
 					}
+				} else {
+					// return &backend.QueryDataResponse{}, err
+					continue
 				}
-			} else {
-				// return &backend.QueryDataResponse{}, err
-				continue
 			}
 		}
 	} else {
