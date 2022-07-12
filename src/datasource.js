@@ -160,7 +160,7 @@ export default class OCIDatasource {
         t.region === SELECT_PLACEHOLDERS.REGION
           ? ''
           : this.getVariableValue(t.region, request.scopedVars)
-      let query = this.getVariableValue(t.target, request.scopedVars)
+      let searchQuery = this.getVariableValue(t.searchQuery, request.scopedVars)
 
       const result = {
         environment: this.environment,
@@ -169,7 +169,7 @@ export default class OCIDatasource {
         refId: t.refId,
         hide: t.hide,
         type: t.type || 'timeserie',
-        searchQuery: t.searchQuery,
+        searchQuery: searchQuery,
         region: _.isEmpty(region) ? this.defaultRegion : region,
         maxDataPoints: request.maxDataPoints,
         panelId: panelIdStr
