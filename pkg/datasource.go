@@ -109,6 +109,13 @@ type DataFieldElements struct {
 	Values interface{}
 }
 
+// Represents the metadata characteristics of a field that will be applied as a label
+// to the metric data extracted from the returned log results
+type LabelFieldMetadata struct {
+	LabelName  string
+	LabelValue string
+}
+
 // Query - Determine what kind of query we're making
 func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	var ts GrafanaSearchLogsRequest
@@ -702,6 +709,13 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 	currFromMs := fromMs - int64(intervalMs) + 1
 	currToMs := fromMs
 
+	// Keep track of the labels to be applied to the field
+	sLabelFields := make([]*LabelFieldMetadata, 0)
+
+	numericFieldKey := ""
+	numericFieldType := ValueType_Undefined
+	metricFieldName := ""
+
 	// For the number of required data points loop through the logic to run the query for a sub-interval
 	// of the specified query time range. Process each search query's results and combine all of the results
 	// into a set of data field definitions and set of values per data field. This information will be used
@@ -774,14 +788,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 					// a raw string to simplify escaping
 					reFunc, _ := regexp.Compile(`^([a-zA-Z]+)\((.+)\)`)
 
-					labelFieldKey := ""
-					numericFieldKey := ""
-					numericFieldType := ValueType_Undefined
-					metricFieldName := ""
-
 					var fieldDefn *DataFieldElements
-					var labelValue string
-					var convOk bool
 
 					// There needs to be a timestamp field but there is none returned in the
 					// logging query results, so create the timestamp field if it doesn't already
@@ -798,12 +805,16 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 					for rowCount, logSearchResult := range res.SearchResponse.Results {
 						searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
 						if ok == true {
-							// If this is the first row then inspect the values of the elements to
-							// speed up the processing of the remaining rows
-							if rowCount == 0 {
+							// If this is the first row for the first interval then inspect the
+							// values of the elements to speed up the processing of the remaining rows
+							// for all intervals. It is important to do this only for the first row of
+							// all of the results otherwise the order of the label keys may be different
+							// between the search results for different intervals
+							if intervalCnt == 0 && rowCount == 0 {
 								// Loop through the keys for the entries in the results data item
 								// to determine what kind of fields we have in the results
 								for key, value := range searchResultData {
+
 									// Check whether the key contains one of the aggregation functions
 									if key == "count" {
 										metricFieldName = "count"
@@ -814,32 +825,50 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 									} else if reFunc.Match([]byte(key)) == true {
 										metricFieldName = key
 										numericFieldKey = key
-										if _, ok := value.(float64); ok {
-											numericFieldType = ValueType_Float64
-										} else if _, ok := value.(int); ok {
+										// The order of these checks is important since integer fields will likely
+										// be convertible as floating point values
+										if _, ok := value.(int); ok {
 											numericFieldType = ValueType_Int
+										} else if _, ok := value.(float64); ok {
+											numericFieldType = ValueType_Float64
 										} else {
 											o.logger.Error("Unable to determine numeric data type for field value",
 												"panelId", queryPanelId, "refId", queryRefId, "value", value)
 											numericFieldType = ValueType_Undefined
 										}
 									} else {
-										labelFieldKey = key
+										// Save the information about the label field
+										labelFieldMetadata := LabelFieldMetadata{
+											LabelName:  key,
+											LabelValue: "",
+										}
+										sLabelFields = append(sLabelFields, &labelFieldMetadata)
 									}
 								}
 							} // end if first row
 
+							// Process the label fields for the log metric to generate a unique key for the
+							// log metric. This logic is the same no matter the data type of the log metric
+							// field
+							metricFieldCombKey := metricFieldName
+							for _, labelFieldMetadata := range sLabelFields {
+								var labelValueStr string
+								// The label value when provided in the Field data structure is a string so just
+								// output a string representation of the label field's value without worrying about
+								// the actual type. However sometimes the label fiel may be null so handle that case
+								// cleanly
+								if searchResultData[labelFieldMetadata.LabelName] != nil {
+									labelValueStr = fmt.Sprintf("%v", searchResultData[labelFieldMetadata.LabelName])
+								} else {
+									labelValueStr = "null"
+								}
+								labelFieldMetadata.LabelValue = labelValueStr
+								metricFieldCombKey += "_" + labelValueStr
+							}
+
+							// Process the numeric field in the log search results
 							if numericFieldType == ValueType_Float64 {
 
-								metricFieldCombKey := metricFieldName
-								if labelFieldKey != "" {
-									// On rare occasions the identified label field will have no value so need
-									// to protect against that case by checking the conversion result
-									if labelValue, convOk = searchResultData[labelFieldKey].(string); !convOk {
-										labelValue = "null"
-									}
-									metricFieldCombKey = metricFieldName + "_" + labelValue
-								}
 								// Get or create the data field elements structure for this field
 								fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, int(numDataPoints),
 									metricFieldCombKey, metricFieldName, ValueType_Float64)
@@ -850,21 +879,9 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 									o.logger.Error("Unable to extract float field value",
 										"panelId", queryPanelId, "refId", queryRefId, "field", numericFieldKey)
 								}
-								if labelFieldKey != "" {
-									fieldDefn.Labels[labelFieldKey] = labelValue
-								}
 
 							} else if numericFieldType == ValueType_Int {
 
-								metricFieldCombKey := metricFieldName
-								if labelFieldKey != "" {
-									// On rare occasions the identified label field will have no value so need
-									// to protect against that case by checking the conversion result
-									if labelValue, convOk = searchResultData[labelFieldKey].(string); !convOk {
-										labelValue = "null"
-									}
-									metricFieldCombKey = metricFieldName + "_" + labelValue
-								}
 								// Get or create the data field elements structure for this field
 								fieldDefn = o.getCreateDataFieldElemsForField(mFieldDefns, int(numDataPoints),
 									metricFieldCombKey, metricFieldName, ValueType_Int)
@@ -876,13 +893,17 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 										"panelId", queryPanelId, "refId", queryRefId, "field", numericFieldKey)
 								}
 
-								if labelFieldKey != "" {
-									fieldDefn.Labels[labelFieldKey] = labelValue
-								}
-
 							} else {
 								o.logger.Debug("Encountered unexpected field value type for numeric results logging query",
 									"panelId", queryPanelId, "refId", queryRefId)
+							}
+
+							// Populate the label values for this log metric
+							for _, labelFieldMetadata := range sLabelFields {
+								fieldDefn.Labels[labelFieldMetadata.LabelName] = labelFieldMetadata.LabelValue
+								// Clear the label value field so the value for the label field doesn't get re-used
+								// for the next result
+								labelFieldMetadata.LabelValue = ""
 							}
 
 						} else {
