@@ -136,8 +136,8 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 		}
 		loggingMgmtClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
 		if err != nil {
-			o.logger.Error("error with client")
-			panic(err)
+			o.logger.Error("Error creating logging search client", "error", err)
+			return nil, errors.Wrap(err, "Error creating logging search client")
 		}
 		o.identityClient = identityClient
 		o.config = configProvider
@@ -200,23 +200,32 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 							res, err := o.loggingSearchClient.SearchLogs(ctx, request)
 							if err == nil {
 								status := res.RawResponse.StatusCode
-								o.logger.Debug("status :", "status", status)
 								if status >= 200 && status < 300 {
 									return &backend.QueryDataResponse{}, nil
+								} else {
+									o.logger.Error("Error during SearchLogs", "error code", status)
+									return &backend.QueryDataResponse{}, err
 								}
 							} else {
-								// return &backend.QueryDataResponse{}, err
-								continue
+								o.logger.Error("Error during SearchLogs", "error", err)
+								return &backend.QueryDataResponse{}, err
 							}
+						} else {
+							o.logger.Error("Error during ListLogs", "error", "ListLogs list is empty")
+							return &backend.QueryDataResponse{}, err
 						}
 					}
 				} else {
-					// return &backend.QueryDataResponse{}, err
-					continue
+					o.logger.Error("Error during ListLogs", "error", err)
+					return &backend.QueryDataResponse{}, err
 				}
+			} else {
+				o.logger.Error("Error during listLogsGroups", "error", "listLogsGroups list is empty")
+				return &backend.QueryDataResponse{}, err
 			}
 		}
 	} else {
+		o.logger.Error("Error during listLogsGroups", "error", err)
 		return &backend.QueryDataResponse{}, err
 	}
 
