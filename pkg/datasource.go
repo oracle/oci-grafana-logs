@@ -817,13 +817,13 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 
 									// Check whether the key contains one of the aggregation functions
 									if key == "count" {
-										metricFieldName = "count"
+										metricFieldName = ""
 										numericFieldKey = key
 										// In the JSON content for the log record the count appears as an
 										// integer but when converted becomes a float value
 										numericFieldType = ValueType_Float64
 									} else if reFunc.Match([]byte(key)) == true {
-										metricFieldName = key
+										metricFieldName = ""
 										numericFieldKey = key
 										// The order of these checks is important since integer fields will likely
 										// be convertible as floating point values
