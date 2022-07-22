@@ -19,6 +19,13 @@
     </select>
   </div>
   <div class="gf-form max-width-30">
+    <label class="gf-form-label width-10">Compartment OCID</label>
+    <input class="gf-form-input " 
+      type="text" 
+      ng-required="true"      
+      ng-model="ctrl.current.jsonData.compartmentOCID">
+    </input>  
+  <div class="gf-form max-width-30">
     <label class="gf-form-label width-10">Environment</label>
     <select
       class="gf-form-input"

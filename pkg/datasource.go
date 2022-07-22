@@ -17,6 +17,7 @@ import (
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/common/auth"
 	"github.com/oracle/oci-go-sdk/identity"
+	"github.com/oracle/oci-go-sdk/logging"
 	"github.com/oracle/oci-go-sdk/loggingsearch"
 	"github.com/pkg/errors"
 )
@@ -46,6 +47,7 @@ type OCIDatasource struct {
 	loggingSearchClient loggingsearch.LogSearchClient
 	identityClient      identity.IdentityClient
 	config              common.ConfigurationProvider
+	loggingMgmtClient   logging.LoggingManagementClient
 	cmptid              string
 	logger              log.Logger
 	nameToOCID          map[string]string
@@ -141,9 +143,15 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 			o.logger.Error("Error creating logging search client", "error", err)
 			return nil, errors.Wrap(err, "Error creating logging search client")
 		}
+		loggingMgmtClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+		if err != nil {
+			o.logger.Error("Error creating logging search client", "error", err)
+			return nil, errors.Wrap(err, "Error creating logging search client")
+		}
 		o.identityClient = identityClient
 		o.config = configProvider
 		o.loggingSearchClient = loggingSearchClient
+		o.loggingMgmtClient = loggingMgmtClient
 		if ts.Compartment != "" {
 			o.cmptid = ts.Compartment
 		}
@@ -162,29 +170,74 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	return &backend.QueryDataResponse{}, nil
-	// var ts GrafanaCommonRequest
 
-	// query := req.Queries[0]
-	// if err := json.Unmarshal(query.JSON, &ts); err != nil {
-	// 	return &backend.QueryDataResponse{}, err
-	// }
+	// GrafanaCommonRequest - captures the common parts of the search and metricsRequests
+	// the structure is used here to retrieve the TenancyOCID and CompartmentOCID
+	var ts GrafanaCommonRequest
+	query0 := req.Queries[0]
 
-	// //o.logger.Error("ts.Com is " + ts.Compartment)
-	// listMetrics := monitoring.ListMetricsRequest{
-	// 	CompartmentId: common.String(ts.Compartment),
-	// }
-	// reg := common.StringToRegion(ts.Region)
-	// o.metricsClient.SetRegion(string(reg))
-	// res, err := o.metricsClient.ListMetrics(ctx, listMetrics)
-	// if err != nil {
-	// 	return &backend.QueryDataResponse{}, err
-	// }
-	// status := res.RawResponse.StatusCode
-	// if status >= 200 && status < 300 {
-	// 	return &backend.QueryDataResponse{}, nil
-	// }
-	// return nil, errors.Wrap(err, fmt.Sprintf("list metrircs failed %s %d", spew.Sdump(res), status))
+	if err := json.Unmarshal(query0.JSON, &ts); err != nil {
+		return &backend.QueryDataResponse{}, err
+	}
+	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
+
+	listLogsGroup := logging.ListLogGroupsRequest{
+		CompartmentId: common.String(ts.Compartment),
+	}
+	listLogsGroups, err := o.loggingMgmtClient.ListLogGroups(ctx, listLogsGroup)
+	if err == nil {
+		for _, loggroupitem := range listLogsGroups.Items {
+			if &loggroupitem.Id != nil {
+				listLog := logging.ListLogsRequest{
+					LogGroupId: common.String(*loggroupitem.Id),
+				}
+				listLogs, err := o.loggingMgmtClient.ListLogs(ctx, listLog)
+				if err == nil {
+					for _, logitem := range listLogs.Items {
+						if &logitem.Id != nil {
+							query := `search "` + ts.Compartment + `/` + *loggroupitem.Id + `/` + *logitem.Id + `"`
+							t := time.Now()
+							t2 := t.Add(-time.Minute * 30)
+							start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+							end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+							request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
+								TimeStart:         &common.SDKTime{Time: start},
+								TimeEnd:           &common.SDKTime{Time: end},
+								IsReturnFieldInfo: common.Bool(false)},
+								Limit: common.Int(10)}
+							res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+							if err == nil {
+								status := res.RawResponse.StatusCode
+								if status >= 200 && status < 300 {
+									return &backend.QueryDataResponse{}, nil
+								} else {
+									o.logger.Error("Error during SearchLogs", "error code", status)
+									return &backend.QueryDataResponse{}, err
+								}
+							} else {
+								o.logger.Error("Error during SearchLogs", "error", err)
+								return &backend.QueryDataResponse{}, err
+							}
+						} else {
+							o.logger.Error("Error during ListLogs", "error", "ListLogs list is empty")
+							return &backend.QueryDataResponse{}, err
+						}
+					}
+				} else {
+					o.logger.Error("Error during ListLogs", "error", err)
+					return &backend.QueryDataResponse{}, err
+				}
+			} else {
+				o.logger.Error("Error during listLogsGroups", "error", "listLogsGroups list is empty")
+				return &backend.QueryDataResponse{}, err
+			}
+		}
+	} else {
+		o.logger.Error("Error during listLogsGroups", "error", err)
+		return &backend.QueryDataResponse{}, err
+	}
+
+	return &backend.QueryDataResponse{}, err
 }
 
 func getConfigProvider(environment string) (common.ConfigurationProvider, error) {
