@@ -1000,7 +1000,7 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 		// Loop through each of the data field definitions and create a corresponding data.Field object
 		// using the information in the data field definition to initialize the Field object
 		fieldCnt := 0
-		var aaaa string
+		// var aaaa string
 		for _, fieldDataElems := range mFieldData {
 
 			// field := frame.Fields[fieldCnt]
@@ -1018,9 +1018,13 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 
 			dfFields[fieldCnt] = data.NewField(fieldDataElems.Name, fieldDataElems.Labels, fieldDataElems.Values)
 			// aaaa := dfFields[fieldCnt].Config.DisplayNameFromDS
-			field := frame.Fields[fieldCnt]
-			aaaa = field.Config.DisplayNameFromDS
-			o.logger.Debug("Logging search aaaa", "aaaa", aaaa)
+			o.logger.Debug("Logging search fieldDataElems.Name", "fieldDataElems.Name", fieldDataElems.Name)
+			o.logger.Debug("Logging search fieldDataElems.Labels", "fieldDataElems.Labels", fieldDataElems.Labels)
+			o.logger.Debug("Logging search fieldDataElems.Values", "fieldDataElems.Values", fieldDataElems.Values)
+
+			// field := dfFields[len(mFieldData)-1]
+			// aaaa = field.Config.DisplayNameFromDS
+			// o.logger.Debug("Logging search aaaa", "aaaa", aaaa)
 			// dfFields[fieldCnt].SetConfig(&data.FieldConfig{DisplayNameFromDS: " "})
 			fieldCnt += 1
 		}
