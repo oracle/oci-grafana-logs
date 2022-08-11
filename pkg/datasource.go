@@ -817,13 +817,13 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 
 									// Check whether the key contains one of the aggregation functions
 									if key == "count" {
-										metricFieldName = ""
+										metricFieldName = "count"
 										numericFieldKey = key
 										// In the JSON content for the log record the count appears as an
 										// integer but when converted becomes a float value
 										numericFieldType = ValueType_Float64
 									} else if reFunc.Match([]byte(key)) == true {
-										metricFieldName = ""
+										metricFieldName = key
 										numericFieldKey = key
 										// The order of these checks is important since integer fields will likely
 										// be convertible as floating point values
@@ -1000,8 +1000,28 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 		// Loop through each of the data field definitions and create a corresponding data.Field object
 		// using the information in the data field definition to initialize the Field object
 		fieldCnt := 0
+		var aaaa string
 		for _, fieldDataElems := range mFieldData {
+
+			// field := frame.Fields[fieldCnt]
+			// switch {
+			// // case field.Config != nil && field.Config.DisplayName != "":
+			// // 	ts.Name = field.Config.DisplayName
+			// case field.Config != nil && field.Config.DisplayNameFromDS != "":
+			// 	dsnamesds := field.Config.DisplayNameFromDS
+			// 	o.logger.Warn("Logging search dsnamesds", "dsnamesds", dsnamesds)
+			// default:
+			// 	dsnamesds := " "
+			// 	o.logger.Warn("Logging search dsnamesds", "dsnamesds", dsnamesds)
+
+			// }
+
 			dfFields[fieldCnt] = data.NewField(fieldDataElems.Name, fieldDataElems.Labels, fieldDataElems.Values)
+			// aaaa := dfFields[fieldCnt].Config.DisplayNameFromDS
+			field := frame.Fields[fieldCnt]
+			aaaa = field.Config.DisplayNameFromDS
+			o.logger.Debug("Logging search aaaa", "aaaa", aaaa)
+			// dfFields[fieldCnt].SetConfig(&data.FieldConfig{DisplayNameFromDS: " "})
 			fieldCnt += 1
 		}
 		// Create a new data Frame using the generated Fields while referencing the query ID
