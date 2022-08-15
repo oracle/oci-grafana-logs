@@ -375,6 +375,16 @@ func (o *OCIDatasource) getCreateDataFieldElemsForField(dataFieldDefns map[strin
 		} else { // Treat all other data types as a string (including string fields)
 			dataFieldDefn.Values = make([]*string, totalSamples)
 		}
+		o.logger.Debug("fieldNamey", "fieldName", fieldName)
+		reFunc, _ := regexp.Compile(`^([a-zA-Z]+)\((.+)\)`)
+		if reFunc.Match([]byte(uniqueFieldKey)) == true {
+			alfaromeo := reFunc.ReplaceAllString(uniqueFieldKey, "")
+			// alfaromeo := strings.Replace(uniqueFieldKey, metricFieldName, "", -1)
+			o.logger.Debug("alfaromeoyyy", "alfaromeoyyy", alfaromeo)
+
+		}
+		o.logger.Debug("uniqueFieldKeyyy", "uniqueFieldKeyyy", uniqueFieldKey)
+
 		dataFieldDefns[uniqueFieldKey] = dataFieldDefn
 	}
 
