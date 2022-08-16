@@ -375,16 +375,6 @@ func (o *OCIDatasource) getCreateDataFieldElemsForField(dataFieldDefns map[strin
 		} else { // Treat all other data types as a string (including string fields)
 			dataFieldDefn.Values = make([]*string, totalSamples)
 		}
-		o.logger.Debug("fieldNamey", "fieldName", fieldName)
-		reFunc, _ := regexp.Compile(`^([a-zA-Z]+)\((.+)\)`)
-		if reFunc.Match([]byte(uniqueFieldKey)) == true {
-			alfaromeo := reFunc.ReplaceAllString(uniqueFieldKey, "")
-			// alfaromeo := strings.Replace(uniqueFieldKey, metricFieldName, "", -1)
-			o.logger.Debug("alfaromeoyyy", "alfaromeoyyy", alfaromeo)
-
-		}
-		o.logger.Debug("uniqueFieldKeyyy", "uniqueFieldKeyyy", uniqueFieldKey)
-
 		dataFieldDefns[uniqueFieldKey] = dataFieldDefn
 	}
 
@@ -1010,32 +1000,11 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 		// Loop through each of the data field definitions and create a corresponding data.Field object
 		// using the information in the data field definition to initialize the Field object
 		fieldCnt := 0
-		// var aaaa string
 		for _, fieldDataElems := range mFieldData {
-
-			// field := frame.Fields[fieldCnt]
-			// switch {
-			// // case field.Config != nil && field.Config.DisplayName != "":
-			// // 	ts.Name = field.Config.DisplayName
-			// case field.Config != nil && field.Config.DisplayNameFromDS != "":
-			// 	dsnamesds := field.Config.DisplayNameFromDS
-			// 	o.logger.Warn("Logging search dsnamesds", "dsnamesds", dsnamesds)
-			// default:
-			// 	dsnamesds := " "
-			// 	o.logger.Warn("Logging search dsnamesds", "dsnamesds", dsnamesds)
-
-			// }
-
 			dfFields[fieldCnt] = data.NewField(fieldDataElems.Name, fieldDataElems.Labels, fieldDataElems.Values)
-			// aaaa := dfFields[fieldCnt].Config.DisplayNameFromDS
-			o.logger.Debug("Logging search fieldDataElems.Name", "fieldDataElems.Name", fieldDataElems.Name)
-			o.logger.Debug("Logging search fieldDataElems.Labels", "fieldDataElems.Labels", fieldDataElems.Labels)
-			o.logger.Debug("Logging search fieldDataElems.Values", "fieldDataElems.Values", fieldDataElems.Values)
-
-			// field := dfFields[len(mFieldData)-1]
-			// aaaa = field.Config.DisplayNameFromDS
-			// o.logger.Debug("Logging search aaaa", "aaaa", aaaa)
-			// dfFields[fieldCnt].SetConfig(&data.FieldConfig{DisplayNameFromDS: " "})
+			if len(fieldDataElems.Labels) > 0 {
+				dfFields[fieldCnt].Name = ""
+			}
 			fieldCnt += 1
 		}
 		// Create a new data Frame using the generated Fields while referencing the query ID
