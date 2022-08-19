@@ -1002,6 +1002,7 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 		fieldCnt := 0
 		for _, fieldDataElems := range mFieldData {
 			dfFields[fieldCnt] = data.NewField(fieldDataElems.Name, fieldDataElems.Labels, fieldDataElems.Values)
+			// Check if a Label exists for the data field
 			if len(fieldDataElems.Labels) > 0 {
 				dfFields[fieldCnt].Name = ""
 			}
