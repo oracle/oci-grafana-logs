@@ -84,7 +84,7 @@ type GrafanaSearchLogsRequest struct {
 
 // GrafanaCommonRequest - captures the common parts of the search and metricsRequests
 type GrafanaCommonRequest struct {
-	Compartment string
+	Compartment string `json:"compartmentOCID"`
 	Environment string
 	QueryType   string
 	Region      string
