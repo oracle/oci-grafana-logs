@@ -83,12 +83,11 @@ export default class OCIDatasource {
       range: this.timeSrv.timeRange()
     })
       .then((response) => {
-        if (response.status === 200) {
-          return {
-            status: 'success',
-            message: 'Data source is working',
-            title: 'Success'
-          }
+        console.log("testDatasource endpoint response:", response)
+        return {
+          status: 'success',
+          message: 'Data source is working',
+          title: 'Success'
         }
       })
       .catch(() => {

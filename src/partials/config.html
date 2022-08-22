@@ -2,7 +2,7 @@
 
 <div class="gf-form-group">
 <div class="gf-form max-width-30">
-  <label class="gf-form-label width-10">Tenancy OCID</label>
+  <label class="gf-form-label width-11">Tenancy OCID</label>
     <input class="gf-form-input " 
 		type="text" 
 		ng-required="true"
@@ -10,7 +10,7 @@
   </input>
   </div>
   <div class="gf-form max-width-30">
-    <label class="gf-form-label width-10">Default Region</label>
+    <label class="gf-form-label width-11">Default Region</label>
     <select
       class="gf-form-input"
       ng-model="ctrl.current.jsonData.defaultRegion"
@@ -19,15 +19,15 @@
     </select>
   </div>
   <div class="gf-form max-width-30">
-    <label class="gf-form-label width-10">Default Compartment OCID</label>
+    <label class="gf-form-label width-11">Default Compartment OCID</label>
     <input class="gf-form-input " 
       type="text" 
-      ng-required="true"      
+      ng-required="false"      
       ng-model="ctrl.current.jsonData.compartmentOCID">
     </input>
   </div>    
   <div class="gf-form max-width-30">
-    <label class="gf-form-label width-10">Environment</label>
+    <label class="gf-form-label width-11">Environment</label>
     <select
       class="gf-form-input"
       ng-model="ctrl.current.jsonData.environment"

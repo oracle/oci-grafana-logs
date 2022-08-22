@@ -179,6 +179,11 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 	if err := json.Unmarshal(query0.JSON, &ts); err != nil {
 		return &backend.QueryDataResponse{}, err
 	}
+
+	if ts.Compartment == "" {
+		ts.Compartment = ts.TenancyOCID
+	}
+
 	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
 
 	listLogsGroup := logging.ListLogGroupsRequest{
