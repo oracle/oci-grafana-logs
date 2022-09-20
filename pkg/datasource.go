@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -318,8 +319,13 @@ func (o *OCIDatasource) regionsResponse(ctx context.Context, req *backend.QueryD
 
 		frame := data.NewFrame(query.RefID, data.NewField("text", nil, []string{}))
 
+		var regions []string
 		for _, item := range res.Items {
-			frame.AppendRow(*(item.Name))
+			regions = append(regions, *item.Name)
+		}
+		sort.Strings(regions)
+		for _, regionName := range regions {
+			frame.AppendRow(regionName)
 		}
 
 		respD := resp.Responses[query.RefID]
