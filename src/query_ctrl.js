@@ -11,6 +11,7 @@ import {
 
 export const SELECT_PLACEHOLDERS = {
   COMPARTMENT: "select compartment",
+  TENANCYCONFIG: 'select tenancy config',
   REGION: "select region",
 };
 
@@ -23,7 +24,8 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
 
     this.target.region = this.target.region || SELECT_PLACEHOLDERS.REGION;
     this.target.compartment =
-      this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
+    this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
+    this.target.tenancyconfig = this.target.tenancyconfig || SELECT_PLACEHOLDERS.TENANCYCONFIG;
     this.target.searchQuery = this.target.searchQuery || "";
   }
 

@@ -3,13 +3,17 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
@@ -1425,4 +1429,80 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 	} // for each query included in the request
 
 	return resp, nil
+}
+
+func (o *OCIDatasource) tenancyConfigResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+	resp := backend.NewQueryDataResponse()
+
+	for _, query := range req.Queries {
+
+		file, err := os.Open("/home/grafana/.oci/config")
+		if err != nil {
+			return nil, errors.Wrap(err, "error opening file")
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		if err := scanner.Err(); err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+		r, err := regexp.Compile(`\[.*\]`) // this can also be a regex
+
+		if err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+
+		frame := data.NewFrame(query.RefID, data.NewField("text", nil, []string{}))
+
+		for scanner.Scan() {
+			if r.MatchString(scanner.Text()) {
+				replacer := strings.NewReplacer("[", "", "]", "")
+				output := replacer.Replace(scanner.Text())
+				configProvider := common.CustomProfileConfigProvider("", output)
+				res, err := configProvider.TenancyOCID()
+				if err != nil {
+					return nil, errors.Wrap(err, "error fetching regions")
+				}
+
+				value := output + "/" + res
+				frame.AppendRow(*(common.String(value)))
+			}
+		}
+
+		respD := resp.Responses[query.RefID]
+		respD.Frames = append(respD.Frames, frame)
+		resp.Responses[query.RefID] = respD
+	}
+	return resp, nil
+}
+
+func (o *OCIDatasource) tenancySetup(tenancyconfig string) (string, error) {
+	var configProvider common.ConfigurationProvider
+	log.DefaultLogger.Debug(tenancyconfig)
+
+	res := strings.Split(tenancyconfig, "/")
+
+	configname := res[0]
+	tenancyocid := res[1]
+
+	if configname == "DEFAULT" {
+		configProvider = common.DefaultConfigProvider()
+	} else {
+		configProvider = common.CustomProfileConfigProvider("", configname)
+
+	}
+	loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
+	if err != nil {
+		return "", errors.New(fmt.Sprint("error with client", spew.Sdump(configProvider), err.Error()))
+	}
+	identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
+	if err != nil {
+		o.logger.Error("error with client")
+		panic(err)
+	}
+	o.identityClient = identityClient
+	o.loggingSearchClient = loggingSearchClient
+	o.config = configProvider
+
+	return tenancyocid, nil
 }
