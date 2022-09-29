@@ -6,6 +6,8 @@ import _ from 'lodash'
 import * as graf from '@grafana/data'
 import {
   compartmentsQueryRegex,
+  tenancyconfigsQueryRegex,
+  removeQuotes,
   regionsQueryRegex
 } from './constants'
 import retryOrThrow from './util/retry'
@@ -150,6 +152,20 @@ export default class OCIDatasource {
     let queries = request.targets
       .filter((t) => !t.hide)
 
+      .filter(
+        (t) =>
+          !_.isEmpty(this.getVariableValue(t.tenancyconfig, options.scopedVars))
+      )        
+
+      queries.forEach((t) => {
+
+        t.tenancyconfig =
+          t.tenancyconfig === SELECT_PLACEHOLDERS.TENANCYCONFIG
+            ? DEFAULT_TENANCYCONFIG
+            : t.tenancyconfig;
+       
+      });
+
     const results = []
     // When a user is in the Explore window the panel ID value is a string but when the user is on
     // a dashboard the panel ID value is numeric so convert all panel IDs to be strings so that the
@@ -203,27 +219,41 @@ export default class OCIDatasource {
    */
   templateMetricQuery (varString) {
     console.log('* getting suggestions ')
-    let regionQuery = varString.match(regionsQueryRegex)
+    let regionQuery = varString.match(regionsQueryRegex);
     if (regionQuery) {
-      return this.getRegions().catch((err) => {
-        throw new Error('Unable to get regions: ' + err)
-      })
+      let target = {
+        tenancyconfig: removeQuotes(this.getVariableValue(regionQuery[1])),
+      };        
+      return this.getRegions(target).catch((err) => {
+        throw new Error("Unable to get regions: " + err);
+      });
     }
 
-    let compartmentQuery = varString.match(compartmentsQueryRegex)
+    let tenancyconfigQuery = varString.match(tenancyconfigsQueryRegex);
+    if (tenancyconfigQuery) {
+      return this.getTenancyConfig().catch((err) => {
+        throw new Error("Unable to get tenancyconfigs: " + err);
+      });    
+    }    
+
+    let compartmentQuery = varString.match(compartmentsQueryRegex);
     if (compartmentQuery) {
-      return this.getCompartments()
+      let target = {
+        tenancyconfig: removeQuotes(this.getVariableValue(compartmentQuery[1])),
+        region: removeQuotes(this.getVariableValue(compartmentQuery[2])),
+      };      
+      return this.getCompartments(target)
         .then((compartments) => {
-          return compartments.map((c) => ({ text: c.text, value: c.text }))
+          return compartments.map((c) => ({ text: c.text, value: c.text }));
         })
         .catch((err) => {
-          throw new Error('Unable to get compartments: ' + err)
-        })
+          throw new Error("Unable to get compartments: " + err);
+        });
     }
      throw new Error('Unable to parse templating string')
   }
 
-  async getRegions () {
+  async getRegions(target) {
     const tenancyconfig =
       target.tenancyconfig === SELECT_PLACEHOLDERS.TENANCYCONFIG
         ? DEFAULT_TENANCYCONFIG
@@ -270,7 +300,7 @@ export default class OCIDatasource {
     });
   }
 
-  async getCompartments () {
+  async getCompartments (target) {
     const tenancyconfig =
       target.tenancyconfig === SELECT_PLACEHOLDERS.TENANCYCONFIG
         ? DEFAULT_TENANCYCONFIG

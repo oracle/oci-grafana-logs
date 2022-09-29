@@ -19,3 +19,15 @@ export const compartmentsQueryRegex = /^compartments\(\)\s*/
 export const regionsQueryRegex = /^regions\(\)\s*/
 export const tenancyconfigsQueryRegex = /^tenancyconfig\(\)\s*/;
 
+export const removeQuotes = str => {
+    if (!str) return str;
+
+    let res = str;
+    if (str.startsWith("'") || str.startsWith('"')) {
+        res = res.slice(1);
+    }
+    if (str.endsWith("'") || str.endsWith('"')) {
+        res = res.slice(0, res.length - 1);
+    }
+    return res;
+}

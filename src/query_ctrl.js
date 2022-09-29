@@ -6,6 +6,7 @@ import { QueryCtrl } from "app/plugins/sdk";
 import "./css/query-editor.css!";
 import {
   regionsQueryRegex,
+  tenancyconfigQueryRegex,
   compartmentsQueryRegex,
 } from "./constants";
 
@@ -27,6 +28,10 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
     this.target.tenancyconfig = this.target.tenancyconfig || SELECT_PLACEHOLDERS.TENANCYCONFIG;
     this.target.searchQuery = this.target.searchQuery || "";
+
+    if (this.datasource.environment === "multitenancy") {
+      this.target.MultiTenancy = true;
+    }    
   }
 
   // ****************************** Options **********************************
@@ -40,6 +45,12 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
   getCompartments() {
     return this.datasource.getCompartments().then((compartments) => {
       return this.appendVariables([...compartments], compartmentsQueryRegex);
+    });
+  }
+
+  getTenancyConfig() {
+    return this.datasource.getTenancyConfig().then(tenancyconfig => {
+      return this.appendVariables([ ...tenancyconfig], tenancyconfigQueryRegex);
     });
   }
 
