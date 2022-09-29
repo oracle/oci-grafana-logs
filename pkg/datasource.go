@@ -186,63 +186,32 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 
 	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
 
-	listLogsGroup := logging.ListLogGroupsRequest{
-		CompartmentId: common.String(ts.Compartment),
-	}
-	listLogsGroups, err := o.loggingMgmtClient.ListLogGroups(ctx, listLogsGroup)
+	query := `search "` + ts.Compartment + `" | sort by datetime desc`
+	query = `search "ocid1.compartment.oc1..aaaaaaaaghilyh5hrmuaodh2dqryelfyshuqeqzsb4ldpyb4pr5cz4yonn7q"`
+	query = `search "` + ts.Compartment + `///"`
+	o.logger.Debug("query", "query", query)
+	t := time.Now()
+	t2 := t.Add(-time.Minute * 30)
+	start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+	end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+	request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
+		TimeStart:         &common.SDKTime{Time: start},
+		TimeEnd:           &common.SDKTime{Time: end},
+		IsReturnFieldInfo: common.Bool(false)},
+		Limit: common.Int(10)}
+	res, err := o.loggingSearchClient.SearchLogs(ctx, request)
 	if err == nil {
-		for _, loggroupitem := range listLogsGroups.Items {
-			if &loggroupitem.Id != nil {
-				listLog := logging.ListLogsRequest{
-					LogGroupId: common.String(*loggroupitem.Id),
-				}
-				listLogs, err := o.loggingMgmtClient.ListLogs(ctx, listLog)
-				if err == nil {
-					for _, logitem := range listLogs.Items {
-						if &logitem.Id != nil {
-							query := `search "` + ts.Compartment + `/` + *loggroupitem.Id + `/` + *logitem.Id + `"`
-							t := time.Now()
-							t2 := t.Add(-time.Minute * 30)
-							start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
-							end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
-							request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
-								TimeStart:         &common.SDKTime{Time: start},
-								TimeEnd:           &common.SDKTime{Time: end},
-								IsReturnFieldInfo: common.Bool(false)},
-								Limit: common.Int(10)}
-							res, err := o.loggingSearchClient.SearchLogs(ctx, request)
-							if err == nil {
-								status := res.RawResponse.StatusCode
-								if status >= 200 && status < 300 {
-									return &backend.QueryDataResponse{}, nil
-								} else {
-									o.logger.Error("Error during SearchLogs", "error code", status)
-									return &backend.QueryDataResponse{}, err
-								}
-							} else {
-								o.logger.Error("Error during SearchLogs", "error", err)
-								return &backend.QueryDataResponse{}, err
-							}
-						} else {
-							o.logger.Error("Error during ListLogs", "error", "ListLogs list is empty")
-							return &backend.QueryDataResponse{}, err
-						}
-					}
-				} else {
-					o.logger.Error("Error during ListLogs", "error", err)
-					return &backend.QueryDataResponse{}, err
-				}
-			} else {
-				o.logger.Error("Error during listLogsGroups", "error", "listLogsGroups list is empty")
-				return &backend.QueryDataResponse{}, err
-			}
+		status := res.RawResponse.StatusCode
+		if status >= 200 && status < 300 {
+			return &backend.QueryDataResponse{}, nil
+		} else {
+			o.logger.Error("Error during SearchLogs", "error code", status)
+			return &backend.QueryDataResponse{}, err
 		}
 	} else {
-		o.logger.Error("Error during listLogsGroups", "error", err)
+		o.logger.Error("Error during SearchLogs", "error", err)
 		return &backend.QueryDataResponse{}, err
 	}
-
-	return &backend.QueryDataResponse{}, err
 }
 
 func getConfigProvider(environment string) (common.ConfigurationProvider, error) {
