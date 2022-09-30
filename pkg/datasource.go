@@ -206,29 +206,90 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	return &backend.QueryDataResponse{}, nil
-	// var ts GrafanaCommonRequest
+	// return &backend.QueryDataResponse{}, nil
+	var ts GrafanaCommonRequest
+	query0 := req.Queries[0]
 
-	// query := req.Queries[0]
-	// if err := json.Unmarshal(query.JSON, &ts); err != nil {
-	// 	return &backend.QueryDataResponse{}, err
-	// }
+	if err := json.Unmarshal(query0.JSON, &ts); err != nil {
+		return &backend.QueryDataResponse{}, err
+	}
 
-	// //o.logger.Error("ts.Com is " + ts.Compartment)
-	// listMetrics := monitoring.ListMetricsRequest{
-	// 	CompartmentId: common.String(ts.Compartment),
-	// }
-	// reg := common.StringToRegion(ts.Region)
-	// o.metricsClient.SetRegion(string(reg))
-	// res, err := o.metricsClient.ListMetrics(ctx, listMetrics)
-	// if err != nil {
-	// 	return &backend.QueryDataResponse{}, err
-	// }
-	// status := res.RawResponse.StatusCode
-	// if status >= 200 && status < 300 {
-	// 	return &backend.QueryDataResponse{}, nil
-	// }
-	// return nil, errors.Wrap(err, fmt.Sprintf("list metrircs failed %s %d", spew.Sdump(res), status))
+	if ts.Environment == "multitenancy" {
+		file, err := os.Open("/home/grafana/.oci/config")
+		if err != nil {
+			return nil, errors.Wrap(err, "error opening file")
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+
+		r, err := regexp.Compile(`\[.*\]`)   // this can also be a regex
+		r2, err := regexp.Compile(`region=`) // this can also be a regex
+
+		if err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+
+		var configs []string
+		var regioni []string
+		for scanner.Scan() {
+			if r.MatchString(scanner.Text()) {
+				replacer := strings.NewReplacer("[", "", "]", "")
+				output := replacer.Replace(scanner.Text())
+				configProvider := common.CustomProfileConfigProvider("", output)
+				res, err := configProvider.TenancyOCID()
+				if err != nil {
+					return nil, errors.Wrap(err, "error fetching regions")
+				}
+
+				value := output + "/" + res
+				configs = append(configs, *(common.String(value)))
+			}
+			if r2.MatchString(scanner.Text()) {
+				rreplacer := strings.NewReplacer("region=", "")
+				routput := rreplacer.Replace(scanner.Text())
+				regioni = append(regioni, routput)
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+		ts.Region = regioni[0]
+		ts.TenancyOCID, _ = o.tenancySetup(configs[0])
+	}
+
+	if ts.Compartment == "" {
+		ts.Compartment = ts.TenancyOCID
+	}
+
+	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
+
+	query := `search "` + ts.Compartment + `" | sort by datetime desc`
+	// query = `search "` + ts.Compartment + `///"`
+	o.logger.Debug("query", "query", query)
+	t := time.Now()
+	t2 := t.Add(-time.Minute * 30)
+	start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+	end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+	request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
+		TimeStart:         &common.SDKTime{Time: start},
+		TimeEnd:           &common.SDKTime{Time: end},
+		IsReturnFieldInfo: common.Bool(false)},
+		Limit: common.Int(10)}
+	res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+	if err == nil {
+		status := res.RawResponse.StatusCode
+		if status >= 200 && status < 300 {
+			return &backend.QueryDataResponse{}, nil
+		} else {
+			o.logger.Error("Error during SearchLogs", "error code", status)
+			return &backend.QueryDataResponse{}, err
+		}
+	} else {
+		o.logger.Error("Error during SearchLogs", "error", err)
+		return &backend.QueryDataResponse{}, err
+	}
 }
 
 func getConfigProvider(environment string) (common.ConfigurationProvider, error) {
