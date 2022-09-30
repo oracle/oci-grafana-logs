@@ -151,19 +151,16 @@ export default class OCIDatasource {
   async buildQueryParameters (request) {
     let queries = request.targets
       .filter((t) => !t.hide)
-
       .filter(
         (t) =>
-          !_.isEmpty(this.getVariableValue(t.tenancyconfig, options.scopedVars))
-      )        
+          !_.isEmpty(this.getVariableValue(t.tenancyconfig, request.scopedVars))
+      );       
 
       queries.forEach((t) => {
-
         t.tenancyconfig =
           t.tenancyconfig === SELECT_PLACEHOLDERS.TENANCYCONFIG
             ? DEFAULT_TENANCYCONFIG
             : t.tenancyconfig;
-       
       });
 
     const results = []
@@ -204,9 +201,7 @@ export default class OCIDatasource {
       }
       results.push(result)
     }
-
     request.targets = results
-
     return request
   }
 
@@ -218,29 +213,29 @@ export default class OCIDatasource {
    * template variable with the query "regions()" will be matched with the regionsQueryRegex and list of available regions will be returned.
    */
   templateMetricQuery (varString) {
-    console.log('* getting suggestions ')
     let regionQuery = varString.match(regionsQueryRegex);
+    let tenancyconfigQuery = varString.match(tenancyconfigsQueryRegex);
+    let compartmentQuery = varString.match(compartmentsQueryRegex);
+
     if (regionQuery) {
       let target = {
-        tenancyconfig: removeQuotes(this.getVariableValue(regionQuery[1])),
+        tenancyconfig: removeQuotes(this.getVariableValue(tenancyconfigsQueryRegex[1])),
       };        
       return this.getRegions(target).catch((err) => {
         throw new Error("Unable to get regions: " + err);
       });
     }
 
-    let tenancyconfigQuery = varString.match(tenancyconfigsQueryRegex);
     if (tenancyconfigQuery) {
       return this.getTenancyConfig().catch((err) => {
         throw new Error("Unable to get tenancyconfigs: " + err);
       });    
     }    
 
-    let compartmentQuery = varString.match(compartmentsQueryRegex);
     if (compartmentQuery) {
       let target = {
-        tenancyconfig: removeQuotes(this.getVariableValue(compartmentQuery[1])),
-        region: removeQuotes(this.getVariableValue(compartmentQuery[2])),
+        tenancyconfig: removeQuotes(this.getVariableValue(tenancyconfigsQueryRegex[1])),
+        region: removeQuotes(this.getVariableValue(regionQuery[2])),
       };      
       return this.getCompartments(target)
         .then((compartments) => {

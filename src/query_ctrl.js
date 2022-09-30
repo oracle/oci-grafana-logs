@@ -24,8 +24,7 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     this.uiSegmentSrv = uiSegmentSrv;
 
     this.target.region = this.target.region || SELECT_PLACEHOLDERS.REGION;
-    this.target.compartment =
-    this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
+    this.target.compartment = this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
     this.target.tenancyconfig = this.target.tenancyconfig || SELECT_PLACEHOLDERS.TENANCYCONFIG;
     this.target.searchQuery = this.target.searchQuery || "";
 
@@ -37,13 +36,13 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
   // ****************************** Options **********************************
 
   getRegions() {
-    return this.datasource.getRegions().then((regions) => {
+    return this.datasource.getRegions(this.target).then((regions) => {
       return this.appendVariables([...regions], regionsQueryRegex);
     });
   }
 
   getCompartments() {
-    return this.datasource.getCompartments().then((compartments) => {
+    return this.datasource.getCompartments(this.target).then((compartments) => {
       return this.appendVariables([...compartments], compartmentsQueryRegex);
     });
   }
