@@ -18,10 +18,10 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/common/auth"
-	"github.com/oracle/oci-go-sdk/identity"
-	"github.com/oracle/oci-go-sdk/loggingsearch"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/common/auth"
+	"github.com/oracle/oci-go-sdk/v65/identity"
+	"github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/pkg/errors"
 )
 
@@ -45,7 +45,7 @@ const numMaxResults = (MaxPagesToFetch * LimitPerPage) + 1
 
 var cacheRefreshTime = time.Minute // how often to refresh our compartmentID cache
 
-//OCIDatasource - pulls in data from telemtry/various oci apis
+// OCIDatasource - pulls in data from telemtry/various oci apis
 type OCIDatasource struct {
 	loggingSearchClient loggingsearch.LogSearchClient
 	identityClient      identity.IdentityClient
@@ -56,7 +56,7 @@ type OCIDatasource struct {
 	timeCacheUpdated    time.Time
 }
 
-//NewOCIDatasource - constructor
+// NewOCIDatasource - constructor
 func NewOCIDatasource(_ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	return &OCIDatasource{
 		logger:     log.DefaultLogger,
@@ -69,7 +69,7 @@ type GrafanaOCIRequest struct {
 	GrafanaCommonRequest
 }
 
-//GrafanaSearchRequest incoming request body for compartment search requests
+// GrafanaSearchRequest incoming request body for compartment search requests
 type GrafanaSearchRequest struct {
 	GrafanaCommonRequest
 }
