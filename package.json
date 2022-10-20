@@ -1,7 +1,7 @@
 {
   "name": "oci-grafana-logs",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -51,7 +51,7 @@
     "eslint": "^5.12.0",
     "eslint-config-standard": "^12.0.0",
     "js-yaml": "^3.13.1",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "node-notifier": "^8.0.1"
   },
   "resolutions": {
