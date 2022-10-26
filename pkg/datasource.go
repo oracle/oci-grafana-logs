@@ -267,10 +267,7 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 		ts.Compartment = ts.TenancyOCID
 	}
 
-	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
-
 	query := `search "` + ts.Compartment + `" | sort by datetime desc`
-	o.logger.Debug("query", "query", query)
 	t := time.Now()
 	t2 := t.Add(-time.Minute * 30)
 	start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
