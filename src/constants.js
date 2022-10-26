@@ -13,8 +13,21 @@ export const namespaces = ['oci_computeagent', 'oci_blockstore', 'oci_lbaas', 'o
 export const aggregations = ['count()', 'max()', 'mean()', 'min()', 'rate()', 'sum()', 'percentile(.90)', 'percentile(.95)', 'percentile(.99)', 'last()']
 export const windows = [AUTO, '1m', '5m', '1h']
 export const resolutions = [AUTO, '1m', '5m', '1h']
-export const environments = ['local', 'OCI Instance']
+export const environments = ['local', 'OCI Instance', 'multitenancy']
 
 export const compartmentsQueryRegex = /^compartments\(\)\s*/
 export const regionsQueryRegex = /^regions\(\)\s*/
+export const tenancyconfigsQueryRegex = /^tenancyconfig\(\)\s*/;
 
+export const removeQuotes = str => {
+    if (!str) return str;
+
+    let res = str;
+    if (str.startsWith("'") || str.startsWith('"')) {
+        res = res.slice(1);
+    }
+    if (str.endsWith("'") || str.endsWith('"')) {
+        res = res.slice(0, res.length - 1);
+    }
+    return res;
+}
