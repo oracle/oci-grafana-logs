@@ -177,13 +177,10 @@ export default class OCIDatasource {
       const result = {
         environment: this.environment,
         tenancymode: this.tenancymode,
-        datasourceId: this.id,
         queryType: 'searchLogs',
         refId: t.refId,
         hide: t.hide,
         type: t.type || 'timeserie',
-        searchQuery: searchQuery,
-        tenancy: tenancy,
         region: _.isEmpty(region) ? this.defaultRegion : region,
         maxDataPoints: request.maxDataPoints,
         panelId: panelIdStr

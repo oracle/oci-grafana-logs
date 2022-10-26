@@ -134,6 +134,7 @@ type GrafanaSearchLogsRequest struct {
 	GrafanaCommonRequest
 	SearchQuery   string
 	MaxDataPoints int32
+	TenancyConfig string
 	PanelId       string
 }
 
@@ -1612,6 +1613,10 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 		// Unmarshal the request to determine whether the query will return log records or numeric data
 		if err := json.Unmarshal(query.JSON, &ts); err != nil {
 			return &backend.QueryDataResponse{}, err
+		}
+
+		if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
+			ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
 		}
 
 		// Convert the from and to time range values into milliseconds since January 1, 1970 which makes
