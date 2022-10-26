@@ -206,7 +206,6 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	// return &backend.QueryDataResponse{}, nil
 	var ts GrafanaCommonRequest
 	query0 := req.Queries[0]
 
