@@ -3,11 +3,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -78,16 +81,18 @@ type GrafanaSearchLogsRequest struct {
 	GrafanaCommonRequest
 	SearchQuery   string
 	MaxDataPoints int32
+	TenancyConfig string
 	PanelId       string
 }
 
 // GrafanaCommonRequest - captures the common parts of the search and metricsRequests
 type GrafanaCommonRequest struct {
-	Compartment string
-	Environment string
-	QueryType   string
-	Region      string
-	TenancyOCID string `json:"tenancyOCID"`
+	Compartment   string
+	Environment   string
+	QueryType     string
+	Region        string
+	TenancyConfig string
+	TenancyOCID   string `json:"tenancyOCID"`
 }
 
 // Enumeration to represent the value type of a data field to be included in a data frame
@@ -166,21 +171,23 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 		if err != nil {
 			return nil, errors.Wrap(err, "broken environment")
 		}
-		identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
-		if err != nil {
-			o.logger.Error("Error creating identity client", "error", err)
-			return nil, errors.Wrap(err, "Error creating identity client")
-		}
-		loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
-		if err != nil {
-			o.logger.Error("Error creating logging search client", "error", err)
-			return nil, errors.Wrap(err, "Error creating logging search client")
-		}
-		o.identityClient = identityClient
-		o.config = configProvider
-		o.loggingSearchClient = loggingSearchClient
-		if ts.Compartment != "" {
-			o.cmptid = ts.Compartment
+		if configProvider != nil {
+			identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
+			if err != nil {
+				o.logger.Error("Error creating identity client", "error", err)
+				return nil, errors.Wrap(err, "Error creating identity client")
+			}
+			loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
+			if err != nil {
+				o.logger.Error("Error creating logging search client", "error", err)
+				return nil, errors.Wrap(err, "Error creating logging search client")
+			}
+			o.identityClient = identityClient
+			o.config = configProvider
+			o.loggingSearchClient = loggingSearchClient
+			if ts.Compartment != "" {
+				o.cmptid = ts.Compartment
+			}
 		}
 	}
 
@@ -189,6 +196,8 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 		return o.compartmentsResponse(ctx, req)
 	case "regions":
 		return o.regionsResponse(ctx, req)
+	case "tenancyconfig":
+		return o.tenancyConfigResponse(ctx, req)
 	case "searchLogs":
 		return o.searchLogsResponse(ctx, req)
 	default:
@@ -197,29 +206,90 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	return &backend.QueryDataResponse{}, nil
-	// var ts GrafanaCommonRequest
+	// return &backend.QueryDataResponse{}, nil
+	var ts GrafanaCommonRequest
+	query0 := req.Queries[0]
 
-	// query := req.Queries[0]
-	// if err := json.Unmarshal(query.JSON, &ts); err != nil {
-	// 	return &backend.QueryDataResponse{}, err
-	// }
+	if err := json.Unmarshal(query0.JSON, &ts); err != nil {
+		return &backend.QueryDataResponse{}, err
+	}
 
-	// //o.logger.Error("ts.Com is " + ts.Compartment)
-	// listMetrics := monitoring.ListMetricsRequest{
-	// 	CompartmentId: common.String(ts.Compartment),
-	// }
-	// reg := common.StringToRegion(ts.Region)
-	// o.metricsClient.SetRegion(string(reg))
-	// res, err := o.metricsClient.ListMetrics(ctx, listMetrics)
-	// if err != nil {
-	// 	return &backend.QueryDataResponse{}, err
-	// }
-	// status := res.RawResponse.StatusCode
-	// if status >= 200 && status < 300 {
-	// 	return &backend.QueryDataResponse{}, nil
-	// }
-	// return nil, errors.Wrap(err, fmt.Sprintf("list metrircs failed %s %d", spew.Sdump(res), status))
+	if ts.Environment == "multitenancy" {
+		file, err := os.Open("/home/grafana/.oci/config")
+		if err != nil {
+			return nil, errors.Wrap(err, "error opening file")
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+
+		r, err := regexp.Compile(`\[.*\]`)   // this can also be a regex
+		r2, err := regexp.Compile(`region=`) // this can also be a regex
+
+		if err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+
+		var configs []string
+		var regioni []string
+		for scanner.Scan() {
+			if r.MatchString(scanner.Text()) {
+				replacer := strings.NewReplacer("[", "", "]", "")
+				output := replacer.Replace(scanner.Text())
+				configProvider := common.CustomProfileConfigProvider("", output)
+				res, err := configProvider.TenancyOCID()
+				if err != nil {
+					return nil, errors.Wrap(err, "error fetching regions")
+				}
+
+				value := output + "/" + res
+				configs = append(configs, *(common.String(value)))
+			}
+			if r2.MatchString(scanner.Text()) {
+				rreplacer := strings.NewReplacer("region=", "")
+				routput := rreplacer.Replace(scanner.Text())
+				regioni = append(regioni, routput)
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+		ts.Region = regioni[0]
+		ts.TenancyOCID, _ = o.tenancySetup(configs[0])
+	}
+
+	if ts.Compartment == "" {
+		ts.Compartment = ts.TenancyOCID
+	}
+
+	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
+
+	query := `search "` + ts.Compartment + `" | sort by datetime desc`
+	// query = `search "` + ts.Compartment + `///"`
+	o.logger.Debug("query", "query", query)
+	t := time.Now()
+	t2 := t.Add(-time.Minute * 30)
+	start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+	end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+	request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
+		TimeStart:         &common.SDKTime{Time: start},
+		TimeEnd:           &common.SDKTime{Time: end},
+		IsReturnFieldInfo: common.Bool(false)},
+		Limit: common.Int(10)}
+	res, err := o.loggingSearchClient.SearchLogs(ctx, request)
+	if err == nil {
+		status := res.RawResponse.StatusCode
+		if status >= 200 && status < 300 {
+			return &backend.QueryDataResponse{}, nil
+		} else {
+			o.logger.Error("Error during SearchLogs", "error code", status)
+			return &backend.QueryDataResponse{}, err
+		}
+	} else {
+		o.logger.Error("Error during SearchLogs", "error", err)
+		return &backend.QueryDataResponse{}, err
+	}
 }
 
 func getConfigProvider(environment string) (common.ConfigurationProvider, error) {
@@ -228,6 +298,8 @@ func getConfigProvider(environment string) (common.ConfigurationProvider, error)
 		return common.DefaultConfigProvider(), nil
 	case "OCI Instance":
 		return auth.InstancePrincipalConfigurationProvider()
+	case "multitenancy":
+		return nil, nil
 	default:
 		return nil, errors.New("unknown environment type")
 	}
@@ -239,6 +311,10 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 	query := req.Queries[0]
 	if err := json.Unmarshal(query.JSON, &ts); err != nil {
 		return &backend.QueryDataResponse{}, err
+	}
+
+	if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
+		ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
 	}
 
 	if o.timeCacheUpdated.IsZero() || time.Now().Sub(o.timeCacheUpdated) > cacheRefreshTime {
@@ -345,6 +421,9 @@ func (o *OCIDatasource) regionsResponse(ctx context.Context, req *backend.QueryD
 		var ts GrafanaOCIRequest
 		if err := json.Unmarshal(query.JSON, &ts); err != nil {
 			return &backend.QueryDataResponse{}, err
+		}
+		if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
+			ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
 		}
 		res, err := o.identityClient.ListRegions(ctx)
 		if err != nil {
@@ -1370,6 +1449,10 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 			return &backend.QueryDataResponse{}, err
 		}
 
+		if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
+			ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
+		}
+
 		// Convert the from and to time range values into milliseconds since January 1, 1970 which makes
 		// them easier to use in forthcoming computations
 		fromMs := query.TimeRange.From.UnixNano() / int64(time.Millisecond)
@@ -1430,4 +1513,82 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 	} // for each query included in the request
 
 	return resp, nil
+}
+
+func (o *OCIDatasource) tenancyConfigResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+	resp := backend.NewQueryDataResponse()
+
+	for _, query := range req.Queries {
+
+		file, err := os.Open("/home/grafana/.oci/config")
+		if err != nil {
+			return nil, errors.Wrap(err, "error opening file")
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		if err := scanner.Err(); err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+		r, err := regexp.Compile(`\[.*\]`) // this can also be a regex
+
+		if err != nil {
+			return nil, errors.Wrap(err, "error in compiling regex")
+		}
+
+		frame := data.NewFrame(query.RefID, data.NewField("text", nil, []string{}))
+
+		for scanner.Scan() {
+			if r.MatchString(scanner.Text()) {
+				replacer := strings.NewReplacer("[", "", "]", "")
+				output := replacer.Replace(scanner.Text())
+				configProvider := common.CustomProfileConfigProvider("", output)
+				res, err := configProvider.TenancyOCID()
+				if err != nil {
+					return nil, errors.Wrap(err, "error fetching regions")
+				}
+
+				value := output + "/" + res
+				frame.AppendRow(*(common.String(value)))
+			}
+		}
+
+		respD := resp.Responses[query.RefID]
+		respD.Frames = append(respD.Frames, frame)
+		resp.Responses[query.RefID] = respD
+	}
+	return resp, nil
+}
+
+func (o *OCIDatasource) tenancySetup(tenancyconfig string) (string, error) {
+	var configProvider common.ConfigurationProvider
+	log.DefaultLogger.Debug(tenancyconfig)
+
+	res := strings.Split(tenancyconfig, "/")
+
+	configname := res[0]
+	tenancyocid := res[1]
+
+	if configname == "DEFAULT" {
+		configProvider = common.DefaultConfigProvider()
+	} else {
+		configProvider = common.CustomProfileConfigProvider("", configname)
+
+	}
+	loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
+	if err != nil {
+		o.logger.Error("Error creating logging search client", "error", err)
+		return "", errors.Wrap(err, "Error creating logging search client")
+	}
+
+	identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
+	if err != nil {
+		o.logger.Error("error with client")
+		panic(err)
+	}
+	o.identityClient = identityClient
+	o.loggingSearchClient = loggingSearchClient
+	o.config = configProvider
+
+	return tenancyocid, nil
 }
