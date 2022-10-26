@@ -87,7 +87,7 @@ type GrafanaSearchLogsRequest struct {
 
 // GrafanaCommonRequest - captures the common parts of the search and metricsRequests
 type GrafanaCommonRequest struct {
-	Compartment   string
+	Compartment   string `json:"defaultCompartmentOCID"`
 	Environment   string
 	QueryType     string
 	Region        string
@@ -270,7 +270,6 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
 
 	query := `search "` + ts.Compartment + `" | sort by datetime desc`
-	// query = `search "` + ts.Compartment + `///"`
 	o.logger.Debug("query", "query", query)
 	t := time.Now()
 	t2 := t.Add(-time.Minute * 30)
