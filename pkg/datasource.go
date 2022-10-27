@@ -1616,7 +1616,11 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 		}
 
 		if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
-			ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
+			var tenancyErr error
+			ts.TenancyOCID, tenancyErr = o.tenancySetup(ts.TenancyConfig)
+			if tenancyErr != nil {
+				return nil, tenancyErr
+			}
 		}
 
 		// Convert the from and to time range values into milliseconds since January 1, 1970 which makes
