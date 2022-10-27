@@ -19,6 +19,15 @@
   </input>
   </div>
   <div class="gf-form max-width-30">
+    <label class="gf-form-label width-10">Compartment OCID</label>
+      <input class="gf-form-input " 
+      type="text" 
+      ng-required="true"
+      bs-tooltip="'In case of multitenancy, please use Compartment OCID for the very first entry of your oci config file'"
+      ng-model="ctrl.current.jsonData.defaultCompartmentOCID">
+    </input>
+  </div>  
+  <div class="gf-form max-width-30">
     <label class="gf-form-label width-10" ng-if="ctrl.current.jsonData.environment!=='multitenancy'">Default Region</label>
     <select
       class="gf-form-input"
