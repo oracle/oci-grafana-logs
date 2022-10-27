@@ -87,7 +87,7 @@ type GrafanaSearchLogsRequest struct {
 
 // GrafanaCommonRequest - captures the common parts of the search and metricsRequests
 type GrafanaCommonRequest struct {
-	Compartment   string
+	Compartment   string `json:"defaultCompartmentOCID"`
 	Environment   string
 	QueryType     string
 	Region        string
@@ -206,7 +206,6 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	// return &backend.QueryDataResponse{}, nil
 	var ts GrafanaCommonRequest
 	query0 := req.Queries[0]
 
@@ -215,7 +214,13 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 	}
 
 	if ts.Environment == "multitenancy" {
-		file, err := os.Open("/home/grafana/.oci/config")
+		var oci_config_file string
+		if _, ok := os.LookupEnv("OCI_CONFIG_FILE"); ok {
+			oci_config_file = os.Getenv("OCI_CONFIG_FILE")
+		} else {
+			oci_config_file = "/home/grafana/.oci/config"
+		}
+		file, err := os.Open(oci_config_file)
 		if err != nil {
 			return nil, errors.Wrap(err, "error opening file")
 		}
@@ -256,18 +261,19 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 			return nil, errors.Wrap(err, "error in compiling regex")
 		}
 		ts.Region = regioni[0]
-		ts.TenancyOCID, _ = o.tenancySetup(configs[0])
+		var tenancyErr error
+		ts.TenancyOCID, tenancyErr = o.tenancySetup(configs[0])
+		if tenancyErr != nil {
+			o.logger.Error("Error during Tenancy Config", "error", tenancyErr)
+			return &backend.QueryDataResponse{}, tenancyErr
+		}
 	}
 
 	if ts.Compartment == "" {
 		ts.Compartment = ts.TenancyOCID
 	}
 
-	o.logger.Debug("Testing OCI logs datasource", "TenancyOCID/CompartmentOCID", ts.TenancyOCID+"/"+ts.Compartment)
-
 	query := `search "` + ts.Compartment + `" | sort by datetime desc`
-	// query = `search "` + ts.Compartment + `///"`
-	o.logger.Debug("query", "query", query)
 	t := time.Now()
 	t2 := t.Add(-time.Minute * 30)
 	start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
@@ -314,7 +320,11 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 	}
 
 	if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
-		ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
+		var tenancyErr error
+		ts.TenancyOCID, tenancyErr = o.tenancySetup(ts.TenancyConfig)
+		if tenancyErr != nil {
+			return nil, tenancyErr
+		}
 	}
 
 	if o.timeCacheUpdated.IsZero() || time.Now().Sub(o.timeCacheUpdated) > cacheRefreshTime {
@@ -423,7 +433,11 @@ func (o *OCIDatasource) regionsResponse(ctx context.Context, req *backend.QueryD
 			return &backend.QueryDataResponse{}, err
 		}
 		if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
-			ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
+			var tenancyErr error
+			ts.TenancyOCID, tenancyErr = o.tenancySetup(ts.TenancyConfig)
+			if tenancyErr != nil {
+				return nil, tenancyErr
+			}
 		}
 		res, err := o.identityClient.ListRegions(ctx)
 		if err != nil {
@@ -1450,7 +1464,11 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 		}
 
 		if ts.TenancyConfig != "NoTenancyConfig" && ts.TenancyConfig != "" {
-			ts.TenancyOCID, _ = o.tenancySetup(ts.TenancyConfig)
+			var tenancyErr error
+			ts.TenancyOCID, tenancyErr = o.tenancySetup(ts.TenancyConfig)
+			if tenancyErr != nil {
+				return nil, tenancyErr
+			}
 		}
 
 		// Convert the from and to time range values into milliseconds since January 1, 1970 which makes
@@ -1517,10 +1535,17 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 
 func (o *OCIDatasource) tenancyConfigResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	resp := backend.NewQueryDataResponse()
+	var oci_config_file string
 
 	for _, query := range req.Queries {
 
-		file, err := os.Open("/home/grafana/.oci/config")
+		if _, ok := os.LookupEnv("OCI_CONFIG_FILE"); ok {
+			oci_config_file = os.Getenv("OCI_CONFIG_FILE")
+		} else {
+			oci_config_file = "/home/grafana/.oci/config"
+		}
+
+		file, err := os.Open(oci_config_file)
 		if err != nil {
 			return nil, errors.Wrap(err, "error opening file")
 		}
@@ -1528,7 +1553,7 @@ func (o *OCIDatasource) tenancyConfigResponse(ctx context.Context, req *backend.
 
 		scanner := bufio.NewScanner(file)
 		if err := scanner.Err(); err != nil {
-			return nil, errors.Wrap(err, "error in compiling regex")
+			return nil, errors.Wrap(err, "buffer error")
 		}
 		r, err := regexp.Compile(`\[.*\]`) // this can also be a regex
 
@@ -1562,10 +1587,7 @@ func (o *OCIDatasource) tenancyConfigResponse(ctx context.Context, req *backend.
 
 func (o *OCIDatasource) tenancySetup(tenancyconfig string) (string, error) {
 	var configProvider common.ConfigurationProvider
-	log.DefaultLogger.Debug(tenancyconfig)
-
 	res := strings.Split(tenancyconfig, "/")
-
 	configname := res[0]
 	tenancyocid := res[1]
 
@@ -1583,8 +1605,8 @@ func (o *OCIDatasource) tenancySetup(tenancyconfig string) (string, error) {
 
 	identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 	if err != nil {
-		o.logger.Error("error with client")
-		panic(err)
+		o.logger.Error("Error creating identity client", "error", err)
+		return "", errors.Wrap(err, "Error creating identity client")
 	}
 	o.identityClient = identityClient
 	o.loggingSearchClient = loggingSearchClient
