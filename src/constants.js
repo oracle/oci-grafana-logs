@@ -16,7 +16,8 @@ export const resolutions = [AUTO, '1m', '5m', '1h']
 export const environments = ['local', 'OCI Instance', 'multitenancy']
 
 export const compartmentsQueryRegex = /^compartments\(\)\s*/
-export const regionsQueryRegex = /^regions\(\)\s*/
+// export const regionsQueryRegex = /^regions\(\)\s*/;
+export const regionsQueryRegex = /^regions\(.*\)\s*/;
 export const tenancyconfigsQueryRegex = /^tenancyconfig\(\)\s*/;
 
 export const removeQuotes = str => {

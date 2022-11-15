@@ -221,7 +221,7 @@ export default class OCIDatasource {
 
     if (regionQuery) {
       let target = {
-        tenancyconfig: removeQuotes(this.getVariableValue(tenancyconfigsQueryRegex[1])),
+        tenancyconfig: removeQuotes(this.getVariableValue(regionQuery[1])),
       };        
       return this.getRegions(target).catch((err) => {
         throw new Error("Unable to get regions: " + err);
@@ -236,8 +236,8 @@ export default class OCIDatasource {
 
     if (compartmentQuery) {
       let target = {
-        tenancyconfig: removeQuotes(this.getVariableValue(tenancyconfigsQueryRegex[1])),
-        region: removeQuotes(this.getVariableValue(regionQuery[2])),
+        tenancyconfig: removeQuotes(this.getVariableValue(compartmentQuery[1])),
+        region: removeQuotes(this.getVariableValue(compartmentQuery[2])),
       };      
       return this.getCompartments(target)
         .then((compartments) => {
