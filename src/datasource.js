@@ -27,6 +27,7 @@ export default class OCIDatasource {
     this.defaultRegion = instanceSettings.jsonData.defaultRegion
     this.defaultCompartmentOCID = instanceSettings.jsonData.defaultCompartmentOCID
     this.environment = instanceSettings.jsonData.environment
+    this.tenancymode = instanceSettings.jsonData.tenancymode;
     this.q = $q
     this.backendSrv = backendSrv
     this.templateSrv = templateSrv
@@ -81,6 +82,7 @@ export default class OCIDatasource {
           tenancyOCID: this.tenancyOCID,
           defaultCompartmentOCID: this.defaultCompartmentOCID,
           environment: this.environment,
+          tenancymode: this.tenancymode,
           datasourceId: this.id
         }
       ],

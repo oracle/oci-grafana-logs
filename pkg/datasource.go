@@ -89,6 +89,7 @@ type GrafanaSearchLogsRequest struct {
 type GrafanaCommonRequest struct {
 	Compartment   string `json:"defaultCompartmentOCID"`
 	Environment   string
+	TenancyMode   string
 	QueryType     string
 	Region        string
 	TenancyConfig string
@@ -167,7 +168,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 
 	queryType := ts.QueryType
 	if o.config == nil {
-		configProvider, err := getConfigProvider(ts.Environment)
+		configProvider, err := getConfigProvider(ts.Environment, ts.TenancyMode)
 		if err != nil {
 			return nil, errors.Wrap(err, "broken environment")
 		}
@@ -213,7 +214,7 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 		return &backend.QueryDataResponse{}, err
 	}
 
-	if ts.Environment == "multitenancy" {
+	if ts.TenancyMode == "multitenancy" {
 		var oci_config_file string
 		if _, ok := os.LookupEnv("OCI_CONFIG_FILE"); ok {
 			oci_config_file = os.Getenv("OCI_CONFIG_FILE")
@@ -298,14 +299,16 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 	}
 }
 
-func getConfigProvider(environment string) (common.ConfigurationProvider, error) {
+func getConfigProvider(environment string, tenancymode string) (common.ConfigurationProvider, error) {
 	switch environment {
 	case "local":
-		return common.DefaultConfigProvider(), nil
+		if tenancymode == "multitenancy" {
+			return nil, nil
+		} else {
+			return common.DefaultConfigProvider(), nil
+		}
 	case "OCI Instance":
 		return auth.InstancePrincipalConfigurationProvider()
-	case "multitenancy":
-		return nil, nil
 	default:
 		return nil, errors.New("unknown environment type")
 	}
