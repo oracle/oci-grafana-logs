@@ -19,7 +19,7 @@ export const tenancymodes = ['single', 'multitenancy']
 export const compartmentsQueryRegex = /^compartments\(\)\s*/
 // export const regionsQueryRegex = /^regions\(\)\s*/;
 export const regionsQueryRegex = /^regions\(.*\)\s*/;
-export const tenancyconfigsQueryRegex = /^tenancyconfig\(\)\s*/;
+export const tenanciesQueryRegex = /^tenancyconfig\(\)\s*/;
 
 export const removeQuotes = str => {
     if (!str) return str;

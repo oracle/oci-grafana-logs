@@ -197,7 +197,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 		return o.compartmentsResponse(ctx, req)
 	case "regions":
 		return o.regionsResponse(ctx, req)
-	case "tenancyconfig":
+	case "tenancies":
 		return o.tenancyConfigResponse(ctx, req)
 	case "searchLogs":
 		return o.searchLogsResponse(ctx, req)

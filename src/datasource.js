@@ -6,7 +6,7 @@ import _ from 'lodash'
 import * as graf from '@grafana/data'
 import {
   compartmentsQueryRegex,
-  tenancyconfigsQueryRegex,
+  tenanciesQueryRegex,
   removeQuotes,
   regionsQueryRegex
 } from './constants'
@@ -218,7 +218,7 @@ export default class OCIDatasource {
    */
   templateMetricQuery (varString) {
     let regionQuery = varString.match(regionsQueryRegex);
-    let tenancyconfigQuery = varString.match(tenancyconfigsQueryRegex);
+    let tenancyconfigQuery = varString.match(tenanciesQueryRegex);
     let compartmentQuery = varString.match(compartmentsQueryRegex);
 
     if (regionQuery) {
@@ -232,7 +232,7 @@ export default class OCIDatasource {
 
     if (tenancyconfigQuery) {
       return this.getTenancyConfig().catch((err) => {
-        throw new Error("Unable to get tenancyconfigs: " + err);
+        throw new Error("Unable to get tenancies: " + err);
       });    
     }    
 
