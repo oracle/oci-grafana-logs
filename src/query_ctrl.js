@@ -27,6 +27,7 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     this.target.compartment = this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
     this.target.tenancy = this.target.tenancy || SELECT_PLACEHOLDERS.TENANCY;
     this.target.searchQuery = this.target.searchQuery || "";
+    this.target.tenancymode = this.datasource.tenancymode || ''
 
     if (this.datasource.tenancymode === "multitenancy") {
       this.target.MultiTenancy = true;

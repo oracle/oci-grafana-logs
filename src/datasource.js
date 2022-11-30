@@ -133,6 +133,7 @@ export default class OCIDatasource {
       targets: [
         {
           environment: this.environment,
+          tenancymode: this.tenancymode,
           datasourceId: this.id,
           tenancyOCID: this.tenancyOCID,
           queryType: 'search',
@@ -157,7 +158,7 @@ export default class OCIDatasource {
       .filter((t) => !t.hide)
       .filter(
         (t) =>
-          !_.isEmpty(this.getVariableValue(t.tenancyconfig, request.scopedVars))
+          !_.isEmpty(this.getVariableValue(t.tenancy, request.scopedVars))
       );       
 
       queries.forEach((t) => {
@@ -192,6 +193,7 @@ export default class OCIDatasource {
 
       const result = {
         environment: this.environment,
+        tenancymode: this.tenancymode,
         datasourceId: this.id,
         queryType: 'searchLogs',
         refId: t.refId,
@@ -266,6 +268,7 @@ export default class OCIDatasource {
       targets: [
         {
           environment: this.environment,
+          tenancymode: this.tenancymode,
           datasourceId: this.id,
           tenancyOCID: this.tenancyOCID,
           tenancy: tenancy,
@@ -288,6 +291,7 @@ export default class OCIDatasource {
       targets: [
         {
           environment: this.environment,
+          tenancymode: this.tenancymode,
           datasourceId: this.id,
           queryType: "tenancies",
         },
@@ -313,6 +317,7 @@ export default class OCIDatasource {
       targets: [
         {
           environment: this.environment,
+          tenancymode: this.tenancymode,
           datasourceId: this.id,
           tenancyOCID: this.tenancyOCID,
           tenancy: tenancy,
