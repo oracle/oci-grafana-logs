@@ -5,7 +5,7 @@ Copyright (c) 2022 Oracle and/or its affiliates.
 Copyright (c) 2021 Oracle and/or its affiliates.
 Copyright © 2022 Oracle and/or its affiliates. All rights reserved.
 Copyright © 2018, 2020 Oracle and/or its affiliates. All rights reserved.
-Copyright © 2022, 2022 Oracle and/or its affiliates. All rights reserved.
+Copyright © 2019, 2022 Oracle and/or its affiliates. All rights reserved.
 
 -------- License
 The Universal Permissive License (UPL), Version 1.0
@@ -10068,7 +10068,7 @@ is-fullwidth-code-point@2.0.0
 -------- Dependency
 is-glob@4.0.3
 -------- Copyrights
-Copyright © 2022, [Jon Schlinkert](https://github.com/jonschlinkert).
+Copyright © 2019, [Jon Schlinkert](https://github.com/jonschlinkert).
 Copyright (c) 2014-2017, Jon Schlinkert.
 
 -------- Dependency
