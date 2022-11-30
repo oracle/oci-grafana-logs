@@ -6,13 +6,13 @@ import { QueryCtrl } from "app/plugins/sdk";
 import "./css/query-editor.css!";
 import {
   regionsQueryRegex,
-  tenancyconfigQueryRegex,
+  tenanciesQueryRegex,
   compartmentsQueryRegex,
 } from "./constants";
 
 export const SELECT_PLACEHOLDERS = {
   COMPARTMENT: "select compartment",
-  TENANCYCONFIG: 'select tenancy config',
+  TENANCY: 'select tenancy config',
   REGION: "select region",
 };
 
@@ -25,8 +25,9 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
 
     this.target.region = this.target.region || SELECT_PLACEHOLDERS.REGION;
     this.target.compartment = this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
-    this.target.tenancyconfig = this.target.tenancyconfig || SELECT_PLACEHOLDERS.TENANCYCONFIG;
+    this.target.tenancy = this.target.tenancy || SELECT_PLACEHOLDERS.TENANCY;
     this.target.searchQuery = this.target.searchQuery || "";
+    this.target.tenancymode = this.datasource.tenancymode || ''
 
     if (this.datasource.tenancymode === "multitenancy") {
       this.target.MultiTenancy = true;
@@ -47,14 +48,14 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     });
   }
 
-  getTenancyConfig() {
-    return this.datasource.getTenancyConfig().then(tenancyconfig => {
-      return this.appendVariables([ ...tenancyconfig], tenancyconfigQueryRegex);
+  getTenancies() {
+    return this.datasource.getTenancies().then(tenancies => {
+      return this.appendVariables([ ...tenancies], tenanciesQueryRegex);
     });
   }
 
-  appendVariables(options, varQeueryRegex) {
-    const vars = this.datasource.getVariables(varQeueryRegex) || [];
+  appendVariables(options, varQueryRegex) {
+    const vars = this.datasource.getVariables(varQueryRegex) || [];
     vars.forEach((value) => {
       options.unshift({ value, text: value });
     });
