@@ -974,8 +974,22 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 		reg := common.StringToRegion(searchLogsReq.Region)
 		o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
 
+		o.logger.Debug("processLogMetrics")
+		o.logger.Debug(searchLogsReq.Region)
+		o.logger.Debug(searchQuery)
+		o.logger.Debug(takey)
+		o.logger.Debug(searchLogsReq.Tenancy)
+		o.logger.Debug(searchLogsReq.SearchQuery)
+
+		// ensures it catch always the correct tenancy when computing dashboards with data coming from multiple tenancies
+		if searchLogsReq.TenancyMode == "multitenancy" {
+			takey = searchLogsReq.Tenancy
+		}
+
 		// Perform the logs search operation
 		res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
+
+		o.logger.Debug("/processLogMetrics")
 
 		if err != nil {
 			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
@@ -1490,8 +1504,15 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context, searchLo
  */
 func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.QueryDataRequest, takey string) (*backend.QueryDataResponse, error) {
 	resp := backend.NewQueryDataResponse()
+	var ts GrafanaSearchLogsRequest
+
 	for _, query := range req.Queries {
-		var ts GrafanaSearchLogsRequest
+
+		o.logger.Debug("searchLogsResponse")
+		o.logger.Debug(takey)
+		o.logger.Debug(ts.Tenancy)
+		o.logger.Debug(ts.SearchQuery)
+		o.logger.Debug("/searchLogsResponse")
 
 		/*
 		* This is a map containing an entry per data field that will be added to the data frame.

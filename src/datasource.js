@@ -282,7 +282,7 @@ export default class OCIDatasource {
     })
   }
 
-  async getTenancies() {
+  getTenancies() {
     // if (this.tenanciesCache && this.tenanciesCache.length > 0) {
     //   return this.q.when(this.tenanciesCache);
     // }
