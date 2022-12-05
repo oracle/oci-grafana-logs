@@ -155,18 +155,18 @@ export default class OCIDatasource {
    */
   async buildQueryParameters (request) {
     let queries = request.targets
-      .filter((t) => !t.hide)
-      .filter(
-        (t) =>
-          !_.isEmpty(this.getVariableValue(t.tenancy, request.scopedVars))
-      );       
+      // .filter((t) => !t.hide)
+      // .filter(
+      //   (t) =>
+      //     !_.isEmpty(this.getVariableValue(t.tenancy, request.scopedVars))
+      // );       
 
-      queries.forEach((t) => {
-        t.tenancy =
-          t.tenancy === SELECT_PLACEHOLDERS.TENANCY
-            ? DEFAULT_TENANCY
-            : t.tenancy;
-      });
+      // queries.forEach((t) => {
+      //   t.tenancy =
+      //     t.tenancy === SELECT_PLACEHOLDERS.TENANCY
+      //       ? DEFAULT_TENANCY
+      //       : t.tenancy;
+      // });
 
     const results = []
     // When a user is in the Explore window the panel ID value is a string but when the user is on
