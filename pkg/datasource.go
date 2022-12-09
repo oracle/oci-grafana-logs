@@ -1774,3 +1774,17 @@ func OCILoadSettings(req backend.DataSourceInstanceSettings) (*OCIConfigFile, er
 	}
 	return q, nil
 }
+
+/*
+Function returns the path for the .oci/config file
+*/
+func OCIConfigPath() string {
+	var oci_config_file string
+	homedir := "/usr/share/grafana"
+	if _, ok := os.LookupEnv("OCI_CLI_CONFIG_FILE"); ok {
+		oci_config_file = os.Getenv("OCI_CLI_CONFIG_FILE")
+	} else {
+		oci_config_file = homedir + "/.oci/config"
+	}
+	return oci_config_file
+}
