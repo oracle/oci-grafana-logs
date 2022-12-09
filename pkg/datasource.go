@@ -232,25 +232,31 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	var ts GrafanaCommonRequest
 	var tenancyocid string
-	var tenancyErr error
-	var p *OCIConfigFile
 
 	query := req.Queries[0]
 	if err := json.Unmarshal(query.JSON, &ts); err != nil {
 		return &backend.QueryDataResponse{}, err
 	}
 
-	p, _ = OCIConfigParser()
 	reg := common.StringToRegion(ts.Region)
 
 	for key, _ := range o.tenancyAccess { // Order not specified
 		if ts.TenancyMode == "multitenancy" {
-			res := strings.Split(key, "/")
-			tenancyocid, tenancyErr = o.tenancyAccess[key].config.TenancyOCID()
-			if tenancyErr != nil {
-				return nil, errors.Wrap(tenancyErr, "error fetching TenancyOCID")
+			var p *OCIConfigFile
+			var ociparsErr error
+			var tenancyErr error
+			if ts.Environment == "local" {
+				oci_config_file := OCIConfigPath()
+				p, ociparsErr = OCIConfigParser(oci_config_file)
+				res := strings.Split(key, "/")
+				tenancyocid, tenancyErr = o.tenancyAccess[key].config.TenancyOCID()
+				if tenancyErr != nil {
+					return nil, errors.Wrap(tenancyErr, "error fetching TenancyOCID")
+				}
+				reg = common.StringToRegion(p.region[res[0]])
+			} else {
+				return &backend.QueryDataResponse{}, errors.Wrap(ociparsErr, fmt.Sprintf("Multitenancy mode using instance principals is not implemented yet."))
 			}
-			reg = common.StringToRegion(p.region[res[0]])
 		} else {
 			tenancyocid = ts.TenancyOCID
 		}
@@ -286,11 +292,16 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 	o.logger.Debug(environment)
 	o.logger.Debug(tenancymode)
 	var p *OCIConfigFile
+	var ociparsErr error
 
 	switch environment {
 	case "local":
+		oci_config_file := OCIConfigPath()
 		if tenancymode == "multitenancy" {
-			p, _ = OCIConfigParser()
+			p, ociparsErr = OCIConfigParser(oci_config_file)
+			if ociparsErr != nil {
+				return errors.Wrap(ociparsErr, fmt.Sprintf("OCI Config Parser failed"))
+			}
 			for key, _ := range p.tenancyocid {
 				var configProvider common.ConfigurationProvider
 				configProvider = common.CustomProfileConfigProvider("", key)
@@ -321,7 +332,8 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			return nil
 		} else {
 			var configProvider common.ConfigurationProvider
-			configProvider = common.DefaultConfigProvider()
+			// configProvider = common.DefaultConfigProvider()
+			configProvider = common.CustomProfileConfigProvider(oci_config_file, "DEFAULT")
 			loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 			if err != nil {
 				o.logger.Error("Error with config:" + SingleTenancyKey)
@@ -1590,16 +1602,15 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 
 /*
 Function generates an array  containing OCI configuration (.oci/config) in the following format:
-
 <section label/TenancyOCID>
-
 */
 
 func (o *OCIDatasource) tenanciesResponse(ctx context.Context, req *backend.QueryDataRequest, env string) (*backend.QueryDataResponse, error) {
 	resp := backend.NewQueryDataResponse()
 	var p *OCIConfigFile
 	var res string
-	p, err := OCIConfigParser()
+	oci_config_file := OCIConfigPath()
+	p, err := OCIConfigParser(oci_config_file)
 	if err != nil {
 		log.DefaultLogger.Error("could not parse config file")
 		return nil, err
@@ -1632,29 +1643,22 @@ func (o *OCIDatasource) tenanciesResponse(ctx context.Context, req *backend.Quer
 Function parses the content of .oci/config file and returns raw file content.
 It then pass over to parseConfigFile in search for each config entry.
 */
-func OCIConfigParser() (*OCIConfigFile, error) {
-	var oci_config_file string
-
+func OCIConfigParser(oci_config_file string) (*OCIConfigFile, error) {
 	p := NewOCIConfigFile()
-
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		log.DefaultLogger.Error("could not get home directory")
-	}
-	if _, ok := os.LookupEnv("OCI_CLI_CONFIG_FILE"); ok {
-		oci_config_file = os.Getenv("OCI_CLI_CONFIG_FILE")
-	} else {
-		oci_config_file = homedir + "/.oci/config"
-	}
-
 	data, err := ioutil.ReadFile(oci_config_file)
 	if err != nil {
 		err = fmt.Errorf("can not read config file: %s due to: %s", oci_config_file, err.Error())
 		return nil, err
 	}
-
+	if len(data) == 0 {
+		err = fmt.Errorf("config file %s is empty.", oci_config_file)
+		return nil, err
+	}
 	err = p.parseConfigFile(data)
-
+	if err != nil {
+		log.DefaultLogger.Error("config file " + oci_config_file + " is not valid.")
+		return nil, err
+	}
 	return p, nil
 }
 
@@ -1663,19 +1667,22 @@ Function parses the content of .oci/config file
 It looks for each profile entry and pass over to the parseConfigAtLine function
 */
 func (p *OCIConfigFile) parseConfigFile(data []byte) (err error) {
-	if len(data) == 0 {
-		return nil
-	}
-
 	content := string(data)
 	splitContent := strings.Split(content, "\n")
-
+	if len(splitContent) == 0 {
+		err = fmt.Errorf("config file is corrupted.")
+		return err
+	}
 	//Look for profile
 	for i, line := range splitContent {
 		if match := profileRegex.FindStringSubmatch(line); match != nil && len(match) > 1 {
 			start := i + 1
 			p.parseConfigAtLine(start, match[1], splitContent)
 		}
+	}
+	if len(p.tenancyocid) == 0 {
+		err = fmt.Errorf("config file is not valid.")
+		return err
 	}
 	return nil
 }
@@ -1704,4 +1711,18 @@ func (p *OCIConfigFile) parseConfigAtLine(start int, profile string, content []s
 		}
 	}
 	return
+}
+
+/*
+Function returns the path for the .oci/config file
+*/
+func OCIConfigPath() string {
+	var oci_config_file string
+	homedir := "/usr/share/grafana"
+	if _, ok := os.LookupEnv("OCI_CLI_CONFIG_FILE"); ok {
+		oci_config_file = os.Getenv("OCI_CLI_CONFIG_FILE")
+	} else {
+		oci_config_file = homedir + "/.oci/config"
+	}
+	return oci_config_file
 }
