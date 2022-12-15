@@ -1,9 +1,3 @@
-# Using Grafana with the Oracle Cloud Infrastructure Logs Data Source 
-
-Here are a few capabilities for you to explore after installing and configuring the Oracle Cloud Infrastructure Logs Data Source for Grafana. Refer to the [OCI Logging service documentation](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/loggingoverview.htm) for more information about how to use the Logging Service. Since all data panels that use the OCI Logs data source will require the definition of a Logging search query, see the [Logging Query Language Specification](https://docs.oracle.com/en-us/iaas/Content/Logging/Reference/query_language_specification.htm) for more information on the Logging query language capabilities and syntax.
-
-To configure and use the plugin with the multi-tenancy support, please refer to the following document: [Multi-tenancy support](multitenancy.md)
-
 ## Logging Search Queries
 
 The OCI Logging search query language is powerful and flexible and can return two types of information based on the searched log records:
