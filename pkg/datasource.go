@@ -29,6 +29,7 @@ import (
 const MaxPagesToFetch = 10
 const SingleTenancyKey = "DEFAULT/"
 const LimitPerPage = 1000
+const NoTenancy = "NoTenancy"
 
 // Constants for the log search result field names processed by the plugin
 const LogSearchResultsField_LogContent = "logContent"
@@ -201,8 +202,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 	// uncomment to use the single OCI login method
 	// if len(o.tenancyAccess) == 0 {
 	// uncomment to force OCI login at every query
-	if true {
-
+	if len(o.tenancyAccess) == 0 || ts.TenancyMode == "multitenancy" {
 		err := o.getConfigProvider(ts.Environment, ts.TenancyMode)
 		if err != nil {
 			return nil, errors.Wrap(err, "broken environment")
@@ -304,7 +304,7 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			}
 			for key, _ := range p.tenancyocid {
 				var configProvider common.ConfigurationProvider
-				configProvider = common.CustomProfileConfigProvider("", key)
+				configProvider = common.CustomProfileConfigProvider(oci_config_file, key)
 				loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 				if err != nil {
 					o.logger.Error("Error with config:" + key)
@@ -381,6 +381,11 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 
 	var tenancyocid string
 	if ts.TenancyMode == "multitenancy" {
+		if len(takey) <= 0 || takey == NoTenancy {
+			o.logger.Error("Unable to get Multi-tenancy OCID")
+			err := fmt.Errorf("Tenancy OCID %s is not valid.", takey)
+			return nil, err
+		}
 		res := strings.Split(takey, "/")
 		tenancyocid = res[1]
 	} else {

@@ -223,34 +223,64 @@ export default class OCIDatasource {
     let tenancyQuery = varString.match(tenanciesQueryRegex);
     let compartmentQuery = varString.match(compartmentsQueryRegex);
 
-    if (regionQuery) {
-      let target = {
-        tenancy: removeQuotes(this.getVariableValue(regionQuery[1])),
-      };        
-      return this.getRegions(target).catch((err) => {
-        throw new Error("Unable to get regions: " + err);
-      });
-    }
-
     if (tenancyQuery) {
       return this.getTenancies().catch((err) => {
         throw new Error("Unable to get tenancies: " + err);
       });    
+    }
+
+    if (regionQuery) {
+      if (this.tenancymode === "multitenancy") {
+        let target = {
+          tenancy: removeQuotes(this.getVariableValue(regionQuery[1])),
+        };
+        return this.getRegions(target).catch((err) => {
+          throw new Error("Unable to get regions: " + err);
+        });
+      } else {
+        let target = {
+          tenancy: DEFAULT_TENANCY,
+        };        
+        return this.getRegions(target).catch((err) => {
+          throw new Error("Unable to get regions: " + err);
+        });        
+      }
     }    
 
-    if (compartmentQuery) {
-      let target = {
-        tenancy: removeQuotes(this.getVariableValue(compartmentQuery[1])),
-        region: removeQuotes(this.getVariableValue(compartmentQuery[2])),
-      };      
-      return this.getCompartments(target)
-        .then((compartments) => {
-          return compartments.map((c) => ({ text: c.text, value: c.text }));
-        })
-        .catch((err) => {
-          throw new Error("Unable to get compartments: " + err);
-        });
+    if (compartmentQuery){
+      console.log(this.tenancymode)
+      if (this.tenancymode === "multitenancy") {
+        let target = {
+          tenancy: removeQuotes(this.getVariableValue(compartmentQuery[1])),
+          region: removeQuotes(this.getVariableValue(compartmentQuery[2])),
+        };
+        console.log("compartmentQuery")
+        console.log(target)      
+        console.log("end compartmentQuery")        
+        return this.getCompartments(target)
+          .then((compartments) => {
+            return compartments.map((c) => ({ text: c.text, value: c.text }));
+          })
+          .catch((err) => {
+            throw new Error("Unable to get compartments: " + err);
+          });
+      } else {
+          let target = {
+            tenancy: DEFAULT_TENANCY,
+          };
+          console.log("compartmentQuery")
+          console.log(target)      
+          console.log("end compartmentQuery")        
+          return this.getCompartments(target)
+            .then((compartments) => {
+              return compartments.map((c) => ({ text: c.text, value: c.text }));
+            })
+            .catch((err) => {
+              throw new Error("Unable to get compartments: " + err);
+            });  
+      }   
     }
+
      throw new Error('Unable to parse templating string')
   }
 
