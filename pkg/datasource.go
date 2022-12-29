@@ -248,15 +248,18 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 			if ts.Environment == "local" {
 				oci_config_file := OCIConfigPath()
 				p, ociparsErr = OCIConfigParser(oci_config_file)
-				res := strings.Split(key, "/")
-				tenancyocid, tenancyErr = o.tenancyAccess[key].config.TenancyOCID()
-				if tenancyErr != nil {
-					return nil, errors.Wrap(tenancyErr, "error fetching TenancyOCID")
+				if ociparsErr != nil {
+					return &backend.QueryDataResponse{}, errors.Wrap(ociparsErr, fmt.Sprintf("OCI Config Parser failed"))
 				}
-				reg = common.StringToRegion(p.region[res[0]])
 			} else {
 				return &backend.QueryDataResponse{}, errors.Wrap(ociparsErr, fmt.Sprintf("Multitenancy mode using instance principals is not implemented yet."))
 			}
+			res := strings.Split(key, "/")
+			tenancyocid, tenancyErr = o.tenancyAccess[key].config.TenancyOCID()
+			if tenancyErr != nil {
+				return nil, errors.Wrap(tenancyErr, "error fetching TenancyOCID")
+			}
+			reg = common.StringToRegion(p.region[res[0]])
 		} else {
 			tenancyocid = ts.TenancyOCID
 		}
@@ -280,7 +283,7 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 				o.logger.Debug(key, "OK", status)
 			} else {
 				o.logger.Debug(key, "FAILED", status)
-				return nil, errors.Wrap(err, fmt.Sprintf("list metrircs failed %s %d", spew.Sdump(res), status))
+				return nil, errors.Wrap(err, fmt.Sprintf("list logs failed %s %d", spew.Sdump(res), status))
 			}
 		}
 	}
@@ -379,6 +382,13 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 		return &backend.QueryDataResponse{}, err
 	}
 
+	log.DefaultLogger.Debug("compartmentsResponse")
+	log.DefaultLogger.Debug(ts.QueryType)
+	log.DefaultLogger.Debug(ts.Region)
+	log.DefaultLogger.Debug(ts.TenancyMode)
+	log.DefaultLogger.Debug(ts.Tenancy)
+	log.DefaultLogger.Debug(takey)
+
 	var tenancyocid string
 	if ts.TenancyMode == "multitenancy" {
 		if len(takey) <= 0 || takey == NoTenancy {
@@ -391,6 +401,9 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 	} else {
 		tenancyocid = ts.TenancyOCID
 	}
+
+	log.DefaultLogger.Debug(tenancyocid)
+	log.DefaultLogger.Debug("/compartmentsResponse")
 
 	if o.timeCacheUpdated.IsZero() || time.Now().Sub(o.timeCacheUpdated) > cacheRefreshTime {
 		m, err := o.getCompartments(ctx, ts.Region, tenancyocid, takey)
@@ -424,6 +437,10 @@ func (o *OCIDatasource) getCompartments(ctx context.Context, region string, root
 	tenancyOcid := rootCompartment
 
 	req := identity.GetTenancyRequest{TenancyId: common.String(tenancyOcid)}
+
+	reg := common.StringToRegion(region)
+	o.tenancyAccess[takey].identityClient.SetRegion(string(reg))
+
 	// Send the request using the service client
 	resp, err := o.tenancyAccess[takey].identityClient.GetTenancy(context.Background(), req)
 	if err != nil {
@@ -437,8 +454,6 @@ func (o *OCIDatasource) getCompartments(ctx context.Context, region string, root
 	mapFromIdToParentCmptId[tenancyOcid] = "" //since root cmpt does not have a parent
 
 	var page *string
-	reg := common.StringToRegion(region)
-	o.tenancyAccess[takey].identityClient.SetRegion(string(reg))
 	for {
 		res, err := o.tenancyAccess[takey].identityClient.ListCompartments(ctx,
 			identity.ListCompartmentsRequest{
@@ -1627,7 +1642,7 @@ func (o *OCIDatasource) tenanciesResponse(ctx context.Context, req *backend.Quer
 			if env == "local" {
 				res = p.tenancyocid[key]
 			} else {
-				configProvider := common.CustomProfileConfigProvider("", key)
+				configProvider := common.CustomProfileConfigProvider(oci_config_file, key)
 				res, err := configProvider.TenancyOCID()
 				if err != nil {
 					return nil, errors.Wrap(err, "error configuring TenancyOCID: "+key+"/"+res)
