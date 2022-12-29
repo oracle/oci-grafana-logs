@@ -466,6 +466,13 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 		return &backend.QueryDataResponse{}, err
 	}
 
+	log.DefaultLogger.Debug("compartmentsResponse")
+	log.DefaultLogger.Debug(ts.QueryType)
+	log.DefaultLogger.Debug(ts.Region)
+	log.DefaultLogger.Debug(ts.TenancyMode)
+	log.DefaultLogger.Debug(ts.Tenancy)
+	log.DefaultLogger.Debug(takey)
+
 	var tenancyocid string
 	var tenancyErr error
 
@@ -488,6 +495,9 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 	if regErr != nil {
 		return nil, errors.Wrap(regErr, "error fetching TenancyOCID")
 	}
+
+	log.DefaultLogger.Debug(tenancyocid)
+	log.DefaultLogger.Debug("/compartmentsResponse")
 
 	if o.timeCacheUpdated.IsZero() || time.Now().Sub(o.timeCacheUpdated) > cacheRefreshTime {
 		m, err := o.getCompartments(ctx, tenancyocid, regio, takey)
