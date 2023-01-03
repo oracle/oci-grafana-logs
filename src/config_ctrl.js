@@ -11,7 +11,6 @@ export class OCIConfigCtrl {
     this.environment = this.current.jsonData.environment      
     this.tenancymode = this.current.jsonData.tenancymode
     this.defaultRegion = this.current.jsonData.defaultRegion
-<<<<<<< HEAD
     this.region0 = this.current.jsonData.region0
     this.region1 = this.current.jsonData.region1
     this.region2 = this.current.jsonData.region2
@@ -28,11 +27,6 @@ export class OCIConfigCtrl {
     this.addon2 = this.current.jsonData.addon2
     this.addon3 = this.current.jsonData.addon3
     this.addon4 = this.current.jsonData.addon4
-=======
-    this.defaultCompartmentOCID = this.current.jsonData.defaultCompartmentOCID
-    this.environment = this.current.jsonData.environment
-    this.tenancymode = this.current.jsonData.tenancymode
->>>>>>> a88607e (multitenancy in separate option field)
   }
 
   getRegions () {

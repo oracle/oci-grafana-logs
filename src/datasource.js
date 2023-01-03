@@ -24,7 +24,6 @@ export default class OCIDatasource {
     this.name = instanceSettings.name
     this.id = instanceSettings.id
     this.defaultRegion = instanceSettings.jsonData.defaultRegion
-    this.defaultCompartmentOCID = instanceSettings.jsonData.defaultCompartmentOCID
     this.environment = instanceSettings.jsonData.environment
     this.tenancymode = instanceSettings.jsonData.tenancymode;
     this.q = $q
