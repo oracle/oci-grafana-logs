@@ -10,7 +10,6 @@ export class OCIConfigCtrl {
     this.backendSrv = backendSrv
     this.tenancyOCID = this.current.jsonData.tenancyOCID
     this.defaultRegion = this.current.jsonData.defaultRegion
-    this.defaultCompartmentOCID = this.current.jsonData.defaultCompartmentOCID
     this.environment = this.current.jsonData.environment
     this.tenancymode = this.current.jsonData.tenancymode
   }
