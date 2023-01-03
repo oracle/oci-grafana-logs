@@ -25,7 +25,6 @@ export default class OCIDatasource {
     this.id = instanceSettings.id
     this.tenancyOCID = instanceSettings.jsonData.tenancyOCID
     this.defaultRegion = instanceSettings.jsonData.defaultRegion
-    this.defaultCompartmentOCID = instanceSettings.jsonData.defaultCompartmentOCID
     this.environment = instanceSettings.jsonData.environment
     this.tenancymode = instanceSettings.jsonData.tenancymode;
     this.q = $q
@@ -80,7 +79,6 @@ export default class OCIDatasource {
           queryType: 'test',
           region: this.defaultRegion,
           tenancyOCID: this.tenancyOCID,
-          defaultCompartmentOCID: this.defaultCompartmentOCID,
           environment: this.environment,
           tenancymode: this.tenancymode,
           datasourceId: this.id
