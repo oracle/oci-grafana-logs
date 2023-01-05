@@ -153,19 +153,6 @@ export default class OCIDatasource {
    */
   async buildQueryParameters (request) {
     let queries = request.targets
-      // .filter((t) => !t.hide)
-      // .filter(
-      //   (t) =>
-      //     !_.isEmpty(this.getVariableValue(t.tenancy, request.scopedVars))
-      // );       
-
-      // queries.forEach((t) => {
-      //   t.tenancy =
-      //     t.tenancy === SELECT_PLACEHOLDERS.TENANCY
-      //       ? DEFAULT_TENANCY
-      //       : t.tenancy;
-      // });
-
     const results = []
     // When a user is in the Explore window the panel ID value is a string but when the user is on
     // a dashboard the panel ID value is numeric so convert all panel IDs to be strings so that the
@@ -287,10 +274,9 @@ export default class OCIDatasource {
       target.tenancy === SELECT_PLACEHOLDERS.TENANCY
         ? DEFAULT_TENANCY
         : this.getVariableValue(target.tenancy);
-
-    if (this.regionsCache && this.regionsCache.length > 0) {
-      return this.q.when(this.regionsCache)
-    }
+    // if (this.regionsCache && this.regionsCache.length > 0) {
+    //   return this.q.when(this.regionsCache)
+    // }
 
     return this.doRequest({
       targets: [
@@ -305,9 +291,9 @@ export default class OCIDatasource {
       ],
       range: this.timeSrv.timeRange()
     }).then((items) => {
-      this.regionsCache = this.mapToTextValue(items, 'regions')
-      return this.regionsCache
-    })
+      this.regionsCache = this.mapToTextValue(items, 'regions');
+      return this.regionsCache;
+    });
   }
 
   getTenancies() {
@@ -355,18 +341,18 @@ export default class OCIDatasource {
       ],
       range: this.timeSrv.timeRange()
     }).then((items) => {
-      this.compartmentsCache = this.mapToTextValue(items, 'compartments')
-      return this.compartmentsCache
-    })
+      this.compartmentsCache = this.mapToTextValue(items, 'compartments');
+      return this.compartmentsCache;
+    });
   }
 
   getCompartmentId (compartment, target) {
     return this.getCompartments(target).then((compartments) => {
       const compartmentFound = compartments.find(
         (c) => c.text === compartment || c.value === compartment
-      )
+      );
       return compartmentFound ? compartmentFound.value : compartment
-    })
+    });
   }
 
   /**
