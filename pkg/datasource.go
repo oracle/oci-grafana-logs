@@ -275,15 +275,15 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 			Limit: common.Int(10)}
 		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
 		res, err := o.tenancyAccess[key].loggingSearchClient.SearchLogs(ctx, request)
-		if err == nil {
-			status := res.RawResponse.StatusCode
-			if status >= 200 && status < 300 {
-				// return &backend.QueryDataResponse{}, nil
-				o.logger.Debug(key, "OK", status)
-			} else {
-				o.logger.Debug(key, "FAILED", status)
-				return nil, errors.Wrap(err, fmt.Sprintf("list logs failed %s %d", spew.Sdump(res), status))
-			}
+		if err != nil {
+			return &backend.QueryDataResponse{}, err
+		}
+		status := res.RawResponse.StatusCode
+		if status >= 200 && status < 300 {
+			o.logger.Debug(key, "OK", status)
+		} else {
+			o.logger.Debug(key, "FAILED", status)
+			return nil, errors.Wrap(err, fmt.Sprintf("list logs failed %s %d", spew.Sdump(res), status))
 		}
 	}
 	return &backend.QueryDataResponse{}, nil
