@@ -275,15 +275,15 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 			Limit: common.Int(10)}
 		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
 		res, err := o.tenancyAccess[key].loggingSearchClient.SearchLogs(ctx, request)
-		if err == nil {
-			status := res.RawResponse.StatusCode
-			if status >= 200 && status < 300 {
-				// return &backend.QueryDataResponse{}, nil
-				o.logger.Debug(key, "OK", status)
-			} else {
-				o.logger.Debug(key, "FAILED", status)
-				return nil, errors.Wrap(err, fmt.Sprintf("list logs failed %s %d", spew.Sdump(res), status))
-			}
+		if err != nil {
+			return &backend.QueryDataResponse{}, err
+		}
+		status := res.RawResponse.StatusCode
+		if status >= 200 && status < 300 {
+			o.logger.Debug(key, "OK", status)
+		} else {
+			o.logger.Debug(key, "FAILED", status)
+			return nil, errors.Wrap(err, fmt.Sprintf("list logs failed %s %d", spew.Sdump(res), status))
 		}
 	}
 	return &backend.QueryDataResponse{}, nil
@@ -322,11 +322,6 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 					return errors.New(fmt.Sprint("error with TenancyOCID", spew.Sdump(configProvider), err.Error()))
 				}
 				o.tenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{loggingSearchClient, identityClient, configProvider}
-
-				// o.tenancyAccess[ociconfig].identityClient = identityClient
-				// o.tenancyAccess[ociconfig].metricsClient = metricsClient
-				// o.tenancyAccess[ociconfig].config = configProvider
-
 			}
 			for key, _ := range o.tenancyAccess {
 				o.logger.Debug(string(key))
@@ -519,10 +514,13 @@ func (o *OCIDatasource) regionsResponse(ctx context.Context, req *backend.QueryD
 
 		frame := data.NewFrame(query.RefID, data.NewField("text", nil, []string{}))
 
+		/* Generate list of regions */
 		var regions []string
 		for _, item := range res.Items {
 			regions = append(regions, *item.Name)
 		}
+
+		/* Sort regions list */
 		sort.Strings(regions)
 		for _, regionName := range regions {
 			frame.AppendRow(regionName)
@@ -1003,6 +1001,12 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 			Limit:             common.Int(LimitPerPage),
 		}
 		reg := common.StringToRegion(searchLogsReq.Region)
+
+		// ensures it catch always the correct tenancy when computing dashboards with data coming from multiple tenancies
+		if searchLogsReq.TenancyMode == "multitenancy" {
+			takey = searchLogsReq.Tenancy
+		}
+
 		o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
 
 		o.logger.Debug("processLogMetrics")
@@ -1011,11 +1015,6 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 		o.logger.Debug(takey)
 		o.logger.Debug(searchLogsReq.Tenancy)
 		o.logger.Debug(searchLogsReq.SearchQuery)
-
-		// ensures it catch always the correct tenancy when computing dashboards with data coming from multiple tenancies
-		if searchLogsReq.TenancyMode == "multitenancy" {
-			takey = searchLogsReq.Tenancy
-		}
 
 		// Perform the logs search operation
 		res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
@@ -1244,6 +1243,12 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context, searchLo
 		Limit:             common.Int(LimitPerPage),
 	}
 	reg := common.StringToRegion(searchLogsReq.Region)
+
+	// ensures it catch always the correct tenancy when computing dashboards with data coming from multiple tenancies
+	if searchLogsReq.TenancyMode == "multitenancy" {
+		takey = searchLogsReq.Tenancy
+	}
+
 	o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
 
 	// Perform the logs search operation
