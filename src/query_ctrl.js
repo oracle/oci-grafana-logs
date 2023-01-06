@@ -36,6 +36,12 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
 
   // ****************************** Options **********************************
 
+  getTenancies() {
+    return this.datasource.getTenancies().then(tenancies => {
+      return this.appendVariables([ ...tenancies], tenanciesQueryRegex);
+    });
+  }
+
   getRegions() {
     return this.datasource.getRegions(this.target).then((regions) => {
       return this.appendVariables([...regions], regionsQueryRegex);
@@ -45,12 +51,6 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
   getCompartments() {
     return this.datasource.getCompartments(this.target).then((compartments) => {
       return this.appendVariables([...compartments], compartmentsQueryRegex);
-    });
-  }
-
-  getTenancies() {
-    return this.datasource.getTenancies().then(tenancies => {
-      return this.appendVariables([ ...tenancies], tenanciesQueryRegex);
     });
   }
 
