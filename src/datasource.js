@@ -77,6 +77,7 @@ export default class OCIDatasource {
         {
           queryType: 'test',
           region: this.defaultRegion,
+          compartment: "",
           environment: this.environment,
           tenancymode: this.tenancymode,
           datasourceId: this.id

@@ -276,7 +276,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 	case "regions":
 		return o.regionsResponse(ctx, req, takey)
 	case "tenancies":
-		return o.tenanciesResponse(ctx, req, ts.Environment)
+		return o.tenanciesResponse(ctx, req)
 	case "searchLogs":
 		return o.searchLogsResponse(ctx, req, takey)
 	default:
@@ -285,7 +285,6 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 }
 
 func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-
 	var ts GrafanaCommonRequest
 	var reg common.Region
 	query := req.Queries[0]
@@ -304,25 +303,30 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 		}
 		regio, regErr := o.tenancyAccess[key].config.Region()
 		if regErr != nil {
-			return nil, errors.Wrap(regErr, "error fetching TenancyOCID")
+			return nil, errors.Wrap(regErr, "error fetching Region")
 		}
 		reg = common.StringToRegion(regio)
-		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
 
-		query := `search "` + tenancyocid + `" | sort by datetime desc`
+		o.logger.Debug("test")
+		o.logger.Debug(ts.TenancyMode)
+		o.logger.Debug(regio)
+		o.logger.Debug(tenancyocid)
+
+		queri := `search "` + tenancyocid + `" | sort by datetime desc`
+		o.logger.Debug(queri)
+		o.logger.Debug("/test")
 		t := time.Now()
 		t2 := t.Add(-time.Minute * 30)
 		start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
 		end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
-		request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(query),
+		request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(queri),
 			TimeStart:         &common.SDKTime{Time: start},
 			TimeEnd:           &common.SDKTime{Time: end},
 			IsReturnFieldInfo: common.Bool(false)},
 			Limit: common.Int(10)}
+
+		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
 		res, err := o.tenancyAccess[key].loggingSearchClient.SearchLogs(ctx, request)
-		if err != nil {
-			return &backend.QueryDataResponse{}, err
-		}
 		if err != nil {
 			o.logger.Debug(key, "FAILED", err)
 			return &backend.QueryDataResponse{}, err
@@ -339,8 +343,13 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 }
 
 func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string, req *backend.QueryDataRequest) error {
+
+	o.logger.Debug("getConfigProvider")
+	o.logger.Debug(tenancymode)
+	o.logger.Debug("/getConfigProvider")
 	switch environment {
 	case "local":
+		o.logger.Debug("Environment: " + environment)
 		q, err := OCILoadSettings(req)
 		if err != nil {
 			o.logger.Error("Error Loading config settings", "error", err)
@@ -373,6 +382,7 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		return nil
 
 	case "OCI Instance":
+		o.logger.Debug("Environment: " + environment)
 		var configProvider common.ConfigurationProvider
 		configProvider, err := auth.InstancePrincipalConfigurationProvider()
 		if err != nil {
@@ -1662,7 +1672,7 @@ Function generates an array  containing OCI configuration (.oci/config) in the f
 <section label/TenancyOCID>
 */
 
-func (o *OCIDatasource) tenanciesResponse(ctx context.Context, req *backend.QueryDataRequest, env string) (*backend.QueryDataResponse, error) {
+func (o *OCIDatasource) tenanciesResponse(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	resp := backend.NewQueryDataResponse()
 	for _, query := range req.Queries {
 
