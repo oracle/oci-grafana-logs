@@ -23,6 +23,7 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
 	"github.com/oracle/oci-go-sdk/v65/identity"
+	"github.com/oracle/oci-go-sdk/v65/logging"
 	"github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/pkg/errors"
 )
@@ -92,9 +93,10 @@ type OCIConfigFile struct {
 }
 
 type TenancyAccess struct {
-	loggingSearchClient loggingsearch.LogSearchClient
-	identityClient      identity.IdentityClient
-	config              common.ConfigurationProvider
+	loggingSearchClient     loggingsearch.LogSearchClient
+	loggingManagementClient logging.LoggingManagementClient
+	identityClient          identity.IdentityClient
+	config                  common.ConfigurationProvider
 }
 
 // GrafanaOCIRequest - regions Query Request comning in from the front end
@@ -312,31 +314,48 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 		o.logger.Debug(regio)
 		o.logger.Debug(tenancyocid)
 
-		queri := `search "` + tenancyocid + `" | sort by datetime desc`
-		o.logger.Debug(queri)
-		o.logger.Debug("/test")
-		t := time.Now()
-		t2 := t.Add(-time.Minute * 30)
-		start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
-		end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
-		request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(queri),
-			TimeStart:         &common.SDKTime{Time: start},
-			TimeEnd:           &common.SDKTime{Time: end},
-			IsReturnFieldInfo: common.Bool(false)},
-			Limit: common.Int(10)}
-
 		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
-		res, err := o.tenancyAccess[key].loggingSearchClient.SearchLogs(ctx, request)
-		if err != nil {
-			o.logger.Debug(key, "FAILED", err)
-			return &backend.QueryDataResponse{}, err
-		}
-		status := res.RawResponse.StatusCode
-		if status >= 200 && status < 300 {
-			o.logger.Debug(key, "OK", status)
+		if ts.Environment == "local" {
+			queri := `search "` + tenancyocid + `" | sort by datetime desc`
+			o.logger.Debug(queri)
+			o.logger.Debug("/test")
+			t := time.Now()
+			t2 := t.Add(-time.Minute * 30)
+			start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+			end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+			request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(queri),
+				TimeStart:         &common.SDKTime{Time: start},
+				TimeEnd:           &common.SDKTime{Time: end},
+				IsReturnFieldInfo: common.Bool(false)},
+				Limit: common.Int(10)}
+			res, err := o.tenancyAccess[key].loggingSearchClient.SearchLogs(ctx, request)
+			if err != nil {
+				o.logger.Debug(key, "FAILED", err)
+				return &backend.QueryDataResponse{}, err
+			}
+			status := res.RawResponse.StatusCode
+			if status >= 200 && status < 300 {
+				o.logger.Debug(key, "OK", status)
+			} else {
+				o.logger.Debug(key, "FAILED", status)
+				return nil, errors.Wrap(err, fmt.Sprintf("list metrics failed %s %d", spew.Sdump(res), status))
+			}
 		} else {
-			o.logger.Debug(key, "FAILED", status)
-			return nil, errors.Wrap(err, fmt.Sprintf("list metrics failed %s %d", spew.Sdump(res), status))
+			request := logging.ListLogGroupsRequest{Limit: common.Int(69),
+				CompartmentId:            common.String(tenancyocid),
+				IsCompartmentIdInSubtree: common.Bool(true)}
+			res, err := o.tenancyAccess[key].loggingManagementClient.ListLogGroups(ctx, request)
+			if err != nil {
+				o.logger.Debug(key, "FAILED", err)
+				return &backend.QueryDataResponse{}, err
+			}
+			status := res.RawResponse.StatusCode
+			if status >= 200 && status < 300 {
+				o.logger.Debug(key, "OK", status)
+			} else {
+				o.logger.Debug(key, "FAILED", status)
+				return nil, errors.Wrap(err, fmt.Sprintf("list metrics failed %s %d", spew.Sdump(res), status))
+			}
 		}
 	}
 	return &backend.QueryDataResponse{}, nil
@@ -364,6 +383,11 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 				o.logger.Error("Error with config:" + key)
 				return errors.New(fmt.Sprint("error with client", spew.Sdump(configProvider), err.Error()))
 			}
+			loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+			if err != nil {
+				o.logger.Error("Error with config:" + SingleTenancyKey)
+				return errors.New(fmt.Sprint("error with client", spew.Sdump(configProvider), err.Error()))
+			}
 			identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 			if err != nil {
 				o.logger.Error("Error creating identity client", "error", err)
@@ -374,9 +398,9 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 				return errors.New(fmt.Sprint("error with TenancyOCID", spew.Sdump(configProvider), err.Error()))
 			}
 			if tenancymode == "multitenancy" {
-				o.tenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{loggingSearchClient, identityClient, configProvider}
+				o.tenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 			} else {
-				o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{loggingSearchClient, identityClient, configProvider}
+				o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 			}
 		}
 		return nil
@@ -393,12 +417,17 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			o.logger.Error("Error with config:" + SingleTenancyKey)
 			return errors.New(fmt.Sprint("error with client", spew.Sdump(configProvider), err.Error()))
 		}
+		loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+		if err != nil {
+			o.logger.Error("Error with config:" + SingleTenancyKey)
+			return errors.New(fmt.Sprint("error with client", spew.Sdump(configProvider), err.Error()))
+		}
 		identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			o.logger.Error("Error creating identity client", "error", err)
 			return errors.Wrap(err, "Error creating identity client")
 		}
-		o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{loggingSearchClient, identityClient, configProvider}
+		o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 		return nil
 
 	default:
