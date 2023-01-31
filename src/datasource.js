@@ -23,7 +23,6 @@ export default class OCIDatasource {
     this.url = instanceSettings.url
     this.name = instanceSettings.name
     this.id = instanceSettings.id
-    this.tenancyOCID = instanceSettings.jsonData.tenancyOCID
     this.defaultRegion = instanceSettings.jsonData.defaultRegion
     this.environment = instanceSettings.jsonData.environment
     this.tenancymode = instanceSettings.jsonData.tenancymode;
@@ -78,7 +77,7 @@ export default class OCIDatasource {
         {
           queryType: 'test',
           region: this.defaultRegion,
-          tenancyOCID: this.tenancyOCID,
+          compartment: "",
           environment: this.environment,
           tenancymode: this.tenancymode,
           datasourceId: this.id
@@ -133,7 +132,6 @@ export default class OCIDatasource {
           environment: this.environment,
           tenancymode: this.tenancymode,
           datasourceId: this.id,
-          tenancyOCID: this.tenancyOCID,
           queryType: 'search',
           region: _.isEmpty(region) ? this.defaultRegion : region,
           compartment: compartmentId,
@@ -237,7 +235,6 @@ export default class OCIDatasource {
       if (this.tenancymode === "multitenancy") {
         let target = {
           tenancy: removeQuotes(this.getVariableValue(compartmentQuery[1])),
-          region: removeQuotes(this.getVariableValue(compartmentQuery[2])),
         };
         console.log("compartmentQuery")
         console.log(target)      
@@ -284,7 +281,6 @@ export default class OCIDatasource {
           environment: this.environment,
           tenancymode: this.tenancymode,
           datasourceId: this.id,
-          tenancyOCID: this.tenancyOCID,
           tenancy: tenancy,
           queryType: 'regions'
         }
@@ -333,10 +329,8 @@ export default class OCIDatasource {
           environment: this.environment,
           tenancymode: this.tenancymode,
           datasourceId: this.id,
-          tenancyOCID: this.tenancyOCID,
           tenancy: tenancy,
           queryType: "compartments",
-          region: _.isEmpty(region) ? this.defaultRegion : region,
         }
       ],
       range: this.timeSrv.timeRange()
