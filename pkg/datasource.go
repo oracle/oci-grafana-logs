@@ -123,6 +123,9 @@ func NewOCIConfigFile() *OCIConfigFile {
 		tenancyocid: make(map[string]string),
 		region:      make(map[string]string),
 		user:        make(map[string]string),
+		fingerprint: make(map[string]string),
+		privkey:     make(map[string]string),
+		privkeypass: make(map[string]*string),
 		logger:      log.DefaultLogger,
 	}
 }
@@ -131,13 +134,17 @@ type OCIConfigFile struct {
 	tenancyocid map[string]string
 	region      map[string]string
 	user        map[string]string
+	fingerprint map[string]string
+	privkey     map[string]string
+	privkeypass map[string]*string
 	logger      log.Logger
 }
 
 type TenancyAccess struct {
-	loggingSearchClient loggingsearch.LogSearchClient
-	identityClient      identity.IdentityClient
-	config              common.ConfigurationProvider
+	loggingSearchClient     loggingsearch.LogSearchClient
+	loggingManagementClient logging.LoggingManagementClient
+	identityClient          identity.IdentityClient
+	config                  common.ConfigurationProvider
 }
 
 // GrafanaOCIRequest - regions Query Request comning in from the front end
@@ -445,6 +452,11 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		if err != nil {
 			o.logger.Error("Error with config:" + SingleTenancyKey)
 			return errors.New("Error creating loggingManagement client")
+		}
+		loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+		if err != nil {
+			o.logger.Error("Error with config:" + SingleTenancyKey)
+			return errors.New(fmt.Sprint("error with client", spew.Sdump(configProvider), err.Error()))
 		}
 		identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 		if err != nil {
