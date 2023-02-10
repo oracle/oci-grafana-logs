@@ -60,13 +60,39 @@ type OCIDatasource struct {
 	cmptid           string
 }
 
-// NewOCIDatasource - constructor
-func NewOCIDatasource(_ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+// NewOCIDatasourceConstructor - constructor
+func NewOCIDatasourceConstructor() *OCIDatasource {
 	return &OCIDatasource{
 		tenancyAccess: make(map[string]*TenancyAccess),
 		logger:        log.DefaultLogger,
 		nameToOCID:    make(map[string]string),
-	}, nil
+	}
+}
+
+// NewOCIDatasource - constructor
+func NewOCIDatasource(req backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	var ts GrafanaCommonRequest
+	log.DefaultLogger.Error("NewOCIDatasource")
+
+	o := NewOCIDatasourceConstructor()
+
+	if err := json.Unmarshal(req.JSONData, &ts); err != nil {
+		return nil, fmt.Errorf("can not read settings: %s", err.Error())
+	}
+
+	if len(o.tenancyAccess) == 0 {
+		err := o.getConfigProvider(ts.Environment, ts.TenancyMode, req)
+		if err != nil {
+			return nil, errors.Wrap(err, "broken environment")
+		}
+	}
+
+	// return &OCIDatasource{
+	// 	tenancyAccess: make(map[string]*TenancyAccess),
+	// 	logger:        log.DefaultLogger,
+	// 	nameToOCID:    make(map[string]string),
+	// }, nil
+	return o, nil
 }
 
 // NewOCIConfigFile - constructor
@@ -259,13 +285,6 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 	o.logger.Debug(ts.Region)
 	o.logger.Debug(ts.Tenancy)
 
-	if len(o.tenancyAccess) == 0 {
-		err := o.getConfigProvider(ts.Environment, ts.TenancyMode, req)
-		if err != nil {
-			return nil, errors.Wrap(err, "broken environment")
-		}
-	}
-
 	if ts.TenancyMode == "multitenancy" {
 		takey = ts.Tenancy
 	} else {
@@ -361,7 +380,7 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 	return &backend.QueryDataResponse{}, nil
 }
 
-func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string, req *backend.QueryDataRequest) error {
+func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string, req backend.DataSourceInstanceSettings) error {
 
 	o.logger.Debug("getConfigProvider")
 	o.logger.Debug(tenancymode)
@@ -1718,13 +1737,13 @@ func (o *OCIDatasource) tenanciesResponse(ctx context.Context, req *backend.Quer
 }
 
 // OCILoadSettings will read and validate Settings from the DataSourceConfig
-func OCILoadSettings(req *backend.QueryDataRequest) (*OCIConfigFile, error) {
+func OCILoadSettings(req backend.DataSourceInstanceSettings) (*OCIConfigFile, error) {
 	q := NewOCIConfigFile()
 
 	TenancySettingsBlock := 0
 	var dat OCISecuredSettings
 
-	if err := json.Unmarshal(req.PluginContext.DataSourceInstanceSettings.JSONData, &dat); err != nil {
+	if err := json.Unmarshal(req.JSONData, &dat); err != nil {
 		return nil, fmt.Errorf("can not read settings: %s", err.Error())
 	}
 
@@ -1732,7 +1751,7 @@ func OCILoadSettings(req *backend.QueryDataRequest) (*OCIConfigFile, error) {
 	// if ok {
 	// 	dat.Fingerprint_0 = password
 	// }
-	decryptedJSONData := req.PluginContext.DataSourceInstanceSettings.DecryptedSecureJSONData
+	decryptedJSONData := req.DecryptedSecureJSONData
 	transcode(decryptedJSONData, &dat)
 
 	v := reflect.ValueOf(dat)
