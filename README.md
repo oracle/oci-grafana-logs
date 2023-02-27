@@ -20,21 +20,9 @@ place, for Grafana to fetch the logs from Oracle Cloud Logging Service.
 
 ### For local/dev box environment
 
-#### Install the Oracle Cloud Infrastructure CLI
+#### Get OCI Configuration values
 
-The [Oracle Cloud Infrastructure CLI][3] provides you with a way to perform
-tasks in OCI from your command line rather than the OCI Console. It does so by
-making REST calls to the [OCI APIs][4]. We will be using the CLI to authenticate
-between our local environment hosting Grafana and OCI in order to pull in
-log content. The CLI is built on Python (version 2.7.5 or 3.6 or later), running on
-macOS, Windows, or Linux.
-
-Begin by [installing the Oracle Cloud Infrastructure CLI][5]. Follow the
-installation prompts to install the CLI on your local environment. After the
-installation is complete, use the `oci setup config` command to have the CLI
-walk you through the first-time setup process. If you haven't already uploaded
-your public API signing key through the console, [follow these instructions][6]
-to do so.
+Get the necessary provider and resource settings, as described in this section [Getting OCI Configuration values](https://github.com/oracle/oci-grafana-logs/blob/main/docs/linux.md#getting-oci-configuration-values)
 
 #### Configure OCI Identity Policies
 
