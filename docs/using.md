@@ -4,6 +4,23 @@ Here are a few capabilities for you to explore after installing and configuring 
 
 To configure and use the plugin with the multi-tenancy support, please refer to the following document: [Multi-tenancy support](multitenancy.md)
 
+## Multitenancy support
+
+This version of the OCI plugin includes multitenancy support. That means that the plugin is able to query different tenancies as they are configured in the .oci/config file. Instance principals are not yet supported to operate in multitenancy mode.
+For existing grafana dashboards created with the legacy single tenancy plugin datasource configuration, retro compatibility is supported under the following schema:
+
+
+|                                                   | Dashboard created with plugin configured with .oci/config file | Dashboard created with plugin configured with instance principals |
+| --------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| New Plugin release with existing Datasource configuration | Dashboard should load with no action required                  | Dashboard should load with no action required  |
+| New Plugin release with single tenancy Datasource | Dashboard should load with no action required                  | Dashboard should load with no action required   |
+| New Plugin release with multitenancy Datasource   | Dashboard should be modified selecting the tenancy             | Dashboard should be modified selecting the tenancy                |
+
+
+In general, Dashboard does not require to be modified if the dashboard will continue to use the datasource with which it was created and in case it will use a datasource configured in single tenancy mode. If the legacy dashboard will be imported into a multitenancy configured datasource, then the dashboard needs to be modified, including the tenancy to be used, and then saved, as in the following example:
+
+![Tenancy selector](images/multi_tenancy.png)
+
 ## Logging Search Queries
 
 The OCI Logging search query language is powerful and flexible and can return two types of information based on the searched log records:
@@ -192,7 +209,11 @@ Finally click the **Add variable** button on the next page.
 
 ![Grafana-TemplateVars-VariablesScreen-Screenshot](images/Grafana-TemplateVars-VariablesScreen-Screenshot.png)
 
-Add the **region** variable to this page. Enter `region` for the variable in the **Name** field, enter `Region` in the **Label** field, enter an optional description such as `OCI Region selection` in the Description field, choose **Oracle Cloud Infrastructure Logs** from the list of data sources, and in the **Query** field enter `regions()`. Click outside the **Query** field and the list of possible region values should appear in the Preview section at the bottom of the page.
+### Templating in Single Tenancy Mode
+
+If the datasource is configured in **single** tenancy mode then use the following setup:
+
+add the **region** variable to this page. Enter `region` for the variable in the **Name** field, enter `Region` in the **Label** field, enter an optional description such as `OCI Region selection` in the Description field, choose **Oracle Cloud Infrastructure Logs** from the list of data sources, and in the **Query** field enter `regions()`. Click outside the **Query** field and the list of possible region values should appear in the Preview section at the bottom of the page.
 
 ![Grafana-TemplateVars-Regions-Screenshot](images/Grafana-TemplateVars-Regions-Screenshot.png)
 
@@ -222,6 +243,43 @@ If you plan to visualize log-based time series metrics using the `rounddown() fu
 ![Grafana-TemplateVars-IntervalVarConfig-Screenshot](images/Grafana-TemplateVars-IntervalVarConfig-Screenshot.png)
 
 This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
+
+
+
+### Templating in Multi-Tenancy Mode
+
+With the plugin configured to operate with multitenancy support, add the **tenancy** variable to this page. Give the variable the name `tenancy`, choose **OCI** from the list of data sources, and for **Query** enter `tenancies()`.
+
+![Screen Shot 2019-01-11 at 3.10.49 PM](images/multi_templating_tenancies.png)
+
+Add the **region** variable to this page. Give the variable the name `region`, choose **OCI** from the list of data sources, and for **Query** enter `regions($tenancy)`.
+
+![Screen Shot 2019-01-11 at 3.00.28 PM](images/multi_regions.png)
+
+The page will load a preview of values available for that variable. Scroll down and click **Add** to create a template variable for regions.
+
+Repeat the process for the following OCI variables:
+
+
+| Name           | Query                                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------------------- |
+| tenancy        | `tenancies()`                                                                                     |
+| region         | `regions($tenancy)`                                                                               |
+| compartment    | `compartments($tenancy)`                                                                  |
+
+**NOTE**: The use of a compartment template variable within the logging query in a logs data panel is not currently supported.
+
+In Multitenancy mode, it is recommended to click the 'save template variable state' radio button when saving a dashboard using template variables.
+The final list of variables should look like this:
+
+![Logs dashboard variables screenshot](images/multi_templating_vars.png)
+
+If you plan to visualize log-based time series metrics using the `rounddown() function` within logging queries then you optionally can define an additional **interval** template variable that defines an appropriate list of interval values from which a dashboard user can select.
+
+![Grafana-TemplateVars-IntervalVarConfig-Screenshot](images/Grafana-TemplateVars-IntervalVarConfig-Screenshot.png)
+
+This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
+
 
 ### Using Template Variables with OCI Logs Data Panels
 
