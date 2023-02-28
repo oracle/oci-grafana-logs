@@ -198,7 +198,7 @@ By default, if you selected **multi** as **Tenancy mode** you can configure one 
 
 The configured data source will look like the following:
 
-![Datasource Filled](images/multitenancy_configured.png)
+![Datasource Filled](images/logs_multi_filled.png)
 
 Click **Save & Test** to return to the home dashboard.
 
