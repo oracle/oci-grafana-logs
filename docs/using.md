@@ -272,7 +272,7 @@ Repeat the process for the following OCI variables:
 In Multitenancy mode, it is recommended to click the 'save template variable state' radio button when saving a dashboard using template variables.
 The final list of variables should look like this:
 
-![Metrics dashboard variables screenshot](images/multi_templating_vars.png)
+![Logs dashboard variables screenshot](images/multi_templating_vars.png)
 
 If you plan to visualize log-based time series metrics using the `rounddown() function` within logging queries then you optionally can define an additional **interval** template variable that defines an appropriate list of interval values from which a dashboard user can select.
 
