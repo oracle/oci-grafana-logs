@@ -10,6 +10,8 @@ rm -rf ./oci-logs-datasource
 ./node_modules/.bin/grunt
 
 mage --debug -v
+if [ $? -ne 0 ]; then { echo "Unable to find mage" ; exit 1; } fi
+
 #grafana-toolkit plugin:sign
 mv ./dist ./oci-logs-datasource
 tar cvf plugin.tar ./oci-logs-datasource
