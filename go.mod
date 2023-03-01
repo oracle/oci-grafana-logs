@@ -7,4 +7,5 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.31.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1
+	golang.org/x/text v0.7.0 // indirect
 )
