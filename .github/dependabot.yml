@@ -7,7 +7,7 @@ version: 2
 updates:
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/" # Location of package manifests
-    target-branch: "fix-dependabot-security"
+    target-branch: "main"
     schedule:
       interval: "weekly"
     
