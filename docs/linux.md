@@ -13,7 +13,7 @@ Make sure you have access to the [Logging Service](https://docs.oracle.com/en-us
 
 ## Getting OCI Configuration values
 
-To configure OCI Logging Grafana Data Source, you'll need to get the necessary provider and resource settings. Please note that Migrating from version 2.x.x to 3.x.x will require to migrate the existing data source configuration: using version 3.x.x of the plugin with the data source configuration of version 2.x.x is **not possible**. In case you are migrating from previous version 2.x.x of the OCI Logging Grafana Plugin, you can refer to the [**Migration Instructions for Grafana OCI Logging Data Source Settings (User Principals and Single Tenancy mode only)**](migration.md). If you are configuring the plugin to work in Multitenancy Mode, you will need to repeat the following steps for each of the Tenancies you want to configure with the plugin (up to 5 additional Tenancies are supported).
+To configure OCI Logging Grafana Data Source, you'll need to get the necessary provider and resource settings. Please note that Migrating from version 2.x.x to 3.x.x will require migrating the existing data source configuration: using version 3.x.x of the plugin with the data source configuration of version 2.x.x is **not possible**. In case you are migrating from previous version 2.x.x of the OCI Logging Grafana Plugin, you can refer to the [**Migration Instructions for Grafana OCI Logging Data Source Settings (User Principals and Single Tenancy mode only)**](migration.md). If you are configuring the plugin to work in Multitenancy Mode, you will need to repeat the following steps for each of the Tenancies you want to configure with the plugin (up to 5 additional Tenancies are supported).
 
 ### Getting the Region
 
@@ -24,7 +24,7 @@ To get the region for your OCI cloud, follow these steps:
 3. The region is listed next to **Home**.
 
 For details and reference, see: [Regions and Availability Domains](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm#top)
-Make note of the region as you'll need it later to configure your OCI Logging Grafana Data Source.
+Please make note of the region as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 ### Getting the Tenancy OCID
 
@@ -41,7 +41,7 @@ To get the tenancy OCID, follow these steps:
 ![OCI Tenancy](images/oci_tenancy.png)
 
 For details and reference, see: [Where to Get the Tenancy's OCID and User's OCID](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#five)
-Make note of the tenancy OCID as you'll need it later to configure your OCI Logging Grafana Data Source.
+Please make note of the tenancy OCID as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 ### Getting the User OCID
 
@@ -55,7 +55,7 @@ To get the user OCID, follow these steps:
 ![OCI User](images/oci_user.png)
 
 For details and reference, see: [Where to Get the Tenancy's OCID and User's OCID](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#five).
-Make note of the user OCID as you'll need it later to configure your OCI Logging Grafana Data Source.
+Please make note of the user OCID as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 ### Getting the API Key Fingerprint
 
@@ -70,7 +70,7 @@ To get the API key fingerprint, follow these steps:
 ![OCI Fingerprint](images/oci_fingerprint.png)
 
 For details and reference, see: [How to Get the Key's Fingerprint](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#four)
-Make note of the API key fingerprint as you'll need it later to configure your OCI Logging Grafana Data Source.
+Please make note of the API key fingerprint as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 #### Getting the Private Key
 
@@ -86,7 +86,7 @@ To get the private key, follow these steps:
 ![OCI API Key](images/oci_apikey.png)
 
 For details on how to create and configure keys see [How to Generate an API Signing Key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two) and [How to Upload the Public Key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#three).
-Make note of the private key file location as you'll need it later to configure your OCI Logging Grafana Data Source
+Please make note of the private key file location as you'll need it later to configure your OCI Logging Grafana Data Source
 
 ## Configure OCI Identity Policies
 
@@ -96,7 +96,7 @@ In the OCI console under **Identity > Groups** click **Create Group** and create
 
 Under the **Policy** tab click **Create Policy** and create policies allowing the group to read tenancy log objects and content. Add the following policy statements:
 
-- `allow group grafana to read read log-groups in tenancy`
+- `allow group grafana to read log-groups in tenancy`
 - `allow group grafana to read log-content in tenancy`
 - `allow group grafana to read compartments in tenancy`
 
@@ -117,7 +117,7 @@ The plugin will be installed into your Grafana plugins directory, which by defau
 ### Manual installation 
 Alternatively, you can manually download the .tar file and unpack it into your /grafana/plugins directory. To do so, change to the Grafana plugins directory: `cd /usr/local/var/lib/grafana/plugins`. Download the OCI Grafana Plugin: wget `https://github.com/oracle/oci-grafana-logs/releases/latest/download/plugin.tar`. Create a directory and install the plugin: `mkdir oci && tar -C oci -xvf plugin.tar` and then remove the tarball: `rm plugin.tar`. 
 
->  **Additional step for Grafana 8**. Open the grafana configuration  *grafana.ini* file and add the `allow_loading_unsigned_plugins = "oci-logs-datasource"`in the *plugins* section.
+>  **Additional step for Grafana 8**. Open the grafana configuration  *grafana.ini* file and add the `allow_loading_unsigned_plugins = "oci-logs-datasource"` in the *plugins* section.
 
 *Example* 
 ```
@@ -202,15 +202,15 @@ The configured data source will look like the following:
 
 Click **Save & Test** to return to the home dashboard.
 
-After the initial configuration, you can modify the datasource by adding a new tenancy by clicking on the **Add another Tenancy** checkbox and filling in the additional credentials. You can also disable a configured Tenancy leaving ampty the **Profile Name** as in this screenshot:
+After the initial configuration, you can modify the datasource by adding a new tenancy by clicking on the **Add another Tenancy** checkbox and filling in the additional credentials. You can also disable a configured Tenancy leaving empty the **Profile Name** as in this screenshot:
 
 ![Tenancy Disabled](images/multi_disable.png)
 
 
 
-On the Oracle Cloud Infrastructure Logs data source configuration page, fill in your **Tenancy OCID**, **Default Region**, and **Environment**. Your **Default region** is the same as your home region listed in the **Tenancy Details** page. For **Environment** choose **OCI Instance**. 
+On the Oracle Cloud Infrastructure Logs data source configuration page, fill in your **Tenancy OCID**, **Default Region**, and **Environment**. Your **Default region** is the same as your home region listed on the **Tenancy Details** page. For **Environment** choose **OCI Instance**. 
 
-Click **Save & Test** to test the configuration of the Logs data source. Click the Dashboard icon in the left hand navigation menu to return to the home dashboard.
+Click **Save & Test** to test the configuration of the Logs data source. Click the Dashboard icon in the left-hand navigation menu to return to the home dashboard.
 
 ## Next Steps
 
