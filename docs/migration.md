@@ -16,7 +16,7 @@ Additionally, we will copy the ID key stored in a file (whose path is stored in 
 Before starting the migration process, please make sure you have the following:
 
 * Access to the Grafana instance where the data source settings will be updated.
-* The `.oci/config` file containing the variables to be migrated (`user`,`fingerprint`,`tenancy`,`region`) and the ID key (`key_file`).
+* The `.oci/config` file containing the variables to be migrated (`user`, `fingerprint`, `tenancy`, `region`) and the ID key (`key_file`).
 
 ### Steps
 
@@ -30,11 +30,11 @@ Before starting the migration process, please make sure you have the following:
    * `User OCID` - OCID of the user calling the API. Update it with the content of variables `user` from the `.oci/config` file.
    * `Tenancy OCID` - OCID of your tenancy. Update it with the content of variables `tenancy` from the `.oci/config` from the `.oci/config` file.
    * `Fingerprint` - Fingerprint for the key pair being used. Update it with the content of variables `fingerprint` from the `.oci/config` file.
-   * `Private Key` - The contents of the private key file. Update it with the content of the file stored at the path specified in the `key_file` variable in `.oci/config` file.
+   * `Private Key` - The contents of the private key file. Update it with the content of the file stored at the path specified in the `key_file` variable in the `.oci/config` file.
 5. Save the changes to the data source settings. Configuration parameters will look then like the following:
 ![Datasource Filled](images/datasource_single_full.png)
 
 
 ### Conclusion
 
-By following these steps, you should have successfully migrated the data from the `.oci/config` file to the Grafana OCI Logging data source settings (User Principals and Single Tenancy mode only) for the specified variables and the ID key. Please note that the process cannot be reverted, and rollback to previous configuration with the config file is not possible. Also, once migrated to version 4.x.x of the plugin, moving back to version 3.x.x is not possible.
+By following these steps, you should have successfully migrated the data from the `.oci/config` file to the Grafana OCI Logging data source settings (User Principals and Single Tenancy mode only) for the specified variables and the ID key. Please note that the process cannot be reverted, and rollback to the previous configuration with the config file is not possible. Also, once migrated to version 4.x.x of the plugin, moving back to version 3.x.x is not possible.
