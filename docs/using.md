@@ -315,7 +315,7 @@ If you plan to visualize log-based time series metrics using the `rounddown() fu
 
 ![Grafana-TemplateVars-IntervalVarConfig-Screenshot](images/Grafana-TemplateVars-IntervalVarConfig-Screenshot.png)
 
-This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
+This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example, the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
 
 
 ### Using Template Variables with OCI Logs Data Panels
