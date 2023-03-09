@@ -231,14 +231,10 @@ export default class OCIDatasource {
     }    
 
     if (compartmentQuery){
-      console.log(this.tenancymode)
       if (this.tenancymode === "multitenancy") {
         let target = {
           tenancy: removeQuotes(this.getVariableValue(compartmentQuery[1])),
-        };
-        console.log("compartmentQuery")
-        console.log(target)      
-        console.log("end compartmentQuery")        
+        };       
         return this.getCompartments(target)
           .then((compartments) => {
             return compartments.map((c) => ({ text: c.text, value: c.text }));
@@ -249,10 +245,7 @@ export default class OCIDatasource {
       } else {
           let target = {
             tenancy: DEFAULT_TENANCY,
-          };
-          console.log("compartmentQuery")
-          console.log(target)      
-          console.log("end compartmentQuery")        
+          };       
           return this.getCompartments(target)
             .then((compartments) => {
               return compartments.map((c) => ({ text: c.text, value: c.text }));
