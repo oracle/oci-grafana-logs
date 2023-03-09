@@ -1677,7 +1677,7 @@ func (o *OCIDatasource) searchLogsResponse(ctx context.Context, req *backend.Que
 }
 
 /*
-Function generates an array  containing OCI configuration (.oci/config) in the following format:
+Function generates an array  containing OCI tenancy informationin the following format:
 <section label/TenancyOCID>
 */
 
