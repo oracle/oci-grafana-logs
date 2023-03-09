@@ -271,12 +271,6 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 
 	queryType := ts.QueryType
 
-	o.logger.Debug("QueryData")
-	o.logger.Debug(ts.Environment)
-	o.logger.Debug(ts.TenancyMode)
-	o.logger.Debug(ts.Region)
-	o.logger.Debug(ts.Tenancy)
-
 	if ts.TenancyMode == "multitenancy" {
 		takey = ts.Tenancy
 	} else {
@@ -333,8 +327,6 @@ func (o *OCIDatasource) testResponse(ctx context.Context, req *backend.QueryData
 		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
 		if ts.Environment == "local" {
 			queri := `search "` + tenancyocid + `" | sort by datetime desc`
-			o.logger.Debug(queri)
-			o.logger.Debug("/test")
 			t := time.Now()
 			t2 := t.Add(-time.Minute * 30)
 			start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
@@ -381,7 +373,6 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 
 	switch environment {
 	case "local":
-		o.logger.Debug("Environment: " + environment)
 		q, err := OCILoadSettings(req)
 		if err != nil {
 			return errors.New("Error Loading config settings")
@@ -1086,18 +1077,8 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context, searchLogsReq Gra
 
 		o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
 
-		o.logger.Debug("processLogMetrics")
-		o.logger.Debug(searchLogsReq.Region)
-		o.logger.Debug(searchQuery)
-		o.logger.Debug(takey)
-		o.logger.Debug(searchLogsReq.Tenancy)
-		o.logger.Debug(searchLogsReq.SearchQuery)
-
 		// Perform the logs search operation
 		res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
-
-		o.logger.Debug("/processLogMetrics")
-
 		if err != nil {
 			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
 				queryPanelId, queryRefId, err))

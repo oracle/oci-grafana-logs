@@ -24,7 +24,6 @@ else
   fi  
 fi
 
-#grafana-toolkit plugin:sign
 mv ./dist ./oci-logs-datasource
 tar cvf plugin.tar ./oci-logs-datasource
 zip -r oci-logs-datasource ./oci-logs-datasource
