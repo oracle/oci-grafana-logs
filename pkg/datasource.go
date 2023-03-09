@@ -456,7 +456,7 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			o.logger.Error("Error with config:" + SingleTenancyKey)
-			return errors.New(fmt.Sprint("error with client", spew.Sdump(configProvider), err.Error()))
+			return errors.New("Error creating loggingManagement client")
 		}
 		identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 		if err != nil {
@@ -477,13 +477,6 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 	if err := json.Unmarshal(query.JSON, &ts); err != nil {
 		return &backend.QueryDataResponse{}, err
 	}
-
-	log.DefaultLogger.Debug("compartmentsResponse")
-	log.DefaultLogger.Debug(ts.QueryType)
-	log.DefaultLogger.Debug(ts.Region)
-	log.DefaultLogger.Debug(ts.TenancyMode)
-	log.DefaultLogger.Debug(ts.Tenancy)
-	log.DefaultLogger.Debug(takey)
 
 	var tenancyocid string
 	var tenancyErr error
@@ -507,9 +500,6 @@ func (o *OCIDatasource) compartmentsResponse(ctx context.Context, req *backend.Q
 	if regErr != nil {
 		return nil, errors.Wrap(regErr, "error fetching TenancyOCID")
 	}
-
-	log.DefaultLogger.Debug(tenancyocid)
-	log.DefaultLogger.Debug("/compartmentsResponse")
 
 	if o.timeCacheUpdated.IsZero() || time.Now().Sub(o.timeCacheUpdated) > cacheRefreshTime {
 		m, err := o.getCompartments(ctx, tenancyocid, regio, takey)
