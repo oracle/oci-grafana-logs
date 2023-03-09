@@ -9,10 +9,21 @@ fi
 rm -rf ./oci-logs-datasource
 ./node_modules/.bin/grunt
 
-mage --debug -v
 if [ $? -ne 0 ]; then { echo "Unable to find mage" ; exit 1; } fi
+mage --debug -v
 
-#grafana-toolkit plugin:sign
+cp LICENSE.txt ./dist/LICENSE
+
+if [ -z $1 ]; then
+  echo "sign argument not specified, continuing without sign the plugin"
+else
+  if [ $1 = "sign" ]; then
+    npx @grafana/sign-plugin
+  else
+    echo "Usage: ./build.sh <sign>"
+  fi  
+fi
+
 mv ./dist ./oci-logs-datasource
 tar cvf plugin.tar ./oci-logs-datasource
 zip -r oci-logs-datasource ./oci-logs-datasource
