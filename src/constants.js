@@ -14,7 +14,21 @@ export const aggregations = ['count()', 'max()', 'mean()', 'min()', 'rate()', 's
 export const windows = [AUTO, '1m', '5m', '1h']
 export const resolutions = [AUTO, '1m', '5m', '1h']
 export const environments = ['local', 'OCI Instance']
+export const tenancymodes = ['single', 'multitenancy']
 
-export const compartmentsQueryRegex = /^compartments\(\)\s*/
-export const regionsQueryRegex = /^regions\(\)\s*/
+export const compartmentsQueryRegex = /^compartments\(\s*(\".+\"|\'.+\'|\$\w+)\s*\)|^compartments\(\)\s*/;
+export const regionsQueryRegex = /^regions\(\s*(\".+\"|\'.+\'|\$\w+)\s*\)|^regions\(\)\s*/;
+export const tenanciesQueryRegex = /^tenancies\(\)\s*/;
 
+export const removeQuotes = str => {
+    if (!str) return str;
+
+    let res = str;
+    if (str.startsWith("'") || str.startsWith('"')) {
+        res = res.slice(1);
+    }
+    if (str.endsWith("'") || str.endsWith('"')) {
+        res = res.slice(0, res.length - 1);
+    }
+    return res;
+}

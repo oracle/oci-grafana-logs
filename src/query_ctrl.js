@@ -6,11 +6,13 @@ import { QueryCtrl } from "app/plugins/sdk";
 import "./css/query-editor.css!";
 import {
   regionsQueryRegex,
+  tenanciesQueryRegex,
   compartmentsQueryRegex,
 } from "./constants";
 
 export const SELECT_PLACEHOLDERS = {
   COMPARTMENT: "select compartment",
+  TENANCY: 'select tenancy config',
   REGION: "select region",
 };
 
@@ -22,27 +24,38 @@ export class OCIDatasourceQueryCtrl extends QueryCtrl {
     this.uiSegmentSrv = uiSegmentSrv;
 
     this.target.region = this.target.region || SELECT_PLACEHOLDERS.REGION;
-    this.target.compartment =
-      this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
+    this.target.compartment = this.target.compartment || SELECT_PLACEHOLDERS.COMPARTMENT;
+    this.target.tenancy = this.target.tenancy || SELECT_PLACEHOLDERS.TENANCY;
     this.target.searchQuery = this.target.searchQuery || "";
+    this.target.tenancymode = this.datasource.tenancymode || ''
+
+    if (this.datasource.tenancymode === "multitenancy") {
+      this.target.MultiTenancy = true;
+    }    
   }
 
   // ****************************** Options **********************************
 
+  getTenancies() {
+    return this.datasource.getTenancies().then(tenancies => {
+      return this.appendVariables([ ...tenancies], tenanciesQueryRegex);
+    });
+  }
+
   getRegions() {
-    return this.datasource.getRegions().then((regions) => {
+    return this.datasource.getRegions(this.target).then((regions) => {
       return this.appendVariables([...regions], regionsQueryRegex);
     });
   }
 
   getCompartments() {
-    return this.datasource.getCompartments().then((compartments) => {
+    return this.datasource.getCompartments(this.target).then((compartments) => {
       return this.appendVariables([...compartments], compartmentsQueryRegex);
     });
   }
 
-  appendVariables(options, varQeueryRegex) {
-    const vars = this.datasource.getVariables(varQeueryRegex) || [];
+  appendVariables(options, varQueryRegex) {
+    const vars = this.datasource.getVariables(varQueryRegex) || [];
     vars.forEach((value) => {
       options.unshift({ value, text: value });
     });
