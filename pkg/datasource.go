@@ -117,36 +117,6 @@ type TenancyAccess struct {
 	config                  common.ConfigurationProvider
 }
 
-// NewOCIConfigFile - constructor
-func NewOCIConfigFile() *OCIConfigFile {
-	return &OCIConfigFile{
-		tenancyocid: make(map[string]string),
-		region:      make(map[string]string),
-		user:        make(map[string]string),
-		fingerprint: make(map[string]string),
-		privkey:     make(map[string]string),
-		privkeypass: make(map[string]*string),
-		logger:      log.DefaultLogger,
-	}
-}
-
-type OCIConfigFile struct {
-	tenancyocid map[string]string
-	region      map[string]string
-	user        map[string]string
-	fingerprint map[string]string
-	privkey     map[string]string
-	privkeypass map[string]*string
-	logger      log.Logger
-}
-
-type TenancyAccess struct {
-	loggingSearchClient     loggingsearch.LogSearchClient
-	loggingManagementClient logging.LoggingManagementClient
-	identityClient          identity.IdentityClient
-	config                  common.ConfigurationProvider
-}
-
 // GrafanaOCIRequest - regions Query Request comning in from the front end
 type GrafanaOCIRequest struct {
 	GrafanaCommonRequest
@@ -447,11 +417,6 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		if err != nil {
 			o.logger.Error("Error with config:" + SingleTenancyKey)
 			return errors.New("error with loggingSearchClient")
-		}
-		loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
-		if err != nil {
-			o.logger.Error("Error with config:" + SingleTenancyKey)
-			return errors.New("Error creating loggingManagement client")
 		}
 		loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
 		if err != nil {
@@ -1785,18 +1750,4 @@ func OCILoadSettings(req backend.DataSourceInstanceSettings) (*OCIConfigFile, er
 		}
 	}
 	return q, nil
-}
-
-/*
-Function returns the path for the .oci/config file
-*/
-func OCIConfigPath() string {
-	var oci_config_file string
-	homedir := "/usr/share/grafana"
-	if _, ok := os.LookupEnv("OCI_CLI_CONFIG_FILE"); ok {
-		oci_config_file = os.Getenv("OCI_CLI_CONFIG_FILE")
-	} else {
-		oci_config_file = homedir + "/.oci/config"
-	}
-	return oci_config_file
 }
