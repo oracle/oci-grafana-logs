@@ -281,43 +281,6 @@ If you plan to visualize log-based time series metrics using the `rounddown() fu
 This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example, the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
 
 
-
-
-### Templating in Multi-Tenancy Mode
-
-With the plugin configured to operate with multitenancy support, add the **tenancy** variable to this page. Give the variable the name `tenancy`, choose **OCI** from the list of data sources, and for **Query** enter `tenancies()`.
-
-![Screen Shot 2019-01-11 at 3.10.49 PM](images/multi_templating_tenancies.png)
-
-Add the **region** variable to this page. Give the variable the name `region`, choose **OCI** from the list of data sources, and for **Query** enter `regions($tenancy)`.
-
-![Screen Shot 2019-01-11 at 3.00.28 PM](images/multi_regions.png)
-
-The page will load a preview of values available for that variable. Scroll down and click **Add** to create a template variable for regions.
-
-Repeat the process for the following OCI variables:
-
-
-| Name           | Query                                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------------------- |
-| tenancy        | `tenancies()`                                                                                     |
-| region         | `regions($tenancy)`                                                                               |
-| compartment    | `compartments($tenancy)`                                                                  |
-
-**NOTE**: The use of a compartment template variable within the logging query in a logs data panel is not currently supported.
-
-In Multitenancy mode, it is recommended to click the 'save template variable state' radio button when saving a dashboard using template variables.
-The final list of variables should look like this:
-
-![Logs dashboard variables screenshot](images/multi_templating_vars.png)
-
-If you plan to visualize log-based time series metrics using the `rounddown() function` within logging queries then you optionally can define an additional **interval** template variable that defines an appropriate list of interval values from which a dashboard user can select.
-
-![Grafana-TemplateVars-IntervalVarConfig-Screenshot](images/Grafana-TemplateVars-IntervalVarConfig-Screenshot.png)
-
-This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example, the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
-
-
 ### Using Template Variables with OCI Logs Data Panels
 
 Once a template variable is defined for the dashboard you can reference it using a template variable placeholder, `$<template variable name>` within the data panels on the dashboard. Consider the OCI Logs data panel shown in the following screenshot which currently has hard-coded values for the OCI region and the time interval used for the query.

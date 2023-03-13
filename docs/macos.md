@@ -1,4 +1,4 @@
-z# Local Installation (Linux) - Oracle Cloud Infrastructure Data Source for Grafana 
+# Local Installation (Linux) - Oracle Cloud Infrastructure Data Source for Grafana 
 
 ## Background
 
@@ -205,4 +205,3 @@ Click **Save & Test** to test the configuration of the Logs data source. Click t
 ## Next Steps
 
 Check out how to use the newly installed and configured plugin in our [Using Grafana with Oracle Cloud Infrastructure Data Source](using.md) walkthrough. 
-
