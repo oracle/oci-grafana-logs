@@ -78,7 +78,7 @@ Oracle Cloud Infrastructure services. Add the following policy statements:
 
 ## Note 1
 
-The OCI Logs plugin does not support the integration with Grafana Cloud at the moment. 
+The OCI Logs plugin supports the integration with Grafana Cloud with Data Source **Environment** configured as **local**. See [this document](https://github.com/oracle/oci-grafana-logs/blob/master/docs/linux.md) for additional information.
 
 ## Documentation
 
