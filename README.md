@@ -18,11 +18,18 @@ For custom logs from your application, see [Custom Logging on OCI][2].
 We will discuss two different Grafana IAM configurations that needs to be in
 place, for Grafana to fetch the logs from Oracle Cloud Logging Service.
 
-### For local/dev box environment
+### For local/dev box environment and Grafana Cloud
 
-#### Get OCI Configuration values
+#### Installation
 
-Get the necessary provider and resource settings, as described in this section [Getting OCI Configuration values](https://github.com/oracle/oci-grafana-logs/blob/main/docs/linux.md#getting-oci-configuration-values)
+Depending on your installation scenario you can use the following guides:
+
+* Install Grafana and the OCI Metrics plugin on a Linux host using [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/linux.md).
+
+* Install Grafana and the OCI Metrics plugin on Grafana Cloud using [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/grafanacloud.md).
+
+* Install Grafana and the OCI Metrics plugin on a MacOS host using [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/macos.md).
+
 
 #### Configure OCI Identity Policies
 
@@ -76,9 +83,20 @@ Oracle Cloud Infrastructure services. Add the following policy statements:
 
 ![alt text](https://github.com/oracle/oci-grafana-logs/blob/main/docs/images/dgPolicy.png?raw=true)
 
+#### Installation
+
+Depending on your installation scenario you can use the following guides:
+
+* Install Grafana and the OCI Metrics plugin on a virtual machine in Oracle Cloud Infrastructure using [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/linuxoci.md).
+
+* Install Grafana and the OCI Metrics plugin on a virtual machine in Oracle Cloud Infrastructure using Terraform using [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/terraform.md).
+
+* Install Grafana and the OCI Metrics plugin on Kubernetes in Oracle Cloud Infrastructure using [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/kubernetes.md)
+
+
 ## Note 1
 
-The OCI Logs plugin supports the integration with Grafana Cloud with Data Source **Environment** configured as **local**. See [this document](https://github.com/oracle/oci-grafana-logs/blob/master/docs/linux.md) for additional information.
+The OCI Logs plugin supports the integration with Grafana Cloud with Data Source **Environment** configured as **local**. See [this document](https://github.com/oracle/oci-grafana-logs/blob/master/docs/grafanacloud.md) for additional information.
 
 ## Documentation
 
