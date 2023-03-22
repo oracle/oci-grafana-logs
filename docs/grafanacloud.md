@@ -2,9 +2,9 @@
 
 ## Background
 
-Grafana is a popular technology that makes it easy to visualize logs and Logging. The [Oracle Cloud Infrastructure Logs Data Source for Grafana](https://grafana.com/grafana/plugins/oci-logs-datasource/) is used to extend Grafana by adding OCI Logging as a data source. The plugin enables you to visualize log records (service, audit, and custom) and Logging derived from log records stored in the OCI Logging service.
+Grafana is a popular technology that makes it easy to visualize logs. The [Oracle Cloud Infrastructure Logs Data Source for Grafana](https://grafana.com/grafana/plugins/oci-logs-datasource/) is used to extend Grafana by adding OCI Logging as a data source. The plugin enables you to visualize log records (service, audit, and custom) and Logging derived from log records stored in the OCI Logging service.
 
-This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Logs Data Source for Grafana on a local Linux server. 
+This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Logs Data Source in Grafana Cloud. 
 
 Make sure you have access to the [Logging Service](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/loggingoverview.htm) and that the logs you want to observe and analyze are being collected in your tenancy. See the OCI Logging documentation for information on how to collect or access:
 * [Logs from your compute instances](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/agent_management.htm)
