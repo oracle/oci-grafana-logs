@@ -1,10 +1,10 @@
-# Local Installation (Linux) - Oracle Cloud Infrastructure Data Source for Grafana 
+# Grafana Cloud - Oracle Cloud Infrastructure Data Source for Grafana 
 
 ## Background
 
-Grafana is a popular technology that makes it easy to visualize logs and metrics. The [Oracle Cloud Infrastructure Logs Data Source for Grafana](https://grafana.com/grafana/plugins/oci-logs-datasource/) is used to extend Grafana by adding OCI Logging as a data source. The plugin enables you to visualize log records (service, audit, and custom) and metrics derived from log records stored in the OCI Logging service.
+Grafana is a popular technology that makes it easy to visualize logs. The [Oracle Cloud Infrastructure Logs Data Source for Grafana](https://grafana.com/grafana/plugins/oci-logs-datasource/) is used to extend Grafana by adding OCI Logging as a data source. The plugin enables you to visualize log records (service, audit, and custom) and Logging derived from log records stored in the OCI Logging service.
 
-This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Logs Data Source for Grafana on a local Linux server. 
+This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Logs Data Source in Grafana Cloud. 
 
 Make sure you have access to the [Logging Service](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/loggingoverview.htm) and that the logs you want to observe and analyze are being collected in your tenancy. See the OCI Logging documentation for information on how to collect or access:
 * [Logs from your compute instances](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/agent_management.htm)
@@ -94,68 +94,24 @@ Under the **Policy** tab click **Create Policy** and create policies allowing th
 
 The first two policies can also be limited to specific compartments in your tenancy by adding additional qualifiers to the policy statements.
 
-## Install Grafana and the OCI Logs Data Source for Grafana Plugin 
+## Install Grafana and the OCI Logging Plugin for Grafana Cloud
 
-To [install the OCI Logs data source](https://grafana.com/plugins/oci-logs-datasource/installation) make sure you are running [Grafana 8.0](https://grafana.com/get) or later. Use the [grafana-cli tool](http://docs.grafana.org/plugins/installation/) to install the Oracle Cloud Infrastructure Logs Data Source for Grafana from the command line:
+To [install OCI Logging Plugin](https://grafana.com/grafana/plugins/oci-Logging-datasource/) on Grafana Cloud you need a valid [Grafana Cloud Account](https://grafana.com/products/cloud/).
 
-```
-grafana-cli plugins install oci-logs-datasource
-```
+Log in to your Grafana Cloud Account and go to the **Administration** section:
+![Administration](images/grafanacloud-administration.png)
 
-The plugin will be installed into your grafana plugins directory, which by default is located at /var/lib/grafana/plugins. [Here is more information on the CLI tool](http://docs.grafana.org/plugins/installation/).
+Select **Plugins** and search for **oracle**:
+![Plugins](images/grafanacloud-plugins.png)
 
-### Manual installation 
-Alternatively, you can manually download the .tar file and unpack it into your /grafana/plugins directory. To do so, change to the Grafana plugins directory: `cd /usr/local/var/lib/grafana/plugins`. Download the OCI Grafana Plugin: wget `https://github.com/oracle/oci-grafana-logs/releases/latest/download/plugin.tar`. Create a directory and install the plugin: `mkdir oci && tar -C oci -xvf plugin.tar` and then remove the tarball: `rm plugin.tar`. 
+Click on **Oracle Cloud Infrastructure Logging**. You will see the installation option for the plugin. Choose **install via grafana.con**:
+![Install](images/grafanacloud-installlogs.png)
 
->  **Additional step for Grafana 8**. Open the grafana configuration  *grafana.ini* file and add the `allow_loading_unsigned_plugins = "oci-logs-datasource"` in the *plugins* section.
-
-*Example* 
-```
-    [plugins]
-    ;enable_alpha = false
-    ;app_tls_skip_verify_insecure = false
-    allow_loading_unsigned_plugins = "oci-logs-datasource"
-```
-
-To start the Grafana server, run: `sudo systemctl start grafana-server`. 
+You will be forwarded to the grafana.com website where you can proceed with the one-click installation. Make sure you will choose the correct Grafana Cloud account (in this example the account is named **Oracle** yours will be different) and follow the instruction on this web page to complete the plugin installation:
+![One-click](images/grafanacloud-oneclick.png)
 
 
 ## Configure Grafana
-
-The next step is to configure the plugin. Navigate to the Grafana homepage at `http://localhost:3000`
-
-![GrafanaLogin-Screenshot](images/GrafanaLogin-Screenshot.png)
-
-Log in with the default username `admin` and the password `admin`. You will be prompted to change your password. Click **Skip** or **Save** to continue. 
-
-![Grafana-ChangeDefaultAdminPassword-Screenshot](images/Grafana-ChangeDefaultAdminPassword-Screenshot.png)
-
-On the Home Dashboard click the gear icon on the left side of the page and then select **Data sources** from the Configuration menu.
-
-![GrafanaHomePage-Screenshot](images/GrafanaHomePage-Screenshot.png)
-
-Click **Add data source**.
-
-![Grafana-AddDataSource-Screenshot](images/Grafana-AddDataSource-Screenshot.png)
-
-In the search box at the top of the resulting page, enter 'oracle'.
-
-![Grafana-DataSourceSearch-Screenshot](images/Grafana-DataSourceSearch-Screenshot.png)
-
- Click the **Oracle Cloud Infrastructure Logs** box to select it as your data source type.
-
-![Grafana-SelectOCILogsDataSource-Screenshot](images/Grafana-SelectOCILogsDataSource-Screenshot.png)
-
-
-This Configuration screen will appear:
-
-![Datasource Empty](images/datasource_single_empty.png)
-
-For **Environment** choose **local** and then choose between **single** or **multitenancy** as **Tenancy mode**.
-You can then choose between two different modes as **Tenancy mode**:
-
-* **single**: to use a single specific Tenancy
-* **multitenancy**: to use multiple tenancies
 
 ### Configure Plugin in Single Tenancy Mode
 If you selected **single** as **Tenancy mode** then fill in the following credentials:
