@@ -89,6 +89,7 @@ Under the **Policy** tab click **Create Policy** and create policies allowing th
 - `allow group grafana to read log-groups in tenancy`
 - `allow group grafana to read log-content in tenancy`
 - `allow group grafana to read compartments in tenancy`
+- `allow group grafana to read audit-events in tenancy`
 
 ![OCIConsole-GroupLogsPolicyCreate-Screenshot](images/OCIConsole-GroupLogsPolicyCreate-Screenshot.png)
 
