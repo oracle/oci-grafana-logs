@@ -24,6 +24,7 @@ Next, create a [policy](https://docs.cloud.oracle.com/iaas/Content/Identity/Conc
 * `allow dynamicgroup grafana to read read log-groups in tenancy`
 * `allow dynamicgroup grafana to read log-content in tenancy`
 * `allow dynamicgroup grafana to read compartments in tenancy`
+* `allow dynamicgroup grafana to read audit-events in tenancy`
 
    ![OCIConsole-PoliciesList-Screenshot](images/OCIConsole-PoliciesList-Screenshot.png)
 
