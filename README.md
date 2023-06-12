@@ -111,8 +111,7 @@ Issues and questions about this plugin can be posted
 
 ## Contributing
 
-This project welcomes contributions from the community. Before submitting a pull
-request, please [review our contribution guide](https://github.com/oracle/oci-grafana-logs/blob/main/CONTRIBUTING.md).
+This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md)
 
 ## Security
 
@@ -121,7 +120,7 @@ vulnerability disclosure process.
 
 ## License
 
-Copyright (c) 2022 Oracle and/or its affiliates.
+Copyright (c) 2022, 2023 Oracle and/or its affiliates.
 
 Released under the Universal Permissive License v1.0 as shown at
 <https://oss.oracle.com/licenses/upl/>.
