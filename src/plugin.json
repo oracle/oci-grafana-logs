@@ -1,15 +1,14 @@
 {
-  "name": "Oracle Cloud Infrastructure Logs",
+  "name": "Oracle Cloud Infrastructure Metrics",
   "id": "oci-logs-datasource",
   "type": "datasource",
   "metrics": true,
   "annotations": false,
   "alerting": false,
   "backend": true,
-  "executable": "oci-logs-plugin",
-  "logs": true,
+  "executable": "oci-metrics-plugin",
   "info": {
-    "description": "Oracle Cloud Infrastructure Logs Data Source for Grafana",
+    "description": "Oracle Cloud Infrastructure Metrics Data Source for Grafana",
     "author": {
       "name": "Oracle"
     },
@@ -18,23 +17,26 @@
       "large": "img/Oracle-cloud.svg"
     },
     "links": [
-      {"name": "GitHub", "url": "https://github.com/oracle/oci-grafana-logs"},
-      {"name": "UPL", "url": "https://oss.oracle.com/licenses/upl"}
+      {
+        "name": "GitHub",
+        "url": "https://github.com/oracle/oci-grafana-metrics"
+      },
+      { "name": "UPL", "url": "https://oss.oracle.com/licenses/upl" }
     ],
-    "version": "3.0.0",
-    "updated": "2023-03-01",
+    "version": "5.0.0",
+    "updated": "2023-09-01",
     "screenshots":[
       {
-        "name":"OCI Logs Dashboard",
-        "path":"img/OCI_Logs.png"
+        "name":"OCI Metrics Dashboard",
+        "path":"img/OCI_Metrics.png"
       }
     ],
     "keywords": [
-      "oci", "logs", "oracle"
+      "oci", "oracle", "metrics"
     ]
   },
   "dependencies": {
     "grafanaDependency": ">=8.0.0",
-    "plugins": []
+    "plugins": [ ]
   }
 }
