@@ -40,15 +40,17 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 			return errors.New("Multitenancy mode using instance principals is not implemented yet.")
 		}
 		tenancyocid, tenancyErr := o.tenancyAccess[key].config.TenancyOCID()
-		if tenancyErr != nil {
+		backend.Logger.Debug("client", "tenancyocid", tenancyocid)
 			return errors.Wrap(tenancyErr, "error fetching TenancyOCID")
 		}
 
 		regio, regErr := o.tenancyAccess[key].config.Region()
+		backend.Logger.Debug("client", "regio", regio)
 		if regErr != nil {
 			return errors.Wrap(regErr, "error fetching Region")
 		}
 		reg = common.StringToRegion(regio)
+		backend.Logger.Debug("client", "reg", reg)
 		o.tenancyAccess[key].monitoringClient.SetRegion(string(reg))
 
 		// Test Tenancy OCID first

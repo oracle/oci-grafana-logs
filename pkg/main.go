@@ -17,6 +17,7 @@ import (
 const OCI_PLUGIN_ID = "oci-logs-datasource"
 
 func main() {
+	backend.Logger.Error("Main.go")
 	if err := datasource.Manage(OCI_PLUGIN_ID, plugin.NewOCIDatasource, datasource.ManageOpts{}); err != nil {
 		backend.Logger.Error(err.Error())
 		os.Exit(1)

@@ -151,6 +151,7 @@ func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt
 	backend.Logger.Debug("plugin", "dsSettings.TenancyMode", "dsSettings.TenancyMode: "+dsSettings.TenancyMode)
 
 	if len(o.tenancyAccess) == 0 {
+
 		err := o.getConfigProvider(dsSettings.Environment, dsSettings.TenancyMode, settings)
 		if err != nil {
 			return nil, errors.New("broken environment")
@@ -201,7 +202,7 @@ func (o *OCIDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealt
 	backend.Logger.Debug("plugin", "CheckHealth", req.PluginContext.PluginID)
 
 	hRes := &backend.CheckHealthResult{}
-
+	backend.Logger.Error("plugin", "CheckHealth", "In Health Check")
 	if err := o.TestConnectivity(ctx); err != nil {
 		hRes.Status = backend.HealthStatusError
 		hRes.Message = err.Error()
@@ -309,6 +310,11 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			if block == nil {
 				return errors.New("error with Private Key")
 			}
+			log.DefaultLogger.Error("q.tenancyocid[key]: " + q.tenancyocid[key])
+			log.DefaultLogger.Error("q.user[key]: " + q.user[key])
+			log.DefaultLogger.Error("q.region[key]: " + q.region[key])
+			log.DefaultLogger.Error("q.fingerprint[key]: " + q.fingerprint[key])
+			log.DefaultLogger.Error("q.privkey[key]: " + q.privkey[key])
 			configProvider = common.NewRawConfigurationProvider(q.tenancyocid[key], q.user[key], q.region[key], q.fingerprint[key], q.privkey[key], q.privkeypass[key])
 
 			// creating oci monitoring client
