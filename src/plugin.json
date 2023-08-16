@@ -1,5 +1,5 @@
 {
-  "name": "Oracle CLoud Infrastructure Logs",
+  "name": "Oracle Cloud Infrastructure Logs",
   "id": "oci-logs-datasource",
   "type": "datasource",
   "metrics": true,
