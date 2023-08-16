@@ -12,6 +12,9 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/identity"
 	"github.com/oracle/oci-go-sdk/v65/monitoring"
+
+	//"github.com/oracle/oci-go-sdk/v65/logging"
+	// "github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/constants"
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
 	"github.com/pkg/errors"
@@ -24,7 +27,7 @@ type metricDataBank struct {
 
 // TestConnectivity Check the OCI data source test request in Grafana's Datasource configuration UI.
 func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
-	backend.Logger.Debug("client", "TestConnectivity", "testing the OCI connectivity")
+	backend.Logger.Error("client", "TestConnectivity", "testing the OCI connectivity")
 
 	var reg common.Region
 	var testResult bool
@@ -32,32 +35,38 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 
 	tenv := o.settings.Environment
 	tmode := o.settings.TenancyMode
-
+	backend.Logger.Error("client", "tenv", tenv)
+	backend.Logger.Error("client", "tmode", tmode)
 	for key, _ := range o.tenancyAccess {
 		testResult = false
-
+		backend.Logger.Error("client", "key", key)
 		if tmode == "multitenancy" && tenv == "OCI Instance" {
 			return errors.New("Multitenancy mode using instance principals is not implemented yet.")
 		}
 		tenancyocid, tenancyErr := o.tenancyAccess[key].config.TenancyOCID()
-		backend.Logger.Debug("client", "tenancyocid", tenancyocid)
+		backend.Logger.Error("client", "tenancyocid", tenancyocid)
+		backend.Logger.Error("client", "tenancyErr", tenancyErr)
+		if tenancyErr != nil {
 			return errors.Wrap(tenancyErr, "error fetching TenancyOCID")
 		}
 
 		regio, regErr := o.tenancyAccess[key].config.Region()
-		backend.Logger.Debug("client", "regio", regio)
+		backend.Logger.Error("client", "regio", regio)
 		if regErr != nil {
 			return errors.Wrap(regErr, "error fetching Region")
 		}
 		reg = common.StringToRegion(regio)
-		backend.Logger.Debug("client", "reg", reg)
+		backend.Logger.Error("client", "reg", reg)
 		o.tenancyAccess[key].monitoringClient.SetRegion(string(reg))
 
 		// Test Tenancy OCID first
-		backend.Logger.Debug(key, "Testing Tenancy OCID", tenancyocid)
+		backend.Logger.Error(key, "Testing Tenancy OCID", tenancyocid)
 		listMetrics := monitoring.ListMetricsRequest{
 			CompartmentId: &tenancyocid,
 		}
+
+		backend.Logger.Error(key, "Listing Metrics", listMetrics)
+		backend.Logger.Error(key, "Testing Tenancy OCID", tenancyocid)
 
 		var status int
 		res, err := o.tenancyAccess[key].monitoringClient.ListMetrics(ctx, listMetrics)

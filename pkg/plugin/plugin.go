@@ -203,6 +203,7 @@ func (o *OCIDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealt
 
 	hRes := &backend.CheckHealthResult{}
 	backend.Logger.Error("plugin", "CheckHealth", "In Health Check")
+	backend.Logger.Error("plugin", "CheckHealth", ctx)
 	if err := o.TestConnectivity(ctx); err != nil {
 		hRes.Status = backend.HealthStatusError
 		hRes.Message = err.Error()
