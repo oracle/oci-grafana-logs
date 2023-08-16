@@ -1,17 +1,12 @@
 # Terraform-Based Installation - Oracle Cloud Infrastructure Data Source for Grafana
 
-**NOTE**: There are aspects of this page that are out of date and need to be refreshed. The use of the steps laid out in this document may work as described.
-
 ## Background
 
-Grafana is a popular technology that makes it easy to visualize logs and metrics. The [Oracle Cloud Infrastructure Logs Data Source for Grafana](https://grafana.com/grafana/plugins/oci-logs-datasource/) is used to extend Grafana by adding OCI Logging as a data source. The plugin enables you to visualize log records (service, audit, and custom) and metrics derived from log records stored in the OCI Logging service.
+Grafana is a popular technology that makes it easy to visualize metrics. The Oracle Cloud Infrastructure Data Source for Grafana is used to extend Grafana by adding OCI as a data source. The plugin enables you to visualize metrics related to a number of OCI resources: Compute, Networking, Storage, and custom metrics. 
 
-This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Logs Data Source for Grafana on a virtual machine in OCI. 
+This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Data Source for Grafana on a virtual machine in OCI. 
 
-Make sure you have access to the [Logging Service](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/loggingoverview.htm) and that the logs you want to observe and analyze are being collected in your tenancy. See the OCI Logging documentation for information on how to collect or access:
-* [Logs from your compute instances](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/agent_management.htm)
-* [Custom logs from your application/services](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/custom_logs.htm)
-* [OCI service logs](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/service_logs.htm).
+Make sure you have access to the [Monitoring Service](https://docs.cloud.oracle.com/iaas/Content/Monitoring/Concepts/monitoringoverview.htm) and that [metrics have been enabled](https://docs.cloud.oracle.com/iaas/Content/Compute/Tasks/enablingmonitoring.htm) for the resources you are trying to monitor.
 
 ## Install Terraform 
 
@@ -70,37 +65,32 @@ The next step is to configure the plugin. To find the IP address of the newly-cr
 
 Navigate to the Grafana homepage at http://localhost:3000.
 
-![GrafanaLogin-Screenshot](images/GrafanaLogin-Screenshot.png)
+![Screen Shot 2018-12-17 at 3.23.46 PM](images/Screen%20Shot%202018-12-17%20at%203.23.46%20PM.png)
 
-Log in with the default username `admin` and the password `admin`. You will be prompted to change your password. Click **Skip** or **Save** to continue. 
+Log in with the default username `admin` and the password `admin`. You will be prompted to change your password. Click **Skip** or **Save** to continue. ![Screen Shot 2018-12-17 at 3.23.54 PM](images/Screen%20Shot%202018-12-17%20at%203.23.54%20PM.png)
 
-![Grafana-ChangeDefaultAdminPassword-Screenshot](images/Grafana-ChangeDefaultAdminPassword-Screenshot.png)
+On the Home Dashboard click the gear icon on the left side of the page.
 
-On the Home Dashboard click the gear icon on the left side of the page and then select **Data sources** from the Configuration menu.
-
-![GrafanaHomePage-Screenshot](images/GrafanaHomePage-Screenshot.png)
+![Screen Shot 2018-12-17 at 3.24.02 PM](images/Screen%20Shot%202018-12-17%20at%203.24.02%20PM.png)
 
 Click **Add data source**.
 
-![Grafana-AddDataSource-Screenshot](images/Grafana-AddDataSource-Screenshot.png)
+![Screen Shot 2018-12-17 at 3.24.13 PM](images/Screen%20Shot%202018-12-17%20at%203.24.13%20PM.png)
 
-In the search box at the top of the resulting page, enter 'oracle'.
+ Choose **oracle-oci-datasource** as your data source type.
 
-![Grafana-DataSourceSearch-Screenshot](images/Grafana-DataSourceSearch-Screenshot.png)
+![Screen Shot 2018-12-17 at 3.24.24 PM](images/Screen%20Shot%202018-12-17%20at%203.24.17%20PM.png)
 
- Click the **Oracle Cloud Infrastructure Logs** box to select it as your data source type.
+Fill in your **Tenancy OCID**, **Default Region**, and **Environment**. Your **Default region** is the same as your home region listed in the **Tenancy Details** page. For **Environment** choose **OCI Instance**. 
 
-![Grafana-SelectOCILogsDataSource-Screenshot](images/Grafana-SelectOCILogsDataSource-Screenshot.png)
+Click **Save & Test** to return to the home dashboard.
 
-On the Oracle Cloud Infrastructure Logs data source configuration page, fill in your **Tenancy OCID**, **Default Region**, and **Environment**. Your **Default region** is the same as your home region listed in the **Tenancy Details** page. For **Environment** choose **OCI Instance**. 
-
-Click **Save & Test** to test the configuration of the Logs data source. Click the Dashboard icon in the left hand navigation menu to return to the home dashboard.
-
-![Grafana-OCILogsPluginConfigWindow-Screenshot](images/Grafana-OCILogsPluginConfigWindow-Screenshot.png)
+![Screen Shot 2018-12-17 at 3.25.33 PM](images/Screen_Shot_2019-02-08_at_10.19.56_AM.png)
 
 ## Clean Up 
 
 To remove the environment created by the Terraform script, run `terraform destroy` and pass in the same availability domain and dynamic group variables passed in during the apply step.
+
 
 
 ## Next Steps

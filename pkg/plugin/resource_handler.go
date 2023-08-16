@@ -1,3 +1,8 @@
+/*
+** Copyright © 2023 Oracle and/or its affiliates. All rights reserved.
+** Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+ */
+
 package plugin
 
 import (
@@ -6,7 +11,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/oracle/oci-grafana-metrics/pkg/plugin/models"
+	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
 )
 
 type rootRequest struct {
@@ -107,7 +112,6 @@ func (ocidx *OCIDatasource) GetNamespacesHandler(rw http.ResponseWriter, req *ht
 		return
 	}
 
-	// namespaces := ocidx.clients.GetNamespaceWithMetricNames(req.Context(), nmr.Tenancy, nmr.Compartment, nmr.Region)
 	namespaces := ocidx.GetNamespaceWithMetricNames(req.Context(), nmr.Tenancy, nmr.Compartment, nmr.Region)
 
 	writeResponse(rw, namespaces)

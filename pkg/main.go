@@ -1,3 +1,8 @@
+/*
+** Copyright © 2023 Oracle and/or its affiliates. All rights reserved.
+** Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+ */
+
 package main
 
 import (
@@ -6,7 +11,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 
-	"github.com/oracle/oci-grafana-metrics/pkg/plugin"
+	"github.com/oracle/oci-grafana-logs/pkg/plugin"
 )
 
 const OCI_PLUGIN_ID = "oci-logs-datasource"

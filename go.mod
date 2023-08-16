@@ -1,4 +1,4 @@
-module github.com/oracle/oci-grafana-metrics
+module github.com/oracle/oci-grafana-logs
 
 go 1.16
 
