@@ -14,9 +14,6 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/logging"
 	"github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/oracle/oci-go-sdk/v65/monitoring"
-
-	//"github.com/oracle/oci-go-sdk/v65/logging"
-	// "github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/constants"
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
 	"github.com/pkg/errors"
