@@ -25,6 +25,8 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
 	"github.com/oracle/oci-go-sdk/v65/identity"
+	"github.com/oracle/oci-go-sdk/v65/logging"
+	"github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/oracle/oci-go-sdk/v65/monitoring"
 
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
@@ -47,9 +49,16 @@ type TenancyAccess struct {
 	identityClient   identity.IdentityClient
 	config           common.ConfigurationProvider
 }
+type logTenancyAccess struct {
+	loggingSearchClient     loggingsearch.LogSearchClient
+	loggingManagementClient logging.LoggingManagementClient
+	identityClient          identity.IdentityClient
+	config                  common.ConfigurationProvider
+}
 
 type OCIDatasource struct {
-	tenancyAccess    map[string]*TenancyAccess
+	tenancyAccess    map[string]*logTenancyAccess
+	monTenancyAccess map[string]*TenancyAccess
 	logger           log.Logger
 	nameToOCID       map[string]string
 	timeCacheUpdated time.Time
@@ -129,9 +138,10 @@ func NewOCIConfigFile() *OCIConfigFile {
 // NewOCIDatasourceConstructor - constructor
 func NewOCIDatasourceConstructor() *OCIDatasource {
 	return &OCIDatasource{
-		tenancyAccess: make(map[string]*TenancyAccess),
-		logger:        log.DefaultLogger,
-		nameToOCID:    make(map[string]string),
+		tenancyAccess:    make(map[string]*logTenancyAccess),
+		monTenancyAccess: make(map[string]*TenancyAccess),
+		logger:           log.DefaultLogger,
+		nameToOCID:       make(map[string]string),
 	}
 }
 
@@ -319,29 +329,33 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			configProvider = common.NewRawConfigurationProvider(q.tenancyocid[key], q.user[key], q.region[key], q.fingerprint[key], q.privkey[key], q.privkeypass[key])
 
 			// creating oci monitoring client
-			mrp := clientRetryPolicy()
+			//mrp := clientRetryPolicy()
 			monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
+			loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 			if err != nil {
-				backend.Logger.Error("Error with config:" + key)
-				return errors.New("error with client")
+				o.logger.Error("Error with config:" + key)
+				return errors.New("error with loggingSearchClient")
 			}
-			monitoringClient.Configuration.RetryPolicy = &mrp
-
-			// creating oci identity client
-			irp := clientRetryPolicy()
+			loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+			if err != nil {
+				o.logger.Error("Error with config:" + key)
+				return errors.New("Error creating loggingManagement client")
+			}
 			identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 			if err != nil {
-				return errors.New("Error creating identity client")
+				return errors.Wrap(err, "Error creating identity client")
 			}
-			identityClient.Configuration.RetryPolicy = &irp
 			tenancyocid, err := configProvider.TenancyOCID()
 			if err != nil {
 				return errors.New("error with TenancyOCID")
 			}
+
 			if tenancymode == "multitenancy" {
-				o.tenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.monTenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.tenancyAccess[key+"/"+tenancyocid] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 			} else {
-				o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.monTenancyAccess[SingleTenancyKey] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.tenancyAccess[SingleTenancyKey] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 			}
 		}
 		return nil
@@ -353,16 +367,22 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		if err != nil {
 			return errors.New("error with instance principals")
 		}
-		monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
+		//monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
+		loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			backend.Logger.Error("Error with config:" + SingleTenancyKey)
 			return errors.New("error with client")
+		}
+		loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+		if err != nil {
+			o.logger.Error("Error with config:")
+			return errors.New("Error creating loggingManagement client")
 		}
 		identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			return errors.New("Error creating identity client")
 		}
-		o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+		o.tenancyAccess[SingleTenancyKey] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 		return nil
 
 	default:
