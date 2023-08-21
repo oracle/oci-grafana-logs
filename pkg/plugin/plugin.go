@@ -353,6 +353,7 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			if tenancymode == "multitenancy" {
 				o.monTenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{monitoringClient, identityClient, configProvider}
 				o.tenancyAccess[key+"/"+tenancyocid] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
+				log.DefaultLogger.Error("Multitenancy:: tenancyAccess: ", o.tenancyAccess[key+"/"+tenancyocid])
 			} else {
 				o.monTenancyAccess[SingleTenancyKey] = &TenancyAccess{monitoringClient, identityClient, configProvider}
 				o.tenancyAccess[SingleTenancyKey] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
