@@ -147,7 +147,7 @@ func NewOCIDatasourceConstructor() *OCIDatasource {
 
 func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	backend.Logger.Debug("plugin", "NewOCIDatasource", settings.ID)
-
+	backend.Logger.Error("plugin", "NewOCIDatasource", "In NewOCIDatasource")
 	o := NewOCIDatasourceConstructor()
 	dsSettings := &models.OCIDatasourceSettings{}
 
@@ -157,8 +157,9 @@ func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt
 	}
 	o.settings = dsSettings
 
-	backend.Logger.Debug("plugin", "dsSettings.Environment", "dsSettings.Environment: "+dsSettings.Environment)
-	backend.Logger.Debug("plugin", "dsSettings.TenancyMode", "dsSettings.TenancyMode: "+dsSettings.TenancyMode)
+	backend.Logger.Error("plugin", "dsSettings.Environment", "dsSettings.Environment: "+dsSettings.Environment)
+	backend.Logger.Error("plugin", "dsSettings.TenancyMode", "dsSettings.TenancyMode: "+dsSettings.TenancyMode)
+	backend.Logger.Error("plugin", "to.enancyAccess", o.tenancyAccess)
 
 	if len(o.tenancyAccess) == 0 {
 
@@ -214,6 +215,7 @@ func (o *OCIDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealt
 	hRes := &backend.CheckHealthResult{}
 	backend.Logger.Error("plugin", "CheckHealth", "In Health Check")
 	backend.Logger.Error("plugin", "CheckHealth", ctx)
+	//backend.Logger.Error("plugin", "CheckHealth", o.tenancyAccess["DEFAULT"].config.Region())
 	if err := o.TestConnectivity(ctx); err != nil {
 		hRes.Status = backend.HealthStatusError
 		hRes.Message = err.Error()
@@ -362,9 +364,10 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		return nil
 
 	case "OCI Instance":
-		log.DefaultLogger.Debug("Configuring using Instance Principal")
+		log.DefaultLogger.Error("Configuring using Instance Principal")
 		var configProvider common.ConfigurationProvider
 		configProvider, err := auth.InstancePrincipalConfigurationProvider()
+		//log.DefaultLogger.Error("configProvider: " + configProvider)
 		if err != nil {
 			return errors.New("error with instance principals")
 		}

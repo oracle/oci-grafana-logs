@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/identity"
+	"github.com/oracle/oci-go-sdk/v65/logging"
 	"github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/oracle/oci-go-sdk/v65/monitoring"
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/constants"
@@ -27,7 +29,6 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 	backend.Logger.Error("client", "TestConnectivity", "testing the OCI connectivity")
 
 	var reg common.Region
-	//var testResult bool
 	//var errAllComp error
 
 	tenv := o.settings.Environment
@@ -75,6 +76,7 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 			backend.Logger.Error("res", "res", res)
 			if err != nil {
 				o.logger.Debug(key, "FAILED", err)
+				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed in each Compartments in profile %s", key))
 			}
 			status := res.RawResponse.StatusCode
 			backend.Logger.Error("status", "status", status)
@@ -82,13 +84,32 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 				o.logger.Debug(key, "OK", status)
 				break
 			} else {
-				backend.Logger.Debug(key, "SKIPPED", status)
+				o.logger.Debug(key, "SKIPPED", status)
+				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed: %s", key))
+			}
+		} else {
+			backend.Logger.Error("Instance Principal", "queri", "Instance Principals")
+			request := logging.ListLogGroupsRequest{Limit: common.Int(69),
+				CompartmentId:            common.String(tenancyocid),
+				IsCompartmentIdInSubtree: common.Bool(true)}
+			res, err := o.tenancyAccess[key].loggingManagementClient.ListLogGroups(ctx, request)
+			if err != nil {
+				o.logger.Debug(key, "FAILED", err)
+				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed:%s", key))
+			}
+			status := res.RawResponse.StatusCode
+			backend.Logger.Error("status", "status", status)
+			if status >= 200 && status < 300 {
+				o.logger.Debug(key, "OK", status)
+				break
+			} else {
+				o.logger.Debug(key, "FAILED", status)
+				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed in each Compartments in profile %s", key))
 			}
 		}
 
 	}
 	return nil
-
 }
 
 /*
