@@ -367,7 +367,18 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		log.DefaultLogger.Error("Configuring using Instance Principal")
 		var configProvider common.ConfigurationProvider
 		configProvider, err := auth.InstancePrincipalConfigurationProvider()
-		//log.DefaultLogger.Error("configProvider: " + configProvider)
+
+		KeyFingerprint, err := configProvider.KeyFingerprint()
+		TenancyOCID, err := configProvider.TenancyOCID()
+		UserOCID, err := configProvider.UserOCID()
+		Region, err := configProvider.Region()
+		//AuthType, err := configProvider.AuthType()
+
+		log.DefaultLogger.Error("KeyFingerprint:" + KeyFingerprint)
+		log.DefaultLogger.Error("TenancyOCID:" + TenancyOCID)
+		log.DefaultLogger.Error("UserOCID:" + UserOCID)
+		log.DefaultLogger.Error("Region: " + Region)
+		//log.DefaultLogger.Error("AuthType: " + AuthType)
 		if err != nil {
 			return errors.New("error with instance principals")
 		}
