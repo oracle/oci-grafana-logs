@@ -5,137 +5,76 @@ package plugin
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
-	jsoniter "github.com/json-iterator/go"
 
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
 )
 
-func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
-	backend.Logger.Debug("plugin.query", "query", "query initiated for "+query.RefID)
-
+func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) (map[string]*DataFieldElements, backend.DataResponse) {
+	backend.Logger.Warn("plugin.query", "query", "query initiated for "+query.RefID)
 	// Creating the Data response for query
 	response := backend.DataResponse{}
-
+	//response := backend.NewQueryDataResponse()
 	// Unmarshal the json into oci queryModel
 	qm := &models.QueryModel{}
-	response.Error = jsoniter.Unmarshal(query.JSON, &qm)
+	response.Error = json.Unmarshal(query.JSON, &qm)
 	if response.Error != nil {
-		return response
+		return nil, response
 	}
 
-	// checking if the query has valid tenancy detail
-	if qm.TenancyOCID == "" {
-		backend.Logger.Warn("plugin.query", "query", "tenancy ocid is mandatory but it is not present in query")
-		return response
+	backend.Logger.Warn("plugin.query", "queryText", qm.QueryText)
+	backend.Logger.Warn("plugin.query", "tenancyName", qm.TenancyName)
+	backend.Logger.Warn("plugin.query", "TenancyOCID", qm.TenancyOCID)
+	backend.Logger.Warn("plugin.query", "queryText", qm.QueryText)
+	backend.Logger.Warn("plugin.query", "REGION", qm.Region)
+
+	tenv := ocidx.settings.Environment
+	tmode := ocidx.settings.TenancyMode
+
+	backend.Logger.Warn("tenv", "tenv", tenv)
+	backend.Logger.Warn("tmode", "tmode", tmode)
+	var takey string
+
+	if tmode == "multitenancy" {
+		takey = qm.TenancyName
+	} else {
+		takey = SingleTenancyKey
+	}
+	backend.Logger.Warn("takey", "takey", takey)
+
+	logQueryType := ocidx.identifyQueryType(qm.QueryText)
+	backend.Logger.Warn("plugin.query", "logQueryType", logQueryType)
+
+	var processErr error
+	fromMs := query.TimeRange.From.UnixNano() / int64(time.Millisecond)
+	toMs := query.TimeRange.To.UnixNano() / int64(time.Millisecond)
+	var mFieldData = make(map[string]*DataFieldElements)
+	backend.Logger.Warn("plugin.query", "mFieldData", fmt.Sprintf("%v", mFieldData))
+	if logQueryType == QueryType_LogMetrics_TimeSeries {
+		ocidx.logger.Debug("Logging query WILL return numeric data over intervals", "refId", query.RefID)
+		// Call method that parses log metric results and produces the required field definitions
+		mFieldData, processErr = ocidx.processLogMetricTimeSeries(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+		backend.Logger.Warn("plugin.query", "processErr", processErr)
+		backend.Logger.Warn("plugin.query", "mFieldData", fmt.Sprintf("%v", mFieldData))
+
+	} else if logQueryType == QueryType_LogMetrics_NoInterval {
+		ocidx.logger.Debug("Logging query will NOT return numeric data over entire time range", "refId", query.RefID)
+		// Call method that parses log metric results and produces the required field definitions
+		mFieldData, processErr = ocidx.processLogMetrics(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+		backend.Logger.Warn("plugin.query", "processErr", processErr)
+		backend.Logger.Warn("plugin.query", "mFieldData", fmt.Sprintf("%v", mFieldData))
+	} else { // QueryType_LogRecords
+		ocidx.logger.Debug("Logging query will return log records for the specified time interval", "refId", query.RefID)
+		// Call method that parses log record results and produces the required field definitions
+		mFieldData, processErr = ocidx.processLogRecords(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+	}
+	if processErr != nil {
+		return nil, response
 	}
 
-	// checking if the query has valid Interval detail
-	if qm.Interval == "" {
-		backend.Logger.Warn("plugin.query", "query", "Interval is mandatory but it is not present in query")
-		return response
-	}
-
-	metricsDataRequest := models.MetricsDataRequest{
-		TenancyOCID:     qm.TenancyOCID,
-		CompartmentOCID: qm.CompartmentOCID,
-		CompartmentName: qm.CompartmentName,
-		Region:          qm.Region,
-		Namespace:       qm.Namespace,
-		QueryText:       qm.QueryText,
-		Interval:        qm.Interval[1 : len(qm.Interval)-1],
-		ResourceGroup:   qm.ResourceGroup,
-		DimensionValues: qm.DimensionValues,
-		LegendFormat:    qm.LegendFormat,
-		TagsValues:      qm.TagsValues,
-		StartTime:       query.TimeRange.From.UTC(),
-		EndTime:         query.TimeRange.To.UTC(),
-	}
-
-	// create data frame response
-	frame := data.NewFrame("response").SetMeta(&data.FrameMeta{ExecutedQueryString: qm.QueryText})
-
-	times, metricDataValues := ocidx.GetMetricDataPoints(ctx, metricsDataRequest, qm.TenancyOCID)
-
-	// plotting the x axis with time as unit
-	frame.Fields = append(frame.Fields, data.NewField("time", nil, times))
-	var name string
-	for _, metricDataValue := range metricDataValues {
-		name = metricDataValue.ResourceName
-
-		dl := data.Labels{
-			"tenancy":   metricDataValue.TenancyName,
-			"unique_id": metricDataValue.UniqueDataID,
-			"region":    metricDataValue.Region,
-		}
-
-		if qm.LegendFormat != "" {
-			if metricDataValue.UniqueDataID == "" {
-				ocidx.logger.Debug("UniqueDataID", "No valid ResourceID found")
-				continue
-			} else {
-				ocidx.logger.Debug("UniqueDataID", "UniqueDataID", metricDataValue.UniqueDataID)
-			}
-			dl = data.Labels{}
-
-			dimensions := ocidx.GetDimensions(ctx, qm.TenancyOCID, qm.CompartmentOCID, qm.Region, qm.Namespace, metricDataValue.MetricName, true)
-			OriginalDimensionMap := make(map[string][]string)
-			FoundDimensionMap := make(map[string][]string)
-			var index int
-
-			// Convert dimensions into a Go map
-			for _, dimension := range dimensions {
-				key := dimension.Key
-				ocidx.logger.Debug("KEY DIM", "key", key)
-
-				// Create a new slice for each key in the map
-				var values []string
-
-				for _, vall := range dimension.Values {
-					values = append(values, vall)
-					ocidx.logger.Debug("ALL DIM", "dim", vall)
-				}
-
-				// Assign the values slice to the map key
-				OriginalDimensionMap[key] = values
-			}
-
-			//Search for resourceID and mark the position if found
-			for _, value := range OriginalDimensionMap {
-				for i, v := range value {
-					if v == metricDataValue.UniqueDataID {
-						index = i
-						break
-					}
-				}
-			}
-
-			// Create a new map containing only the dimensions for the found resourceID
-			for key, value := range OriginalDimensionMap {
-				if len(value) > index {
-					FoundDimensionMap[key] = []string{value[index]}
-				}
-			}
-
-			name = ocidx.generateCustomMetricLabel(metricsDataRequest.LegendFormat, metricDataValue.MetricName, FoundDimensionMap)
-
-		} else {
-			for k, v := range metricDataValue.Labels {
-				dl[k] = v
-				if k == "resource_name" && len(name) == 0 {
-					name = v
-				}
-			}
-		}
-		frame.Fields = append(frame.Fields,
-			data.NewField(name, dl, metricDataValue.DataPoints),
-		)
-	}
-
-	// add the frames to the response
-	response.Frames = append(response.Frames, frame)
-
-	return response
+	return mFieldData, response
 }

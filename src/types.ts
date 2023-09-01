@@ -81,34 +81,37 @@ export const GroupOptions = [
 ];
 
 export interface OCIQuery extends DataQuery {
-  queryText?: string;
-  rawQuery: boolean;
+  searchQuery?: string;
+  query?: string;
   //hide: boolean;
   tenancyName: string;
   tenancy: string;
   tenancymode: string;
-  compartments?: any;
-  compartmentName?: string;
-  compartment?: string;
+  //compartments?: any;
+  //compartmentName?: string;
+  //compartment?: string;
   regions?: any;
   region?: string;
-  namespace?: string;
-  metricNames?: string[];
-  metricNamesFromNS?: string[];
-  metric?: string;
-  interval: string;
-  intervalLabel?: string;
-  legendFormat?: string;
-  statistic: string;
-  statisticLabel?: string;
-  resourcegroup?: string;
-  dimensionValues?: string[];
-  tagsValues?: string[];
-  groupBy?: string;
+  //namespace?: string;
+  //metricNames?: string[];
+  //metricNamesFromNS?: string[];
+  //metric?: string;
+  //interval: string;
+  //intervalLabel?: string;
+  //legendFormat?: string;
+  //statistic: string;
+  //statisticLabel?: string;
+  //resourcegroup?: string;
+  //dimensionValues?: string[];
+  //tagsValues?: string[];
+  //groupBy?: string;
 }
 
-export const defaultQuery: Partial<OCIQuery> = {};
+//export const defaultQuery: Partial<OCIQuery> = {};
 
+export const defaultQuery: Partial<OCIQuery> = {
+  searchQuery: `severity >= DEFAULT`,
+};
 /**
  * These are options configured for each DataSource instance
  */

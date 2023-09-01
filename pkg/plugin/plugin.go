@@ -21,6 +21,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
@@ -29,6 +30,7 @@ import (
 	"github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/oracle/oci-go-sdk/v65/monitoring"
 
+	"github.com/oracle/oci-grafana-logs/pkg/plugin/constants"
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
 )
 
@@ -188,18 +190,77 @@ func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt
 	return o, nil
 }
 
+func (o *OCIDatasource) getCreateDataFieldElemsForField(dataFieldDefns map[string]*DataFieldElements,
+	totalSamples int, uniqueFieldKey string, fieldName string, fieldType FieldValueType) *DataFieldElements {
+	var dataFieldDefn *DataFieldElements
+	var ok bool
+
+	if dataFieldDefn, ok = dataFieldDefns[uniqueFieldKey]; !ok {
+		o.logger.Debug("Did NOT find existing data field definition", "uniqueKey", uniqueFieldKey)
+		// Since the specified unique key does not exist in the provided map,
+		// create & populate a new DataFieldElements object and add it to the map
+		// Map for the Labels element is always created and if a field has no associated labels then
+		// it will be unused but this does not cause any issues when the data is presented by Grafana
+		dataFieldDefn = &DataFieldElements{
+			Name:   fieldName,
+			Type:   fieldType,
+			Labels: make(map[string]string),
+			Values: nil,
+		}
+
+		/*
+		 * Note that Values arrays are preallocated arrays with totalSamples entries where each entry is nil.
+		 * Only intervals where a corresponding field/label combination has a value will the Values array
+		 * entry have a value. This is important for situations where some field/label combinations don't
+		 * have any value or data in a particular interval.
+		 */
+		if fieldType == FieldValueType(constants.ValueType_Time) {
+			dataFieldDefn.Values = make([]*time.Time, totalSamples)
+		} else if fieldType == FieldValueType(constants.ValueType_Float64) {
+			dataFieldDefn.Values = make([]*float64, totalSamples)
+		} else if fieldType == FieldValueType(constants.ValueType_Int) {
+			dataFieldDefn.Values = make([]*int, totalSamples)
+		} else { // Treat all other data types as a string (including string fields)
+			dataFieldDefn.Values = make([]*string, totalSamples)
+		}
+		dataFieldDefns[uniqueFieldKey] = dataFieldDefn
+	}
+
+	return dataFieldDefn
+}
 func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	backend.Logger.Debug("plugin", "QueryData", req.PluginContext.DataSourceInstanceSettings.Name)
-
+	backend.Logger.Debug("plugin", "QueryData", "starting point ..")
 	// create response struct
 	response := backend.NewQueryDataResponse()
 
 	// loop over queries and execute them individually.
 	for _, q := range req.Queries {
-		res := o.query(ctx, req.PluginContext, q)
+		var frame *data.Frame = nil
+		//var mFieldData = make(map[string]*DataFieldElements)
+		// Create an array of data.Field pointers, one for each data field definition in the
+		// field definition map
 
+		mFieldData, res := o.query(ctx, req.PluginContext, q)
+
+		dfFields := make([]*data.Field, len(mFieldData))
+		backend.Logger.Error("QueryData", "mFieldData", fmt.Sprintf("%v", mFieldData))
 		// saving the response in a hashmap based on with RefID as identifier
 		response.Responses[q.RefID] = res
+		respD := response.Responses[q.RefID]
+		fieldCnt := 0
+		for _, fieldDataElems := range mFieldData {
+			dfFields[fieldCnt] = data.NewField(fieldDataElems.Name, fieldDataElems.Labels, fieldDataElems.Values)
+			backend.Logger.Error("dfFields[fieldCnt]", "dfFields[fieldCnt]", fmt.Sprintf("%v", dfFields[fieldCnt]))
+			fieldCnt += 1
+		}
+		backend.Logger.Error("dfFields1", "dfFields1", fmt.Sprintf("%v", dfFields))
+		// Create a new data Frame using the generated Fields while referencing the query ID
+		frame = data.NewFrame(q.RefID, dfFields...)
+
+		// Add the current frame to the list of frames for all of the provided queries
+		respD.Frames = append(respD.Frames, frame)
+		response.Responses[q.RefID] = respD
 	}
 
 	return response, nil
