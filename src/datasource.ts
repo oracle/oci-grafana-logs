@@ -3,32 +3,27 @@
 ** Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 */
 
-import { Observable } from 'rxjs';
 import _,{ isString} from 'lodash';
-import { DataSourceInstanceSettings, DataQueryRequest, DataQueryResponse, ScopedVars, MetricFindValue } from '@grafana/data';
+import { DataSourceInstanceSettings, ScopedVars, MetricFindValue } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 import {
   OCIResourceItem,
   OCINamespaceWithMetricNamesItem,
   OCIResourceGroupWithMetricNamesItem,
   ResponseParser,
-  OCIResourceMetadataItem,
+  //OCIResourceMetadataItem,
 } from './resource.response.parser';
 import {
   OCIDataSourceOptions,
   OCIQuery,
   OCIResourceCall,
   QueryPlaceholder,
-  dimensionQueryRegex,
-  namespacesQueryRegex,
-  resourcegroupsQueryRegex,
-  metricsQueryRegex,
   regionsQueryRegex,
   tenanciesQueryRegex,
   DEFAULT_TENANCY,
   compartmentsQueryRegex,
 } from "./types";
-import QueryModel from './query_model';
+//import QueryModel from './query_model';
 
 
 export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSourceOptions> {
@@ -40,16 +35,16 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
   }
 
   /**
-   * Override to apply template variables
+   * Filters disabled/hidden queries
    *
    * @param {string} query Query
-   * @param {ScopedVars} scopedVars Scoped variables
    */
-
-  query(options: DataQueryRequest<OCIQuery>): Observable<DataQueryResponse> {
-    return super.query(options);
+  filterQuery(query: OCIQuery): boolean {
+    if (query.hide) {
+      return false;
+    }
+    return true;
   }
-
 
   /**
    * Override to apply template variables
@@ -59,33 +54,14 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
    */
   applyTemplateVariables(query: OCIQuery, scopedVars: ScopedVars) {
     const templateSrv = getTemplateSrv();  
-
     query.region = templateSrv.replace(query.region, scopedVars);
     query.tenancy = templateSrv.replace(query.tenancy, scopedVars);
-    query.compartment = templateSrv.replace(query.compartment, scopedVars);
-    query.namespace = templateSrv.replace(query.namespace, scopedVars);
-    query.resourcegroup = templateSrv.replace(query.resourcegroup, scopedVars);
-    query.metric = templateSrv.replace(query.metric, scopedVars);
-    if (query.dimensionValues) {
-      for (let i = 0; i < query.dimensionValues.length; i++) {
-        query.dimensionValues[i] = templateSrv.replace(query.dimensionValues[i], scopedVars);
-      }
-    }
     if (query.tenancy) {
       query.tenancy = templateSrv.replace(query.tenancy, scopedVars);
     }
-    if (query.compartment) {
-      query.compartment = templateSrv.replace(query.compartment, scopedVars);
-    }
-    if (query.resourcegroup) {
-      query.resourcegroup = templateSrv.replace(query.resourcegroup, scopedVars);
-    }
     
-    const queryModel = new QueryModel(query, getTemplateSrv());
-    if (queryModel.isQueryReady()) {
-      query.queryText = queryModel.buildQuery(String(query.metric));
-    }
-     
+    //const queryModel = new QueryModel(query, getTemplateSrv());
+    query.searchQuery = templateSrv.replace(query.searchQuery, scopedVars);
     return query;
   }
 
@@ -109,7 +85,7 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
   //  */
   // metricFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
 
-  async metricFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
+  async logsFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
     const templateSrv = getTemplateSrv();
     // const tmode = this.getJsonData().tenancymode;
 
@@ -129,7 +105,7 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
         return regions.map(n => {
           return { text: n, value: n };
         });
-      } else {     
+      } else {
         const regions = await this.getSubscribedRegions(DEFAULT_TENANCY);
         return regions.map(n => {
           return { text: n, value: n };
@@ -152,110 +128,6 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
         }); 
       }   
     }    
-
-
-    const namespaceQuery = query.match(namespacesQueryRegex);
-    if (namespaceQuery) {
-      if (this.jsonData.tenancymode === "multitenancy") {
-        const tenancy = templateSrv.replace(namespaceQuery[1]);
-        const region = templateSrv.replace(namespaceQuery[2]);
-        const compartment = templateSrv.replace(namespaceQuery[3]);
-        const namespaces = await this.getNamespacesWithMetricNames(tenancy, compartment, region);
-        return namespaces.map(n => {
-          return { text: n.namespace, value: n.namespace };
-        });        
-      } else {
-        const tenancy = DEFAULT_TENANCY;
-        const region = templateSrv.replace(namespaceQuery[1]);
-        const compartment = templateSrv.replace(namespaceQuery[2]);
-        const namespaces = await this.getNamespacesWithMetricNames(tenancy, compartment, region);
-        return namespaces.map(n => {
-          return { text: n.namespace, value: n.namespace };
-        });      
-      }
-    }
-
-    let resourcegroupQuery = query.match(resourcegroupsQueryRegex);
-    if (resourcegroupQuery) {
-      if (this.jsonData.tenancymode === "multitenancy") {
-        const tenancy = templateSrv.replace(resourcegroupQuery[1]);
-        const region = templateSrv.replace(resourcegroupQuery[2]);
-        const compartment = templateSrv.replace(resourcegroupQuery[3]);
-        const namespace = templateSrv.replace(resourcegroupQuery[4]);
-        const resource_group = await this.getResourceGroupsWithMetricNames(tenancy, compartment, region, namespace);
-        return resource_group.map(n => {
-          return { text: n.resource_group, value: n.resource_group };
-        });
-      } else {
-        const tenancy = DEFAULT_TENANCY;
-        const region = templateSrv.replace(resourcegroupQuery[1]);
-        const compartment = templateSrv.replace(resourcegroupQuery[2]);
-        const namespace = templateSrv.replace(resourcegroupQuery[3]);
-        const resource_group = await this.getResourceGroupsWithMetricNames(tenancy, compartment, region, namespace);
-        return resource_group.map(n => {
-          return { text: n.resource_group, value: n.resource_group };
-        });     
-      }
-    }
-
-    const metricQuery = query.match(metricsQueryRegex);
-    if (metricQuery) {
-      if (this.jsonData.tenancymode === "multitenancy") {
-        const tenancy = templateSrv.replace(metricQuery[1]);
-        const region = templateSrv.replace(metricQuery[2]);
-        const compartment = templateSrv.replace(metricQuery[3]);
-        const namespace = templateSrv.replace(metricQuery[4]);
-        // const resource_group = templateSrv.replace(metricQuery[4]);
-        const metric_names = await this.getResourceGroupsWithMetricNames(tenancy, compartment, region, namespace);
-        return metric_names.flatMap(n => {
-          return n.metric_names.map(name => {
-            return { text: name, value: name };
-          });
-        });        
-      } else {
-        const tenancy = DEFAULT_TENANCY;
-        const region = templateSrv.replace(metricQuery[1]);
-        const compartment = templateSrv.replace(metricQuery[2]);
-        const namespace = templateSrv.replace(metricQuery[3]);
-        // const resource_group = templateSrv.replace(metricQuery[4]);
-        const metric_names = await this.getResourceGroupsWithMetricNames(tenancy, compartment, region, namespace); 
-        return metric_names.flatMap(n => {
-          return n.metric_names.map(name => {
-            return { text: name, value: name };
-          });
-        });       
-      }  
-    }    
-
-    const dimensionsQuery = query.match(dimensionQueryRegex);
-    if (dimensionsQuery) {
-      if (this.jsonData.tenancymode === "multitenancy") {
-        const tenancy = templateSrv.replace(dimensionsQuery[1]);
-        const region = templateSrv.replace(dimensionsQuery[2]);
-        const compartment = templateSrv.replace(dimensionsQuery[3]);
-        const namespace = templateSrv.replace(dimensionsQuery[4]);
-        const metric = templateSrv.replace(dimensionsQuery[5]);
-        const dimension_values = await this.getDimensions(tenancy, compartment, region, namespace, metric);
-        return dimension_values.flatMap(res => {
-          return res.values.map(val => {
-              return { text: res.key + ' - ' + val, value: res.key + '="' + val + '"' };
-          });
-        }); 
-      } else {
-        const tenancy = DEFAULT_TENANCY;
-        const region = templateSrv.replace(dimensionsQuery[1]);
-        const compartment = templateSrv.replace(dimensionsQuery[2]);
-        const namespace = templateSrv.replace(dimensionsQuery[3]);
-        const metric = templateSrv.replace(dimensionsQuery[4]);
-        const dimension_values = await this.getDimensions(tenancy, compartment, region, namespace, metric);
-        return dimension_values.flatMap(res => {
-          return res.values.map(val => {
-              return { text: res.key + ' - ' + val, value: res.key + '="' + val + '"' };
-          });
-        }); 
-      }      
-    } 
-
     return [];
   }
 
@@ -347,232 +219,6 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return this.postResource(OCIResourceCall.Compartments, reqBody).then((response) => {
       return new ResponseParser().parseCompartments(response);
     });
-  }
-
-  async getNamespacesWithMetricNames(
-    tenancy: string,
-    compartment: any,
-    region: any
-  ): Promise<OCINamespaceWithMetricNamesItem[]> {
-    if (this.isVariable(tenancy)) {
-      let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
-      if (var_tenancy !== "") { 
-        tenancy = var_tenancy
-      }      
-    }
-
-    if (this.isVariable(compartment)) {
-      let { compartment: var_compartment} = this.interpolateProps({compartment});
-      if (var_compartment !== "") { 
-        compartment = var_compartment
-      }      
-    }
-
-    if (this.isVariable(region)) {
-      let { region: var_region} = this.interpolateProps({region});
-      if (var_region !== "") { 
-        region = var_region
-      }      
-    }
-
-    if (tenancy === '') {
-      return [];
-    }
-    if (region === undefined || region === QueryPlaceholder.Region) {
-      return [];
-    }
-
-    if (compartment === undefined || compartment === QueryPlaceholder.Compartment) {
-      compartment = '';
-    }
-
-    const reqBody: JSON = {
-      tenancy: tenancy,
-      compartment: compartment,
-      region: region,
-    } as unknown as JSON;
-    return this.postResource(OCIResourceCall.Namespaces, reqBody).then((response) => {
-      return new ResponseParser().parseNamespacesWithMetricNames(response);
-    });
-  }
-
-
-  async getResourceGroupsWithMetricNames(
-    tenancy: any,
-    compartment: any,
-    region: any,
-    namespace: any
-  ): Promise<OCIResourceGroupWithMetricNamesItem[]> {
-
-    if (this.isVariable(tenancy)) {
-      let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
-      if (var_tenancy !== "") { 
-        tenancy = var_tenancy
-      }      
-    }
-
-    if (this.isVariable(compartment)) {
-      let { compartment: var_compartment} = this.interpolateProps({compartment});
-      if (var_compartment !== "") { 
-        compartment = var_compartment
-      }      
-    }
-
-    if (this.isVariable(region)) {
-      let { region: var_region} = this.interpolateProps({region});
-      if (var_region !== "") { 
-        region = var_region
-      }      
-    }
-
-    if (this.isVariable(namespace)) {
-      let { namespace: var_namespace} = this.interpolateProps({namespace});
-      if (var_namespace !== "") { 
-        namespace = var_namespace
-      }      
-    }    
-
-    if (tenancy === '') {
-      return [];
-    }
-    if (region === undefined || region === QueryPlaceholder.Region) {
-      return [];
-    }
-
-    if (compartment === undefined || compartment === QueryPlaceholder.Compartment) {
-      compartment = '';
-    } 
-
-    if (tenancy === '') {
-      return [];
-    }
-    if (region === undefined || namespace === undefined) {
-      return [];
-    }
-    if (region === QueryPlaceholder.Region || namespace === QueryPlaceholder.Namespace) {
-      return [];
-    }
-
-    if (compartment === undefined || compartment === QueryPlaceholder.Compartment) {
-      compartment = '';
-    }
-
-    const reqBody: JSON = {
-      tenancy: tenancy,
-      compartment: compartment,
-      region: region,
-      namespace: namespace,
-    } as unknown as JSON;
-    return this.postResource(OCIResourceCall.ResourceGroups, reqBody).then((response) => {
-      return new ResponseParser().parseResourceGroupWithMetricNames(response);
-    });
-  }
-
-  async getDimensions(
-    tenancy: any,
-    compartment: any,
-    region: any,
-    namespace: any,
-    metricName: any
-  ): Promise<OCIResourceMetadataItem[]> {
-
-    if (this.isVariable(tenancy)) {
-      let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
-      if (var_tenancy !== "") { 
-        tenancy = var_tenancy
-      }      
-    }
-
-    if (this.isVariable(compartment)) {
-      let { compartment: var_compartment} = this.interpolateProps({compartment});
-      if (var_compartment !== "") { 
-        compartment = var_compartment
-      }      
-    }
-
-    if (this.isVariable(region)) {
-      let { region: var_region} = this.interpolateProps({region});
-      if (var_region !== "") { 
-        region = var_region
-      }      
-    }
-
-    if (this.isVariable(namespace)) {
-      let { namespace: var_namespace} = this.interpolateProps({namespace});
-      if (var_namespace !== "") { 
-        namespace = var_namespace
-      }      
-    }
-
-    if (this.isVariable(metricName)) {
-      let { metricName: var_metric} = this.interpolateProps({metricName});
-      if (var_metric !== "") { 
-        metricName = var_metric
-      }      
-    }       
-
-    if (tenancy === '') {
-      return [];
-    }
-    if (region === undefined || namespace === undefined || metricName === undefined) {
-      return [];
-    }
-    if (
-      region === QueryPlaceholder.Region ||
-      namespace === QueryPlaceholder.Namespace ||
-      metricName === QueryPlaceholder.Metric
-    ) {
-      return [];
-    }
-
-    if (compartment === undefined || compartment === QueryPlaceholder.Compartment) {
-      compartment = '';
-    }
-
-    const reqBody: JSON = {
-      tenancy: tenancy,
-      compartment: compartment,
-      region: region,
-      namespace: namespace,
-      metric_name: metricName,
-    } as unknown as JSON;
-    return this.postResource(OCIResourceCall.Dimensions, reqBody).then((response) => {
-      return new ResponseParser().parseDimensions(response);
-    });
-  }
-  async getTags(
-    tenancy: any,
-    compartment: any,
-    compartmentName: any,
-    region: any,
-    namespace: any
-  ): Promise<OCIResourceMetadataItem[]> {
-    if (tenancy === '') {
-      return [];
-    }
-    if (region === undefined || namespace === undefined) {
-      return [];
-    }
-    if (region === QueryPlaceholder.Region || namespace === QueryPlaceholder.Namespace) {
-      return [];
-    }
-
-    if (compartment === undefined || compartment === QueryPlaceholder.Compartment) {
-      compartment = '';
-    }
-    if (compartmentName === undefined) {
-      compartmentName = '';
-    }
-
-    const reqBody: JSON = {
-      tenancy: tenancy,
-      compartment: compartment,
-      compartment_name: compartmentName,
-      region: region,
-      namespace: namespace,
-    } as unknown as JSON;
-    return this.postResource(OCIResourceCall.Tags, reqBody).then((response) => {
-      return new ResponseParser().parseTags(response);
-    });
-  }
+  } 
+  
 }
