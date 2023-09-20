@@ -96,7 +96,7 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 			backend.Logger.Error("res", "res", res)
 			if err != nil {
 				o.logger.Debug(key, "FAILED", err)
-				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed in each Compartments in profile %s", key))
+				return fmt.Errorf("ListLogGroupsRequest failed in each Compartments in profile %v", err)
 			}
 			status := res.RawResponse.StatusCode
 			backend.Logger.Error("status", "status", status)

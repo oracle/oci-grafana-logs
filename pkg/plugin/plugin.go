@@ -167,7 +167,7 @@ func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt
 
 		err := o.getConfigProvider(dsSettings.Environment, dsSettings.TenancyMode, settings)
 		if err != nil {
-			return nil, errors.New("broken environment")
+			return nil, err
 		}
 	}
 
@@ -382,7 +382,7 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			// test if PEM key is valid
 			block, _ := pem.Decode([]byte(q.privkey[key]))
 			if block == nil {
-				return errors.New("error with Private Key")
+				return errors.New("Invalid Private Key")
 			}
 			log.DefaultLogger.Error("q.tenancyocid[key]: " + q.tenancyocid[key])
 			log.DefaultLogger.Error("q.user[key]: " + q.user[key])
