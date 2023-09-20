@@ -10,40 +10,23 @@ type OCIResource struct {
 	OCID string `json:"ocid,omitempty"`
 }
 
-type OCIMetricNamesWithNamespace struct {
-	Namespace   string   `json:"namespace,omitempty"`
-	MetricNames []string `json:"metric_names,omitempty"`
+type LabelFieldMetadata struct {
+	LabelName  string
+	LabelValue string
 }
 
-type OCIMetricNamesWithResourceGroup struct {
-	ResourceGroup string   `json:"resource_group,omitempty"`
-	MetricNames   []string `json:"metric_names,omitempty"`
+type GrafanaCommonRequest struct {
+	Environment string
+	TenancyMode string
+	QueryType   string
+	Region      string
+	Tenancy     string // the actual tenancy with the format <configfile entry name/tenancyOCID>
+	TenancyOCID string `json:"tenancyOCID"`
 }
 
-type OCIMetricDimensions struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"values,omitempty"`
-}
-
-type OCIResourceTags struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"values,omitempty"`
-}
-
-type OCIMetricDataPoints struct {
-	TenancyName     string
-	CompartmentName string
-	Region          string
-	MetricName      string
-	ResourceName    string
-	UniqueDataID    string
-	DataPoints      []float64
-	Labels          map[string]string
-}
-
-type OCIResourceTagsResponse struct {
-	ResourceID   string
-	ResourceName string
-	DefinedTags  map[string]map[string]interface{}
-	FreeFormTags map[string]string
+type GrafanaSearchLogsRequest struct {
+	GrafanaCommonRequest
+	SearchQuery   string
+	MaxDataPoints int32
+	PanelId       string
 }

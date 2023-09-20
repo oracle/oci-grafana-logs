@@ -28,7 +28,7 @@ import {
   DEFAULT_TENANCY,
   compartmentsQueryRegex,
 } from "./types";
-import QueryModel from './query_model';
+//import QueryModel from './query_model';
 
 
 export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSourceOptions> {
@@ -62,30 +62,22 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
 
     query.region = templateSrv.replace(query.region, scopedVars);
     query.tenancy = templateSrv.replace(query.tenancy, scopedVars);
-    query.compartment = templateSrv.replace(query.compartment, scopedVars);
-    query.namespace = templateSrv.replace(query.namespace, scopedVars);
-    query.resourcegroup = templateSrv.replace(query.resourcegroup, scopedVars);
-    query.metric = templateSrv.replace(query.metric, scopedVars);
-    if (query.dimensionValues) {
+    //query.compartment = templateSrv.replace(query.compartment, scopedVars);
+    //query.namespace = templateSrv.replace(query.namespace, scopedVars);
+    //query.resourcegroup = templateSrv.replace(query.resourcegroup, scopedVars);
+    /*if (query.dimensionValues) {
       for (let i = 0; i < query.dimensionValues.length; i++) {
         query.dimensionValues[i] = templateSrv.replace(query.dimensionValues[i], scopedVars);
       }
-    }
+    }*/
     if (query.tenancy) {
       query.tenancy = templateSrv.replace(query.tenancy, scopedVars);
     }
-    if (query.compartment) {
-      query.compartment = templateSrv.replace(query.compartment, scopedVars);
-    }
-    if (query.resourcegroup) {
-      query.resourcegroup = templateSrv.replace(query.resourcegroup, scopedVars);
-    }
     
-    const queryModel = new QueryModel(query, getTemplateSrv());
-    if (queryModel.isQueryReady()) {
-      query.queryText = queryModel.buildQuery(String(query.metric));
-    }
-     
+    //const queryModel = new QueryModel(query, getTemplateSrv());
+    query.searchQuery = templateSrv.replace(query.searchQuery, scopedVars);
+    console.log("query text:")
+    console.log(query.searchQuery)
     return query;
   }
 

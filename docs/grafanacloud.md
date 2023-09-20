@@ -99,7 +99,7 @@ Log in to your Grafana Cloud Account and go to the **Administration** section:
 Select **Plugins** and search for **oracle**:
 ![Plugins](images/grafanacloud-plugins.png)
 
-Click on **Oracle CLoud Infrastructure Logs**. You will see the installation option for the plugin. Choose **install via grafana.con**:
+Click on **Oracle Cloud Infrastructure Logs**. You will see the installation option for the plugin. Choose **install via grafana.con**:
 ![Install](images/grafanacloud-installmetrics.png)
 
 You will be forwarded to the grafana.com website where you can proceed with the one-click installation. Make sure you will choose the correct Grafana Cloud account (in this example the account is named **Oracle** yours will be different) and follow the instruction on this web page to complete the plugin installation:
@@ -118,7 +118,7 @@ On the Home Dashboard go to the **Administration** section:
 Select **Data sources** and search for **oracle**:
 ![Plugins](images/grafanacloud-searchdatasource.png)
 
-Click on  **Oracle CLoud Infrastructure Logs** as your data source type.
+Click on  **Oracle Cloud Infrastructure Logs** as your data source type.
 This Configuration screen will appear:
 
 ![Datasource Empty](images/datasource_conf_empty.png)
