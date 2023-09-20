@@ -1,12 +1,12 @@
 {
-  "name": "Oracle CLoud Infrastructure Logs",
+  "name": "Oracle Cloud Infrastructure Logs",
   "id": "oci-logs-datasource",
   "type": "datasource",
   "metrics": true,
   "annotations": false,
   "alerting": false,
   "backend": true,
-  "executable": "oci-metrics-plugin",
+  "executable": "oci-logs-plugin",
   "info": {
     "description": "Oracle Cloud Infrastructure Logs Data Source for Grafana",
     "author": {

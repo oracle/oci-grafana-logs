@@ -21,12 +21,16 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
 	"github.com/oracle/oci-go-sdk/v65/identity"
+	"github.com/oracle/oci-go-sdk/v65/logging"
+	"github.com/oracle/oci-go-sdk/v65/loggingsearch"
 	"github.com/oracle/oci-go-sdk/v65/monitoring"
 
+	"github.com/oracle/oci-grafana-logs/pkg/plugin/constants"
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
 )
 
@@ -47,9 +51,16 @@ type TenancyAccess struct {
 	identityClient   identity.IdentityClient
 	config           common.ConfigurationProvider
 }
+type logTenancyAccess struct {
+	loggingSearchClient     loggingsearch.LogSearchClient
+	loggingManagementClient logging.LoggingManagementClient
+	identityClient          identity.IdentityClient
+	config                  common.ConfigurationProvider
+}
 
 type OCIDatasource struct {
-	tenancyAccess    map[string]*TenancyAccess
+	tenancyAccess    map[string]*logTenancyAccess
+	monTenancyAccess map[string]*TenancyAccess
 	logger           log.Logger
 	nameToOCID       map[string]string
 	timeCacheUpdated time.Time
@@ -129,15 +140,16 @@ func NewOCIConfigFile() *OCIConfigFile {
 // NewOCIDatasourceConstructor - constructor
 func NewOCIDatasourceConstructor() *OCIDatasource {
 	return &OCIDatasource{
-		tenancyAccess: make(map[string]*TenancyAccess),
-		logger:        log.DefaultLogger,
-		nameToOCID:    make(map[string]string),
+		tenancyAccess:    make(map[string]*logTenancyAccess),
+		monTenancyAccess: make(map[string]*TenancyAccess),
+		logger:           log.DefaultLogger,
+		nameToOCID:       make(map[string]string),
 	}
 }
 
 func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	backend.Logger.Debug("plugin", "NewOCIDatasource", settings.ID)
-
+	backend.Logger.Error("plugin", "NewOCIDatasource", "In NewOCIDatasource")
 	o := NewOCIDatasourceConstructor()
 	dsSettings := &models.OCIDatasourceSettings{}
 
@@ -147,13 +159,15 @@ func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt
 	}
 	o.settings = dsSettings
 
-	backend.Logger.Debug("plugin", "dsSettings.Environment", "dsSettings.Environment: "+dsSettings.Environment)
-	backend.Logger.Debug("plugin", "dsSettings.TenancyMode", "dsSettings.TenancyMode: "+dsSettings.TenancyMode)
+	backend.Logger.Error("plugin", "dsSettings.Environment", "dsSettings.Environment: "+dsSettings.Environment)
+	backend.Logger.Error("plugin", "dsSettings.TenancyMode", "dsSettings.TenancyMode: "+dsSettings.TenancyMode)
+	backend.Logger.Error("plugin", "to.enancyAccess", o.tenancyAccess)
 
 	if len(o.tenancyAccess) == 0 {
+
 		err := o.getConfigProvider(dsSettings.Environment, dsSettings.TenancyMode, settings)
 		if err != nil {
-			return nil, errors.New("broken environment")
+			return nil, err
 		}
 	}
 
@@ -176,18 +190,77 @@ func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt
 	return o, nil
 }
 
+func (o *OCIDatasource) getCreateDataFieldElemsForField(dataFieldDefns map[string]*DataFieldElements,
+	totalSamples int, uniqueFieldKey string, fieldName string, fieldType FieldValueType) *DataFieldElements {
+	var dataFieldDefn *DataFieldElements
+	var ok bool
+
+	if dataFieldDefn, ok = dataFieldDefns[uniqueFieldKey]; !ok {
+		o.logger.Debug("Did NOT find existing data field definition", "uniqueKey", uniqueFieldKey)
+		// Since the specified unique key does not exist in the provided map,
+		// create & populate a new DataFieldElements object and add it to the map
+		// Map for the Labels element is always created and if a field has no associated labels then
+		// it will be unused but this does not cause any issues when the data is presented by Grafana
+		dataFieldDefn = &DataFieldElements{
+			Name:   fieldName,
+			Type:   fieldType,
+			Labels: make(map[string]string),
+			Values: nil,
+		}
+
+		/*
+		 * Note that Values arrays are preallocated arrays with totalSamples entries where each entry is nil.
+		 * Only intervals where a corresponding field/label combination has a value will the Values array
+		 * entry have a value. This is important for situations where some field/label combinations don't
+		 * have any value or data in a particular interval.
+		 */
+		if fieldType == FieldValueType(constants.ValueType_Time) {
+			dataFieldDefn.Values = make([]*time.Time, totalSamples)
+		} else if fieldType == FieldValueType(constants.ValueType_Float64) {
+			dataFieldDefn.Values = make([]*float64, totalSamples)
+		} else if fieldType == FieldValueType(constants.ValueType_Int) {
+			dataFieldDefn.Values = make([]*int, totalSamples)
+		} else { // Treat all other data types as a string (including string fields)
+			dataFieldDefn.Values = make([]*string, totalSamples)
+		}
+		dataFieldDefns[uniqueFieldKey] = dataFieldDefn
+	}
+
+	return dataFieldDefn
+}
 func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	backend.Logger.Debug("plugin", "QueryData", req.PluginContext.DataSourceInstanceSettings.Name)
-
+	backend.Logger.Debug("plugin", "QueryData", "starting point ..")
 	// create response struct
 	response := backend.NewQueryDataResponse()
 
 	// loop over queries and execute them individually.
 	for _, q := range req.Queries {
-		res := o.query(ctx, req.PluginContext, q)
+		var frame *data.Frame = nil
+		//var mFieldData = make(map[string]*DataFieldElements)
+		// Create an array of data.Field pointers, one for each data field definition in the
+		// field definition map
 
+		mFieldData, res := o.query(ctx, req.PluginContext, q)
+
+		dfFields := make([]*data.Field, len(mFieldData))
+		backend.Logger.Error("QueryData", "mFieldData", fmt.Sprintf("%v", mFieldData))
 		// saving the response in a hashmap based on with RefID as identifier
 		response.Responses[q.RefID] = res
+		respD := response.Responses[q.RefID]
+		fieldCnt := 0
+		for _, fieldDataElems := range mFieldData {
+			dfFields[fieldCnt] = data.NewField(fieldDataElems.Name, fieldDataElems.Labels, fieldDataElems.Values)
+			backend.Logger.Error("dfFields[fieldCnt]", "dfFields[fieldCnt]", fmt.Sprintf("%v", dfFields[fieldCnt]))
+			fieldCnt += 1
+		}
+		backend.Logger.Error("dfFields1", "dfFields1", fmt.Sprintf("%v", dfFields))
+		// Create a new data Frame using the generated Fields while referencing the query ID
+		frame = data.NewFrame(q.RefID, dfFields...)
+
+		// Add the current frame to the list of frames for all of the provided queries
+		respD.Frames = append(respD.Frames, frame)
+		response.Responses[q.RefID] = respD
 	}
 
 	return response, nil
@@ -201,7 +274,9 @@ func (o *OCIDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealt
 	backend.Logger.Debug("plugin", "CheckHealth", req.PluginContext.PluginID)
 
 	hRes := &backend.CheckHealthResult{}
-
+	backend.Logger.Error("plugin", "CheckHealth", "In Health Check")
+	backend.Logger.Error("plugin", "CheckHealth", ctx)
+	//backend.Logger.Error("plugin", "CheckHealth", o.tenancyAccess["DEFAULT"].config.Region())
 	if err := o.TestConnectivity(ctx); err != nil {
 		hRes.Status = backend.HealthStatusError
 		hRes.Message = err.Error()
@@ -307,55 +382,83 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			// test if PEM key is valid
 			block, _ := pem.Decode([]byte(q.privkey[key]))
 			if block == nil {
-				return errors.New("error with Private Key")
+				return errors.New("Invalid Private Key")
 			}
+			log.DefaultLogger.Error("q.tenancyocid[key]: " + q.tenancyocid[key])
+			log.DefaultLogger.Error("q.user[key]: " + q.user[key])
+			log.DefaultLogger.Error("q.region[key]: " + q.region[key])
+			log.DefaultLogger.Error("q.fingerprint[key]: " + q.fingerprint[key])
+			log.DefaultLogger.Error("q.privkey[key]: " + q.privkey[key])
 			configProvider = common.NewRawConfigurationProvider(q.tenancyocid[key], q.user[key], q.region[key], q.fingerprint[key], q.privkey[key], q.privkeypass[key])
 
 			// creating oci monitoring client
-			mrp := clientRetryPolicy()
+			//mrp := clientRetryPolicy()
 			monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
+			loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 			if err != nil {
-				backend.Logger.Error("Error with config:" + key)
-				return errors.New("error with client")
+				o.logger.Error("Error with config:" + key)
+				return errors.New("error with loggingSearchClient")
 			}
-			monitoringClient.Configuration.RetryPolicy = &mrp
-
-			// creating oci identity client
-			irp := clientRetryPolicy()
+			loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+			if err != nil {
+				o.logger.Error("Error with config:" + key)
+				return errors.New("Error creating loggingManagement client")
+			}
 			identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 			if err != nil {
-				return errors.New("Error creating identity client")
+				return errors.Wrap(err, "Error creating identity client")
 			}
-			identityClient.Configuration.RetryPolicy = &irp
 			tenancyocid, err := configProvider.TenancyOCID()
 			if err != nil {
 				return errors.New("error with TenancyOCID")
 			}
+
 			if tenancymode == "multitenancy" {
-				o.tenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.monTenancyAccess[key+"/"+tenancyocid] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.tenancyAccess[key+"/"+tenancyocid] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
+				log.DefaultLogger.Error("Multitenancy:: tenancyAccess: ", o.tenancyAccess[key+"/"+tenancyocid])
 			} else {
-				o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.monTenancyAccess[SingleTenancyKey] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+				o.tenancyAccess[SingleTenancyKey] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 			}
 		}
 		return nil
 
 	case "OCI Instance":
-		log.DefaultLogger.Debug("Configuring using Instance Principal")
+		log.DefaultLogger.Error("Configuring using Instance Principal")
 		var configProvider common.ConfigurationProvider
 		configProvider, err := auth.InstancePrincipalConfigurationProvider()
+
+		KeyFingerprint, err := configProvider.KeyFingerprint()
+		TenancyOCID, err := configProvider.TenancyOCID()
+		UserOCID, err := configProvider.UserOCID()
+		Region, err := configProvider.Region()
+		//AuthType, err := configProvider.AuthType()
+
+		log.DefaultLogger.Error("KeyFingerprint:" + KeyFingerprint)
+		log.DefaultLogger.Error("TenancyOCID:" + TenancyOCID)
+		log.DefaultLogger.Error("UserOCID:" + UserOCID)
+		log.DefaultLogger.Error("Region: " + Region)
+		//log.DefaultLogger.Error("AuthType: " + AuthType)
 		if err != nil {
 			return errors.New("error with instance principals")
 		}
-		monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
+		//monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
+		loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			backend.Logger.Error("Error with config:" + SingleTenancyKey)
 			return errors.New("error with client")
+		}
+		loggingManagementClient, err := logging.NewLoggingManagementClientWithConfigurationProvider(configProvider)
+		if err != nil {
+			o.logger.Error("Error with config:")
+			return errors.New("Error creating loggingManagement client")
 		}
 		identityClient, err := identity.NewIdentityClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			return errors.New("Error creating identity client")
 		}
-		o.tenancyAccess[SingleTenancyKey] = &TenancyAccess{monitoringClient, identityClient, configProvider}
+		o.tenancyAccess[SingleTenancyKey] = &logTenancyAccess{loggingSearchClient, loggingManagementClient, identityClient, configProvider}
 		return nil
 
 	default:
