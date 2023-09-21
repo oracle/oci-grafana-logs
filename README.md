@@ -25,6 +25,8 @@ place, for Grafana to fetch the logs from Oracle Cloud Logging Service.
 
 #### Installation
 
+Please refers to the following **compatibility matrix** to choose plugin version accordingly to your Grafana installation: [Compatibility Matrix](https://github.com/oracle/oci-grafana-logs/blob/master/docs/compatmatrix.md)
+
 Depending on your installation scenario you can use the following guides:
 
 * Install Grafana and the OCI Logs plugin on a Linux host using [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/linux.md).

@@ -1,16 +1,19 @@
-# Grafana Cloud Installation - Oracle Cloud Infrastructure Data Source for Grafana
+# Grafana Cloud - Oracle Cloud Infrastructure Data Source for Grafana 
 
 ## Background
 
-Grafana is a popular technology that makes it easy to visualize metrics. The Oracle Cloud Infrastructure Data Source for Grafana is used to extend Grafana by adding OCI as a data source. The plugin enables you to visualize metrics related to several OCI resources: Compute, Networking, Storage, and custom metrics.
+Grafana is a popular technology that makes it easy to visualize logs. The [Oracle Cloud Infrastructure Logs Data Source for Grafana](https://grafana.com/grafana/plugins/oci-logs-datasource/) is used to extend Grafana by adding OCI Logging as a data source. The plugin enables you to visualize log records (service, audit, and custom) and Logging derived from log records stored in the OCI Logging service.
 
-This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Data Source for Grafana in **Grafana Cloud**.
+This walkthrough is intended for use by people who would like to deploy Grafana and the OCI Logs Data Source in Grafana Cloud. 
 
-Make sure you have access to the [Monitoring Service](https://docs.cloud.oracle.com/iaas/Content/Monitoring/Concepts/monitoringoverview.htm) and that [metrics have been enabled](https://docs.cloud.oracle.com/iaas/Content/Compute/Tasks/enablingmonitoring.htm) for the resources you are trying to monitor.
+Make sure you have access to the [Logging Service](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/loggingoverview.htm) and that the logs you want to observe and analyze are being collected in your tenancy. See the OCI Logging documentation for information on how to collect or access:
+* [Logs from your compute instances](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/agent_management.htm)
+* [Custom logs from your application/services](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/custom_logs.htm)
+* [OCI service logs](https://docs.oracle.com/en-us/iaas/Content/Logging/Concepts/service_logs.htm).
 
 ## Getting OCI Configuration values
 
-To configure OCI Metrics Grafana Data Source, you'll need to get the necessary provider and resource settings. Please note that with **Grafana Cloud** only version 4.x.x and above are supported. If you are configuring the plugin to work in Multitenancy Mode, you will need to repeat the following steps for each of the Tenancies you want to configure with the plugin (up to 5 additional Tenancies are supported).
+To configure OCI Logging Grafana Data Source, you'll need to get the necessary provider and resource settings. Please note that Migrating from version 2.x.x to 3.x.x will require migrating the existing data source configuration: using version 3.x.x of the plugin with the data source configuration of version 2.x.x is **not possible**. In case you are migrating from previous version 2.x.x of the OCI Logging Grafana Plugin, you can refer to the [**Migration Instructions for Grafana OCI Logging Data Source Settings (User Principals and Single Tenancy mode only)**](migration.md). If you are configuring the plugin to work in Multitenancy Mode, you will need to repeat the following steps for each of the Tenancies you want to configure with the plugin (up to 5 additional Tenancies are supported).
 
 ### Getting the Region
 
@@ -21,7 +24,7 @@ To get the region for your OCI cloud, follow these steps:
 3. The region is listed next to **Home**.
 
 For details and reference, see: [Regions and Availability Domains](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm#top)
-Make note of the region as you'll need it later to configure your OCI Metrics Grafana Data Source.
+Please make note of the region as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 ### Getting the Tenancy OCID
 
@@ -38,7 +41,7 @@ To get the tenancy OCID, follow these steps:
 ![OCI Tenancy](images/oci_tenancy.png)
 
 For details and reference, see: [Where to Get the Tenancy's OCID and User's OCID](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#five)
-Make note of the tenancy OCID as you'll need it later to configure your OCI Metrics Grafana Data Source.
+Please make note of the tenancy OCID as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 ### Getting the User OCID
 
@@ -46,13 +49,13 @@ To get the user OCID, follow these steps:
 
 1. Log in to the OCI console.
 2. From the OCI menu, select **Identity** > **Users**.
-3. Click on the user you want to use with OCI Metrics Grafana Data Source.
+3. Click on the user you want to use with OCI Logging Grafana Data Source.
 4. The user OCID is listed in the **User Details** section.
 
 ![OCI User](images/oci_user.png)
 
 For details and reference, see: [Where to Get the Tenancy's OCID and User's OCID](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#five).
-Make note of the user OCID as you'll need it later to configure your OCI Metrics Grafana Data Source.
+Please make note of the user OCID as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 ### Getting the Private API Key and Fingerprint
 
@@ -73,25 +76,28 @@ To get the private key, follow these steps:
 
 
 For details on how to create and configure keys see [How to Generate an API Signing Key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#two) and [How to Upload the Public Key](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm#three).
-Make note of the private key file location and API key fingerprint as you'll need it later to configure your OCI Metrics Grafana Data Source.
-
+Make note of the private key file location and API key fingerprint as you'll need it later to configure your OCI Logging Grafana Data Source.
 
 ## Configure OCI Identity Policies
 
-In the OCI console under **Identity > Groups** click **Create Group** and create a new group called **grafana**. Add the user configured in the OCI CLI to the newly-created group.
+In the OCI console under **Identity > Groups** click **Create Group** and create a new group called **grafana**. Add the user configured in the OCI CLI to the newly-created group. 
 
-![Screen Shot 2018-12-19 at 3.02.31 PM](images/Screen%20Shot%202018-12-19%20at%203.02.31%20PM.png)
+![OCIConsole-GroupList-Screenshot](images/OCIConsole-GroupList-Screenshot.png)
 
-Under the **Policy** tab click **Create Policy** and create a policy allowing the group to read tenancy metrics. Add the following policy statements:
+Under the **Policy** tab click **Create Policy** and create policies allowing the group to read tenancy log objects and content. Add the following policy statements:
 
-- `allow group grafana to read metrics in tenancy`
+- `allow group grafana to read log-groups in tenancy`
+- `allow group grafana to read log-content in tenancy`
 - `allow group grafana to read compartments in tenancy`
+- `allow group grafana to read audit-events in tenancy`
 
-![Screen Shot 2018-12-19 at 3.00.10 PM](images/Screen%20Shot%202018-12-19%20at%203.00.10%20PM.png)
+![OCIConsole-GroupLogsPolicyCreate-Screenshot](images/OCIConsole-GroupLogsPolicyCreate-Screenshot.png)
 
-## Install Grafana and the OCI Metrics Plugin for Grafana Cloud
+The first two policies can also be limited to specific compartments in your tenancy by adding additional qualifiers to the policy statements.
 
-To [install OCI Metrics Plugin](https://grafana.com/grafana/plugins/oci-logs-datasource/) on Grafana Cloud you need a valid [Grafana Cloud Account](https://grafana.com/products/cloud/).
+## Install Grafana and the OCI Logging Plugin for Grafana Cloud
+
+To [install OCI Logging Plugin](https://grafana.com/grafana/plugins/oci-Logging-datasource/) on Grafana Cloud you need a valid [Grafana Cloud Account](https://grafana.com/products/cloud/).
 
 Log in to your Grafana Cloud Account and go to the **Administration** section:
 ![Administration](images/grafanacloud-administration.png)
@@ -99,36 +105,14 @@ Log in to your Grafana Cloud Account and go to the **Administration** section:
 Select **Plugins** and search for **oracle**:
 ![Plugins](images/grafanacloud-plugins.png)
 
-Click on **Oracle Cloud Infrastructure Logs**. You will see the installation option for the plugin. Choose **install via grafana.con**:
-![Install](images/grafanacloud-installmetrics.png)
+Click on **Oracle Cloud Infrastructure Logging**. You will see the installation option for the plugin. Choose **install via grafana.con**:
+![Install](images/grafanacloud-installlogs.png)
 
 You will be forwarded to the grafana.com website where you can proceed with the one-click installation. Make sure you will choose the correct Grafana Cloud account (in this example the account is named **Oracle** yours will be different) and follow the instruction on this web page to complete the plugin installation:
 ![One-click](images/grafanacloud-oneclick.png)
 
 
-
 ## Configure Grafana
-
-Log in to **Grafana Cloud** using your grafana cloud credentials:
-![Grafana Cloud Login](images/grafanacloud-login.png)
-
-On the Home Dashboard go to the **Administration** section:
-![Administration](images/grafanacloud-administration.png)
-
-Select **Data sources** and search for **oracle**:
-![Plugins](images/grafanacloud-searchdatasource.png)
-
-Click on  **Oracle Cloud Infrastructure Logs** as your data source type.
-This Configuration screen will appear:
-
-![Datasource Empty](images/datasource_conf_empty.png)
-
-For **Environment** choose **local** and then choose between **single** or **multitenancy** as **Tenancy mode**. Please note that with **Grafana Cloud** the **OCI instance** **Environment** option is not supported. 
-
-You can then choose between two different modes as **Tenancy mode**:
-
-* **single**: to use a single specific Tenancy
-* **multitenancy**: to use multiple tenancies
 
 ### Configure Plugin in Single Tenancy Mode
 If you selected **single** as **Tenancy mode** then fill in the following credentials:
@@ -142,7 +126,7 @@ If you selected **single** as **Tenancy mode** then fill in the following creden
 
 The configured data source will look like the following:
 
-![Datasource Filled](images/datasource_conf_filled.png)
+![Datasource Filled](images/datasource_single_full.png)
 
 Click **Save & Test** to return to the home dashboard.
 
@@ -161,7 +145,7 @@ By default, if you selected **multi** as **Tenancy mode** you can configure one 
 
 The configured data source will look like the following:
 
-![Datasource Filled](images/multitenancy_configured.png)
+![Datasource Filled](images/logs_multi_filled.png)
 
 Click **Save & Test** to return to the home dashboard.
 
@@ -171,6 +155,11 @@ After the initial configuration, you can modify the datasource by adding a new t
 
 
 
+On the Oracle Cloud Infrastructure Logs data source configuration page, fill in your **Tenancy OCID**, **Default Region**, and **Environment**. Your **Default region** is the same as your home region listed on the **Tenancy Details** page. For **Environment** choose **OCI Instance**. 
+
+Click **Save & Test** to test the configuration of the Logs data source. Click the Dashboard icon in the left-hand navigation menu to return to the home dashboard.
+
 ## Next Steps
 
-Check out how to use the newly installed and configured plugin in our [Using Grafana with Oracle Cloud Infrastructure Data Source](using.md) walkthrough.
+Check out how to use the newly installed and configured plugin in our [Using Grafana with Oracle Cloud Infrastructure Data Source](using.md) walkthrough. 
+
