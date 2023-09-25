@@ -39,11 +39,12 @@ func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContex
 	backend.Logger.Warn("tmode", "tmode", tmode)
 	var takey string
 
-	if tmode == "multitenancy" {
+	/*if tmode == "multitenancy" {
 		takey = qm.TenancyName
 	} else {
 		takey = SingleTenancyKey
-	}
+	}*/
+	takey = ocidx.GetTenancyAccessKey(qm.TenancyOCID)
 	backend.Logger.Warn("takey", "takey", takey)
 
 	logQueryType := ocidx.identifyQueryType(qm.QueryText)

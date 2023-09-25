@@ -24,13 +24,13 @@ func (o *OCIDatasource) GetTenancyAccessKey(tenancyOCID string) string {
 
 	var takey string
 	tenancymode := o.settings.TenancyMode
-	backend.Logger.Debug("tenancymode", "tenancymode", tenancymode)
+	backend.Logger.Error("tenancymode", "tenancymode", tenancymode)
 	if tenancymode == "multitenancy" {
 		takey = tenancyOCID
 	} else {
 		takey = SingleTenancyKey
 	}
-
+	backend.Logger.Error("GetTenancyAccessKey: takey", "takey", takey)
 	_, ok := o.tenancyAccess[takey]
 	if ok {
 		backend.Logger.Debug("GetTenancyAccessKey", "GetTenancyAccessKey", "valid takey: "+takey)
