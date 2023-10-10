@@ -7,6 +7,7 @@
   "alerting": false,
   "backend": true,
   "executable": "oci-logs-plugin",
+  "logs": true,
   "info": {
     "description": "Oracle Cloud Infrastructure Logs Data Source for Grafana",
     "author": {
@@ -17,26 +18,23 @@
       "large": "img/Oracle-cloud.svg"
     },
     "links": [
-      {
-        "name": "GitHub",
-        "url": "https://github.com/oracle/oci-grafana-logs"
-      },
-      { "name": "UPL", "url": "https://oss.oracle.com/licenses/upl" }
+      {"name": "GitHub", "url": "https://github.com/oracle/oci-grafana-logs"},
+      {"name": "UPL", "url": "https://oss.oracle.com/licenses/upl"}
     ],
-    "version": "5.0.0",
-    "updated": "2023-09-01",
+    "version": "4.0.0",
+    "updated": "2023-10-10",
     "screenshots":[
       {
-        "name":"OCI Metrics Dashboard",
-        "path":"img/OCI_Metrics.png"
+        "name":"OCI Logs Dashboard",
+        "path":"img/OCI_Logs.png"
       }
     ],
     "keywords": [
-      "oci", "oracle", "metrics"
+      "oci", "logs", "oracle"
     ]
   },
   "dependencies": {
     "grafanaDependency": ">=8.0.0",
-    "plugins": [ ]
+    "plugins": []
   }
 }
