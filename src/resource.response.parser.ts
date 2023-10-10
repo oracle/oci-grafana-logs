@@ -10,11 +10,6 @@ export interface OCIResourceItem {
   ocid: string;
 }
 
-export interface OCINamespaceWithMetricNamesItem {
-  namespace: string;
-  metric_names: string[];
-}
-
 export interface OCIResourceGroupWithMetricNamesItem {
   resource_group: string;
   metric_names: string[];
@@ -56,4 +51,13 @@ export class ResponseParser {
     return rList;
   }
 
+  parseCompartments(results: any): OCIResourceItem[] {
+    const compartments: OCIResourceItem[] = [];
+    if (!results) {
+      return compartments;
+    }
+
+    let cList: OCIResourceItem[] = JSON.parse(JSON.stringify(results));
+    return cList;
+  }
 }

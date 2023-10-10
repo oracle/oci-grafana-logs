@@ -8,8 +8,6 @@ import { DataSourceInstanceSettings, ScopedVars, MetricFindValue } from '@grafan
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 import {
   OCIResourceItem,
-  OCINamespaceWithMetricNamesItem,
-  OCIResourceGroupWithMetricNamesItem,
   ResponseParser,
   //OCIResourceMetadataItem,
 } from './resource.response.parser';
@@ -17,7 +15,7 @@ import {
   OCIDataSourceOptions,
   OCIQuery,
   OCIResourceCall,
-  QueryPlaceholder,
+  //QueryPlaceholder,
   regionsQueryRegex,
   tenanciesQueryRegex,
   DEFAULT_TENANCY,
@@ -85,7 +83,7 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
   //  */
   // metricFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
 
-  async logsFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
+  async metricFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
     const templateSrv = getTemplateSrv();
     // const tmode = this.getJsonData().tenancymode;
 
@@ -219,6 +217,6 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return this.postResource(OCIResourceCall.Compartments, reqBody).then((response) => {
       return new ResponseParser().parseCompartments(response);
     });
-  } 
+  }
   
 }
