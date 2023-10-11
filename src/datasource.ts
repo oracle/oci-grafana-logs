@@ -182,24 +182,5 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return this.postResource(OCIResourceCall.Regions, reqBody).then((response) => {
       return new ResponseParser().parseRegions(response);
     });
-  }
-
-  async getCompartments(tenancy: string): Promise<OCIResourceItem[]> {
-    if (this.isVariable(tenancy)) {
-      let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
-      if (var_tenancy !== "") { 
-        tenancy = var_tenancy
-      }      
-    }   
-    if (tenancy === '') {
-      return [];
-    }
-    const reqBody: JSON = {
-      tenancy: tenancy,
-    } as unknown as JSON;
-    return this.postResource(OCIResourceCall.Compartments, reqBody).then((response) => {
-      return new ResponseParser().parseCompartments(response);
-    });
-  }
-  
+  }  
 }
