@@ -50,14 +50,4 @@ export class ResponseParser {
     let rList: string[] = JSON.parse(JSON.stringify(results));
     return rList;
   }
-
-  parseCompartments(results: any): OCIResourceItem[] {
-    const compartments: OCIResourceItem[] = [];
-    if (!results) {
-      return compartments;
-    }
-
-    let cList: OCIResourceItem[] = JSON.parse(JSON.stringify(results));
-    return cList;
-  }
 }

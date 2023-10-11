@@ -18,8 +18,7 @@ import {
   //QueryPlaceholder,
   regionsQueryRegex,
   tenanciesQueryRegex,
-  DEFAULT_TENANCY,
-  compartmentsQueryRegex,
+  DEFAULT_TENANCY
 } from "./types";
 //import QueryModel from './query_model';
 
@@ -109,23 +108,7 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
           return { text: n, value: n };
         });       
       }
-    }
-
-    const compartmentQuery = query.match(compartmentsQueryRegex);
-    if (compartmentQuery){
-      if (this.jsonData.tenancymode === "multitenancy") {
-        const tenancy = templateSrv.replace(compartmentQuery[1]);
-        const compartments = await this.getCompartments(tenancy);
-        return compartments.map(n => {
-          return { text: n.name, value: n.ocid };
-        });
-      } else {
-        const compartments = await this.getCompartments(DEFAULT_TENANCY);
-        return compartments.map(n => {
-          return { text: n.name, value: n.ocid };
-        }); 
-      }   
-    }    
+    }   
     return [];
   }
 

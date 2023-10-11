@@ -126,7 +126,7 @@ If you selected **single** as **Tenancy mode** then fill in the following creden
 
 The configured data source will look like the following:
 
-![Datasource Filled](images/datasource_single_full.png)
+![Datasource Filled](images/logs_single_filled.png)
 
 Click **Save & Test** to return to the home dashboard.
 
