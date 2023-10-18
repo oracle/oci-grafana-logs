@@ -46,7 +46,7 @@ const numMaxResults = (constants.MaxPagesToFetch * constants.LimitPerPage) + 1
 
 // TestConnectivity Check the OCI data source test request in Grafana's Datasource configuration UI.
 func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
-	backend.Logger.Error("client", "TestConnectivity", "testing the OCI connectivity")
+	backend.Logger.Debug("client", "TestConnectivity", "testing the OCI connectivity")
 
 	var reg common.Region
 	//var errAllComp error
@@ -73,7 +73,7 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 		reg = common.StringToRegion(regio)
 		//perfect till above
 		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
-		backend.Logger.Error("TestConnectivity", "Config Key", key, "Testing Tenancy OCID", tenancyocid)
+		backend.Logger.Debug("TestConnectivity", "Config Key", key, "Testing Tenancy OCID", tenancyocid)
 		if tenv == "local" {
 			queri := `search "` + tenancyocid + `" | sort by datetime desc`
 			t := time.Now()
@@ -92,7 +92,7 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 			}
 			status := res.RawResponse.StatusCode
 			if status >= 200 && status < 300 {
-				backend.Logger.Error("TestConnectivity", "Config Key", key, "OK", status)
+				backend.Logger.Debug("TestConnectivity", "Config Key", key, "OK", status)
 				break
 			} else {
 				o.logger.Debug(key, "SKIPPED", status)
@@ -109,10 +109,10 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 			}
 			status := res.RawResponse.StatusCode
 			if status >= 200 && status < 300 {
-				backend.Logger.Error("TestConnectivity", "Config Key", key, "OK", status)
+				backend.Logger.Debug("TestConnectivity", "Config Key", key, "OK", status)
 				break
 			} else {
-				backend.Logger.Error("TestConnectivity", "Config Key", key, "SKIPPED", status)
+				backend.Logger.Debug("TestConnectivity", "Config Key", key, "SKIPPED", status)
 				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed in each Compartments in profile %s", key))
 			}
 		}
@@ -126,7 +126,7 @@ Function generates an array  containing OCI tenancy list in the following format
 <Label/TenancyOCID>
 */
 func (o *OCIDatasource) GetTenancies(ctx context.Context) []models.OCIResource {
-	backend.Logger.Error("client", "GetTenancies", "fetching the tenancies")
+	backend.Logger.Debug("client", "GetTenancies", "fetching the tenancies")
 
 	tenancyList := []models.OCIResource{}
 	for key, _ := range o.tenancyAccess {
@@ -149,7 +149,7 @@ func (o *OCIDatasource) GetTenancies(ctx context.Context) []models.OCIResource {
 // https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingregions.htm
 // https://docs.oracle.com/en-us/iaas/api/#/en/identity/20160918/RegionSubscription/ListRegionSubscriptions
 func (o *OCIDatasource) GetSubscribedRegions(ctx context.Context, tenancyOCID string) []string {
-	backend.Logger.Error("client", "GetSubscribedRegions", "fetching the subscribed region for tenancy: "+tenancyOCID)
+	backend.Logger.Debug("client", "GetSubscribedRegions", "fetching the subscribed region for tenancy: "+tenancyOCID)
 
 	var subscribedRegions []string
 	takey := o.GetTenancyAccessKey(tenancyOCID)
@@ -174,7 +174,7 @@ func (o *OCIDatasource) GetSubscribedRegions(ctx context.Context, tenancyOCID st
 			return nil
 		}
 	}
-	backend.Logger.Error("client", "GetSubscribedRegionstakey", "fetching the subscribed region for tenancy OCID: "+*common.String(tenancyocid))
+	backend.Logger.Debug("client", "GetSubscribedRegionstakey", "fetching the subscribed region for tenancy OCID: "+*common.String(tenancyocid))
 
 	req := identity.ListRegionSubscriptionsRequest{TenancyId: common.String(tenancyocid)}
 
@@ -405,7 +405,6 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 							}
 							mLogTimeSeriesResults[timestampMs].mMetricResults =
 								append(mLogTimeSeriesResults[timestampMs].mMetricResults, &searchResultData)
-							//o.logger.Error("mLogTimeSeriesResults[timestampMs].mMetricResults", "mLogTimeSeriesResults[timestampMs].mMetricResults", fmt.Sprintf("%v", mLogTimeSeriesResults[timestampMs].mMetricResults))
 						} else {
 							o.logger.Error("Unable to extract timestamp value from log row",
 								"panelId", queryPanelId, "refId", queryRefId, "timestampFieldKey", timestampFieldKey,
@@ -575,7 +574,6 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 
 	// Implicit assumption that the request contains this field, must be set by the plugin frontend
 	searchQuery := queryModel.QueryText
-	o.logger.Error("searchQuery", "searchQuery", searchQuery)
 	o.logger.Debug("Processing log metrics search query", "panelId", queryPanelId, "refId", queryRefId,
 		"query", searchQuery, "from", query.TimeRange.From.UTC(), "to", query.TimeRange.To.UTC())
 
@@ -672,7 +670,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 		start = start.Truncate(time.Millisecond)
 		end = end.Truncate(time.Millisecond)
 
-		o.logger.Error("Intermediate logging query time range", "panelId", queryPanelId, "refId", queryRefId,
+		o.logger.Debug("Intermediate logging query time range", "panelId", queryPanelId, "refId", queryRefId,
 			"interval", intervalCnt, "from", start, "to", end)
 
 		// Set the current query time range start and end times for the current interval
@@ -891,7 +889,7 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	req1.TimeEnd = &common.SDKTime{end}
 	// Directly use the query provided by the user
 	req1.SearchQuery = common.String(searchQuery)
-	o.logger.Error("Processing log records search query", "panelId", queryPanelId, "refId", queryRefId,
+	o.logger.Debug("Processing log records search query", "panelId", queryPanelId, "refId", queryRefId,
 		"query", searchQuery, "from", query.TimeRange.From, "to", query.TimeRange.To)
 
 	// Construct the Logging service SearchLogs request structure
@@ -908,7 +906,7 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 				queryPanelId, queryRefId, err))
 			return nil, errors.Wrap(err, "error fetching logs")
 		}
-		o.logger.Error("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId)
+		o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId)
 
 		// Determine how many rows were returned in the search results
 		resultCount := *res.SearchResponse.Summary.ResultCount

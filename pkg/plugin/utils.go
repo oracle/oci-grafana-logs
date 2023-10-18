@@ -31,7 +31,7 @@ func (o *OCIDatasource) GetTenancyAccessKey(tenancyOCID string) string {
 	}
 	_, ok := o.tenancyAccess[takey]
 	if ok {
-		backend.Logger.Error("GetTenancyAccessKey", "GetTenancyAccessKey", "valid takey: "+takey)
+		backend.Logger.Debug("GetTenancyAccessKey", "GetTenancyAccessKey", "valid takey: "+takey)
 	} else {
 		backend.Logger.Error("GetTenancyAccessKey", "GetTenancyAccessKey", "Invalid takey: "+takey)
 		return ""

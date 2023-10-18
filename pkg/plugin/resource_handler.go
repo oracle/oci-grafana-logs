@@ -31,7 +31,7 @@ func (ocidx *OCIDatasource) GetTenanciesHandler(rw http.ResponseWriter, req *htt
 
 	// ts := ocidx.clients.GetTenancies(req.Context())
 	ts := ocidx.GetTenancies(req.Context())
-	backend.Logger.Error("plugin.resource_handler", "GetTenanciesHandler", ts)
+	backend.Logger.Debug("plugin.resource_handler", "GetTenanciesHandler", ts)
 	writeResponse(rw, ts)
 }
 
@@ -47,14 +47,13 @@ func (ocidx *OCIDatasource) GetRegionsHandler(rw http.ResponseWriter, req *http.
 		respondWithError(rw, http.StatusBadRequest, "Failed to read request body", err)
 		return
 	}
-	backend.Logger.Error("plugin.resource_handler", "GetRegionsHandler", "here ..")
 	regions := ocidx.GetSubscribedRegions(req.Context(), rr.Tenancy)
 	if regions == nil {
 		backend.Logger.Error("plugin.resource_handler", "GetSubscribedRegions", "Could not read regions")
 		respondWithError(rw, http.StatusBadRequest, "Could not read regions", nil)
 		return
 	}
-	backend.Logger.Error("plugin.resource_handler", "GetRegionsHandler", regions)
+	backend.Logger.Debug("plugin.resource_handler", "GetRegionsHandler", regions)
 	writeResponse(rw, regions)
 }
 

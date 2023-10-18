@@ -256,7 +256,7 @@ func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataReq
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
 func (o *OCIDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
-	backend.Logger.Error("plugin", "CheckHealth", req.PluginContext.PluginID)
+	backend.Logger.Debug("plugin", "CheckHealth", req.PluginContext.PluginID)
 
 	hRes := &backend.CheckHealthResult{}
 	if err := o.TestConnectivity(ctx); err != nil {
@@ -407,7 +407,7 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		return nil
 
 	case "OCI Instance":
-		log.DefaultLogger.Error("Configuring using Instance Principal")
+		log.DefaultLogger.Debug("Configuring using Instance Principal")
 		var configProvider common.ConfigurationProvider
 		configProvider, err := auth.InstancePrincipalConfigurationProvider()
 
