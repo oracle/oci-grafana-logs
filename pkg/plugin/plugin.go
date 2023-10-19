@@ -187,7 +187,7 @@ func (o *OCIDatasource) getCreateDataFieldElemsForField(dataFieldDefns map[strin
 	var ok bool
 
 	if dataFieldDefn, ok = dataFieldDefns[uniqueFieldKey]; !ok {
-		o.logger.Error("Did NOT find existing data field definition", "uniqueKey", uniqueFieldKey)
+		o.logger.Debug("Did NOT find existing data field definition", "uniqueKey", uniqueFieldKey)
 		// Since the specified unique key does not exist in the provided map,
 		// create & populate a new DataFieldElements object and add it to the map
 		// Map for the Labels element is always created and if a field has no associated labels then

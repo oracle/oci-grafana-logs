@@ -29,7 +29,7 @@ func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContex
 	takey = ocidx.GetTenancyAccessKey(qm.TenancyOCID)
 
 	logQueryType := ocidx.identifyQueryType(qm.QueryText)
-	backend.Logger.Warn("plugin.query", "logQueryType", logQueryType)
+	backend.Logger.Debug("plugin.query", "logQueryType", logQueryType)
 
 	var processErr error
 	fromMs := query.TimeRange.From.UnixNano() / int64(time.Millisecond)
