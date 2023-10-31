@@ -1,6 +1,6 @@
 ## Migration Instructions for Grafana OCI Logging Data Source Settings (User Principals and Single Tenancy mode only)
 
-DO NOT USE this migration guide if your OCI Logging Data Source is configured to use the `Instance Principals` authentication method. This guide is intended for users who are using the `User Principal` authentication method! In case your Data Source is using the `Instance Principals` authentication method there is no need to migrate. 
+DO NOT USE this migration guide if your OCI Logging Data Source is configured to use the `Instance Principals` authentication method. This guide is intended for the users who are using the `User Principal` authentication method! In case your Data Source is using the `Instance Principals` authentication method there is no need to migrate. 
 
 This document describes the steps to migrate data from the `.oci/config` file to the Grafana data source settings for the following variables:
 

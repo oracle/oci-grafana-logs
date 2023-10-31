@@ -117,7 +117,7 @@ Issues and questions about this plugin can be posted
 
 ## Contributing
 
-This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](https://github.com/oracle/oci-grafana-logs/blob/main/CONTRIBUTING.md)
+This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](https://github.com/oracle/oci-grafana-logs/blob/main/CONTRIBUTING.md) 
 
 ## Security
 
