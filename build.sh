@@ -1,15 +1,23 @@
 #!/bin/bash
 
 #Do grunt work
+# nvm install 12.20
+# nvm use 12.20
 
 if [[ ! -d ./node_modules ]]; then
-  echo "dependencies not installed try running: npm install"
+  echo "dependencies not installed try running: yarn"
   exit 1
 fi
 rm -rf ./oci-logs-datasource
-./node_modules/.bin/grunt
+rm ./oci-logs-datasource.zip 
+rm ./plugin.tar
+# yarn create @grafana/plugin
+yarn run build
+if [ $? -ne 0 ]; then
+    echo "yarn returned error"
+    exit 1
+fi
 
-if [ $? -ne 0 ]; then { echo "Unable to find mage" ; exit 1; } fi
 mage --debug -v
 
 cp LICENSE.txt ./dist/LICENSE
@@ -36,9 +44,10 @@ zip -r oci-logs-datasource ./oci-logs-datasource
 
 # yarn
 # For grafana publishing
-# yarn install
-
+# yarn install --pure-lockfile && yarn build
+#
 # Please make sure if you have the api keys installed in bash profile in name,  GRAFANA_API_KEY
 # Note : Please make sure that you are running the commands in a non-proxy env and without vpn, else grafana signing might fail"
 # yarn  global add @grafana/toolkit
 # grafana-toolkit plugin:sign
+
