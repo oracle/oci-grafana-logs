@@ -4,6 +4,13 @@ Here are a few capabilities for you to explore after installing and configuring 
 
 To configure and use the plugin with the multi-tenancy support, please refer to the following document: [Multi-tenancy support](multitenancy.md)
 
+
+## Migrate to Version 5.x 
+Version 5 of the plugin generally maintains backward compatibility with previous versions. In general, Dashboards do not need to be modified, with a couple of exceptions:
+
+- Dashboards that are set up to use one or more dimension template variables need to be modified by removing the dimensionsKey variable and using the new dimension variable that contains both key and value.See [**Templating**](#templating) for further details.
+- Dashboards that are set up to use dimension key and dimension value must be modified to make use of the new dimension field. See [**here**](#new-dimension-selector-in-version-5-of-the-plugin) for further details.
+
 ## Multitenancy support
 
 This version of the OCI plugin includes multitenancy support. That means that the plugin is able to query different tenancies as they are configured in the .oci/config file. Instance principals are not yet supported to operate in multitenancy mode.

@@ -92,7 +92,7 @@ In the search box at the top of the resulting page, enter 'oracle'.
 
 ![Grafana-SelectOCILogsDataSource-Screenshot](images/Grafana-SelectOCILogsDataSource-Screenshot.png)
 
-On the Oracle Cloud Infrastructure Logs data source configuration page, fill in your **Tenancy OCID**, **Default Region**, and **Environment**. Your **Default region** is the same as your home region listed in the **Tenancy Details** page. For **Environment** choose **OCI Instance**. 
+On the Oracle Cloud Infrastructure Logs data source configuration page, fill in your **Tenancy OCID**, **Default Region**, and **Authentication Provider**. Your **Default region** is the same as your home region listed in the **Tenancy Details** page. For **Authentication Provider** choose **OCI Instance**. 
 
 Click **Save & Test** to test the configuration of the Logs data source. Click the Dashboard icon in the left hand navigation menu to return to the home dashboard.
 
