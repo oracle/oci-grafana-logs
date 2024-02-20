@@ -21,8 +21,8 @@
       {"name": "GitHub", "url": "https://github.com/oracle/oci-grafana-logs"},
       {"name": "UPL", "url": "https://oss.oracle.com/licenses/upl"}
     ],
-    "version": "4.0.0",
-    "updated": "2023-10-10",
+    "version": "4.0.1",
+    "updated": "2024-02-20",
     "screenshots":[
       {
         "name":"OCI Logs Dashboard",
