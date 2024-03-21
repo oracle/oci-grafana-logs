@@ -52,12 +52,24 @@ export const QueryEditor: React.FC<Props> = (props) => {
 
   // Custom input field for Single Tenancy Mode
   const CustomInput = ({ ...props }) => {
-    useEffect(() => {    
-      if (!hasCalledGetTenancyDefault) {
+    const [isReady, setIsReady] = useState(false);
+  
+    useEffect(() => {
+      if (!hasCalledGetTenancyDefault && isReady) {
+        const getTenancyDefault = async () => {
+          const tname = 'DEFAULT/';
+          const tvalue = 'DEFAULT/';
+          onApplyQueryChange({ ...query, tenancyName: tname, tenancy: tvalue }, false);
+          setHasCalledGetTenancyDefault(true);
+        };
         getTenancyDefault();
-        setHasCalledGetTenancyDefault(true);
       }
+    }, [isReady]);
+  
+    useEffect(() => {
+      setIsReady(true);
     }, []);
+  
     return <Input {...props} />;
   };
 
@@ -96,11 +108,6 @@ export const QueryEditor: React.FC<Props> = (props) => {
       return options;
   };
   
-  const getTenancyDefault = async () => {
-    const tname = 'DEFAULT/';
-    const tvalue = 'DEFAULT/';
-    onApplyQueryChange({ ...query, tenancyName: tname, tenancy: tvalue }, false);
-  };
 
   const onTenancyChange = async (data: any) => {
     setTenancyValue(data);
