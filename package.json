@@ -22,7 +22,7 @@
   },
   "engineStrict": true,
   "devDependencies": {
-    "@babel/core": "^7.16.7",
+    "@babel/core": "^7.23.2",
     "@grafana/e2e": "9.3.8",
     "@grafana/e2e-selectors": "9.3.8",
     "@grafana/eslint-config": "^5.1.0",
