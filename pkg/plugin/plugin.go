@@ -45,11 +45,13 @@ var (
 	re               = regexp.MustCompile(`(?m)\w+Name`)
 )
 
-/*type TenancyAccess struct {
-	monitoringClient monitoring.MonitoringClient
-	identityClient   identity.IdentityClient
-	config           common.ConfigurationProvider
-}*/
+/*
+	type TenancyAccess struct {
+		monitoringClient monitoring.MonitoringClient
+		identityClient   identity.IdentityClient
+		config           common.ConfigurationProvider
+	}
+*/
 type logTenancyAccess struct {
 	loggingSearchClient     loggingsearch.LogSearchClient
 	loggingManagementClient logging.LoggingManagementClient
@@ -58,10 +60,10 @@ type logTenancyAccess struct {
 }
 
 type OCIDatasource struct {
-	tenancyAccess    map[string]*logTenancyAccess
-	logger           log.Logger
-	nameToOCID       map[string]string
-	timeCacheUpdated time.Time
+	tenancyAccess map[string]*logTenancyAccess
+	logger        log.Logger
+	nameToOCID    map[string]string
+	// timeCacheUpdated time.Time
 	backend.CallResourceHandler
 	// clients  *client.OCIClients
 	settings *models.OCIDatasourceSettings
