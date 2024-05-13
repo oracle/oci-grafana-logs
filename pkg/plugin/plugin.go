@@ -45,11 +45,13 @@ var (
 	re               = regexp.MustCompile(`(?m)\w+Name`)
 )
 
-/*type TenancyAccess struct {
-	monitoringClient monitoring.MonitoringClient
-	identityClient   identity.IdentityClient
-	config           common.ConfigurationProvider
-}*/
+/*
+	type TenancyAccess struct {
+		monitoringClient monitoring.MonitoringClient
+		identityClient   identity.IdentityClient
+		config           common.ConfigurationProvider
+	}
+*/
 type logTenancyAccess struct {
 	loggingSearchClient     loggingsearch.LogSearchClient
 	loggingManagementClient logging.LoggingManagementClient
@@ -120,6 +122,8 @@ type OCISecuredSettings struct {
 	User_5        string `json:"user5,omitempty"`
 	Fingerprint_5 string `json:"fingerprint5,omitempty"`
 	Privkey_5     string `json:"privkey5,omitempty"`
+
+	Xtenancy_0 string `json:"xtenancy0,omitempty"`
 }
 
 // NewOCIConfigFile - constructor
@@ -308,6 +312,8 @@ func OCILoadSettings(req backend.DataSourceInstanceSettings) (*OCIConfigFile, er
 	dat.Profile_4 = nonsecdat.Profile_4
 	dat.Profile_5 = nonsecdat.Profile_5
 
+	dat.Xtenancy_0 = nonsecdat.Xtenancy_0
+
 	v := reflect.ValueOf(dat)
 	typeOfS := v.Type()
 	var key string
@@ -374,9 +380,6 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 			}
 			configProvider = common.NewRawConfigurationProvider(q.tenancyocid[key], q.user[key], q.region[key], q.fingerprint[key], q.privkey[key], q.privkeypass[key])
 
-			// creating oci monitoring client
-			//mrp := clientRetryPolicy()
-			//monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
 			loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 			if err != nil {
 				o.logger.Error("Error with config:" + key)
@@ -414,7 +417,12 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 		if err != nil {
 			return errors.New("error with instance principals")
 		}
-		//monitoringClient, err := monitoring.NewMonitoringClientWithConfigurationProvider(configProvider)
+		if o.settings.Xtenancy_0 != "" {
+			log.DefaultLogger.Debug("Configuring using Cross Tenancy Instance Principal")
+			tocid, _ := configProvider.TenancyOCID()
+			log.DefaultLogger.Debug("Source Tenancy OCID: " + tocid)
+			log.DefaultLogger.Debug("Target Tenancy OCID: " + o.settings.Xtenancy_0)
+		}
 		loggingSearchClient, err := loggingsearch.NewLogSearchClientWithConfigurationProvider(configProvider)
 		if err != nil {
 			backend.Logger.Error("Error with config:" + SingleTenancyKey)

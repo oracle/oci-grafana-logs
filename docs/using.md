@@ -307,3 +307,31 @@ While the above process for creating and using template variables is focused on 
 ![Grafana-TemplateVars-SelectionOptions-Screenshot](images/Grafana-TemplateVars-SelectionOptions-Screenshot.png)
 
 Support for template variables that can have multiple values or a wildcard for 'all' values will be considered as a future enhancement for the OCI Logs data source plugin. 
+ 
+
+## Alerting
+Version 5.5 of the metrics plugin introduces the Alerting capability.
+For detailed instruction how to work with alerts in Grafana, you may reference to the official documentation available at [Grafana Alerting](https://grafana.com/docs/grafana/latest/alerting/) web page.
+
+The overall procedure is like the following (in Grafana 10):
+1. Open the dashboard you created earlier
+2. Edit any existing panel.
+3. Click on the Alert tab underneath the panel.
+4. Click on Create alert rule from this panel button.
+5. In Expressions section, in the Threshold expression C, set the threshold
+6. Click on Set as alert condition on Threshold expression C. Your alert should now look as follows:
+![Alert Threshold](images/create-alert-expression.png)
+Expression section showing B &quot;reduce&quot; with Input: A, Function: Last, Mode: Strict, C Threshold with Input: B, Is Above: 15 and Alert Condition enabled indicator
+Expression section showing B "reduce" with Input: A, Function: Last, Mode: Strict, C Threshold with Input: B, Is Above: 15 and Alert Condition enabled indicator
+7. In Set alert evaluation behavior section, click on New folder button and create a new folder to store an evaluation rule.
+8. Then, click on New evaluation group button and create a new evaluation group; choose a name and set the Evaluation interval.
+9. Click Save rule and exit button.
+10. Save the dashboard.
+
+After some time the alert rule evaluates and transitions into Alerting state.
+
+### Known limitations with Alerts
+
+#### Alerts and Template vars
+Template variables are not supported in alerts. If you are setting up an alert from a panel which uses template vars, the alert will take the last chosen values.
+Alert setting from panels which are using template variables in raw mode in is not supported. In that case you must rewrite your MQL statement when defyning the alert using explicit expressions without template vars. 

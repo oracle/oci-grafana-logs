@@ -52,16 +52,11 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 	//var errAllComp error
 
 	tenv := o.settings.Environment
-	tmode := o.settings.TenancyMode
 	if len(o.tenancyAccess) == 0 {
 		return fmt.Errorf("TestConnectivity failed: cannot read o.tenancyAccess")
 	}
 	for key, _ := range o.tenancyAccess {
-		if tmode == "multitenancy" && tenv == "OCI Instance" {
-			return errors.New("Multitenancy mode using instance principals is not implemented yet.")
-		}
-
-		tenancyocid, tenancyErr := o.tenancyAccess[key].config.TenancyOCID()
+		tenancyocid, tenancyErr := o.FetchTenancyOCID(key)
 		if tenancyErr != nil {
 			return errors.Wrap(tenancyErr, "error fetching TenancyOCID")
 		}
@@ -122,6 +117,45 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 }
 
 /*
+Fetch TenancyOcid function
+*/
+func (o *OCIDatasource) FetchTenancyOCID(takey string) (string, error) {
+	tenv := o.settings.Environment
+	tenancymode := o.settings.TenancyMode
+	xtenancy := o.settings.Xtenancy_0
+	var tenancyocid string
+	var tenancyErr error
+
+	if tenancymode == "multitenancy" && tenv == "OCI Instance" {
+		return "", errors.New("Multitenancy mode using instance principals is not implemented yet.")
+	}
+
+	if tenancymode == "multitenancy" {
+		if len(takey) <= 0 || takey == NoTenancy {
+			o.logger.Error("Unable to get Multi-tenancy OCID")
+			return "", errors.Wrap(tenancyErr, "error fetching TenancyOCID")
+		} else {
+			res := strings.Split(takey, "/")
+			tenancyocid = res[1]
+		}
+	} else {
+		if xtenancy != "" && tenv == "OCI Instance" {
+			o.logger.Debug("Cross Tenancy Instance Principal detected")
+			tocid, _ := o.tenancyAccess[takey].config.TenancyOCID()
+			o.logger.Debug("Source Tenancy OCID: " + tocid)
+			o.logger.Debug("Target Tenancy OCID: " + o.settings.Xtenancy_0)
+			tenancyocid = xtenancy
+		} else {
+			tenancyocid, tenancyErr = o.tenancyAccess[takey].config.TenancyOCID()
+			if tenancyErr != nil {
+				return "", errors.Wrap(tenancyErr, "error fetching TenancyOCID")
+			}
+		}
+	}
+	return tenancyocid, nil
+}
+
+/*
 Function generates an array  containing OCI tenancy list in the following format:
 <Label/TenancyOCID>
 */
@@ -153,27 +187,17 @@ func (o *OCIDatasource) GetSubscribedRegions(ctx context.Context, tenancyOCID st
 
 	var subscribedRegions []string
 	takey := o.GetTenancyAccessKey(tenancyOCID)
-	tenancymode := o.settings.TenancyMode
-	var tenancyocid string
-	var tenancyErr error
 
 	if len(takey) == 0 {
 		backend.Logger.Error("client", "GetSubscribedRegions", "invalid takey")
 		return nil
 	}
-	if tenancymode == "multitenancy" {
-		if len(takey) <= 0 || takey == NoTenancy {
-			o.logger.Error("Unable to get Multi-tenancy OCID")
-			return nil
-		}
-		res := strings.Split(takey, "/")
-		tenancyocid = res[1]
-	} else {
-		tenancyocid, tenancyErr = o.tenancyAccess[takey].config.TenancyOCID()
-		if tenancyErr != nil {
-			return nil
-		}
+	tenancyocid, tenancyErr := o.FetchTenancyOCID(takey)
+	if tenancyErr != nil {
+		backend.Logger.Warn("client", "GetSubscribedRegions", tenancyErr)
+		return nil
 	}
+
 	backend.Logger.Debug("client", "GetSubscribedRegionstakey", "fetching the subscribed region for tenancy OCID: "+*common.String(tenancyocid))
 
 	req := identity.ListRegionSubscriptionsRequest{TenancyId: common.String(tenancyocid)}
