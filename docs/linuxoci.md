@@ -58,6 +58,10 @@ To start the Grafana server, run: `sudo systemctl start grafana-server`.
 
 ## Configure Grafana
 
+You can use a manual configuration or a programatic configuration.
+In case you want to use the datasource.yaml based plugin configuration you can refers to this document: [Data source configuration using yaml file](datasource_configuration.md)
+For manual approach continue to read this document.
+
 The next step is to configure the plugin. To find the IP address of the newly-created instance, navigate to Compute > Instances > [Your Instance]. The Public IP address is listed under the Primary VNIC Information section. Connect to Grafana via port forward by running `ssh opc@[Instance Public IP] -L 3000:localhost:3000`. 
 
 Navigate to the Grafana homepage at http://localhost:3000.
