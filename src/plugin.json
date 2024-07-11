@@ -4,7 +4,7 @@
   "type": "datasource",
   "metrics": true,
   "annotations": false,
-  "alerting": true,
+  "alerting": false,
   "backend": true,
   "executable": "oci-logs-plugin",
   "logs": true,
@@ -21,8 +21,8 @@
       {"name": "GitHub", "url": "https://github.com/oracle/oci-grafana-logs"},
       {"name": "UPL", "url": "https://oss.oracle.com/licenses/upl"}
     ],
-    "version": "4.0.2",
-    "updated": "2024-03-21",
+    "version": "5.0.0",
+    "updated": "2024-07-11",
     "screenshots":[
       {
         "name":"OCI Logs Dashboard",
@@ -34,7 +34,7 @@
     ]
   },
   "dependencies": {
-    "grafanaDependency": ">=8.5.0",
+    "grafanaDependency": ">=9.0.0",
     "plugins": []
   }
 }
