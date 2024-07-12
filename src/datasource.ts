@@ -18,6 +18,7 @@ import {
   //QueryPlaceholder,
   regionsQueryRegex,
   tenanciesQueryRegex,
+  generalQueryRegex,
   DEFAULT_TENANCY
 } from "./types";
 //import QueryModel from './query_model';
@@ -108,7 +109,24 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
           return { text: n, value: n };
         });       
       }
-    }   
+    }
+
+    const generalQuery = query.match(generalQueryRegex);
+    if (generalQuery) {
+      if (this.jsonData.tenancymode === "multitenancy") {
+        const tenancy = templateSrv.replace(regionQuery[1]);
+        const general = await this.getSubscribedRegions(tenancy);
+        return general.map(n => {
+          return { text: n, value: n };
+        });
+      } else {
+        const general = await this.getSubscribedRegions(DEFAULT_TENANCY);
+        return general.map(n => {
+          return { text: n, value: n };
+        });       
+      }
+    }
+
     return [];
   }
 
