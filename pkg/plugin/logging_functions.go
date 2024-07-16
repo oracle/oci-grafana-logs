@@ -1049,3 +1049,54 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	}
 	return mFieldDefns, nil
 }
+
+func (o *OCIDatasource) getQuery(ctx context.Context, tenancyOCID string, QueryText string) (map[string]*DataFieldElements, backend.DataResponse) {
+	backend.Logger.Debug("plugin.query", "query", "query initiated for "+QueryText)
+	// Creating the Data response for query
+	response := backend.DataResponse{}
+	takey := o.GetTenancyAccessKey(tenancyOCID)
+
+	if len(takey) == 0 {
+		backend.Logger.Error("client", "GetSubscribedRegions", "invalid takey")
+		return nil
+	}
+	tenancyocid, tenancyErr := o.FetchTenancyOCID(takey)
+	if tenancyErr != nil {
+		backend.Logger.Warn("client", "GetSubscribedRegions", tenancyErr)
+		return nil
+	}
+
+	backend.Logger.Debug("client", "GetSubscribedRegionstakey", "fetching the subscribed region for tenancy OCID: "+*common.String(tenancyocid))
+
+	req := identity.ListRegionSubscriptionsRequest{TenancyId: common.String(tenancyocid)}
+
+	takey = o.GetTenancyAccessKey(tenancyOCID)
+
+	logQueryType := o.identifyQueryType(QueryText)
+	backend.Logger.Debug("plugin.query", "logQueryType", logQueryType)
+
+	var processErr error
+	fromMs := query.TimeRange.From.UnixNano() / int64(time.Millisecond)
+	toMs := query.TimeRange.To.UnixNano() / int64(time.Millisecond)
+	var mFieldData = make(map[string]*DataFieldElements)
+
+	if logQueryType == QueryType_LogMetrics_TimeSeries {
+		ocidx.logger.Debug("Logging query WILL return numeric data over intervals", "refId", query.RefID)
+		// Call method that parses log metric results and produces the required field definitions
+		mFieldData, processErr = ocidx.processLogMetricTimeSeries(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+	} else if logQueryType == QueryType_LogMetrics_NoInterval {
+		ocidx.logger.Debug("Logging query will NOT return numeric data over entire time range", "refId", query.RefID)
+		// Call method that parses log metric results and produces the required field definitions
+		mFieldData, processErr = ocidx.processLogMetrics(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+
+	} else { // QueryType_LogRecords
+		ocidx.logger.Debug("Logging query will return log records for the specified time interval", "refId", query.RefID)
+		// Call method that parses log record results and produces the required field definitions
+		mFieldData, processErr = ocidx.processLogRecords(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+	}
+	if processErr != nil {
+		return nil, response
+	}
+
+	return mFieldData, response
+}

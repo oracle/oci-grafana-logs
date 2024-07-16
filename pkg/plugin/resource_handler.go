@@ -18,6 +18,12 @@ type rootRequest struct {
 	Tenancy string `json:"tenancy"`
 }
 
+type queryRequest struct {
+	Tenancy     string `json:"tenancy"`
+	Compartment string `json:"compartment"`
+	Query       string `json:"query"`
+}
+
 func (ocidx *OCIDatasource) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/tenancies", ocidx.GetTenanciesHandler)
 	mux.HandleFunc("/regions", ocidx.GetRegionsHandler)
@@ -55,6 +61,28 @@ func (ocidx *OCIDatasource) GetRegionsHandler(rw http.ResponseWriter, req *http.
 	}
 	backend.Logger.Debug("plugin.resource_handler", "GetRegionsHandler", regions)
 	writeResponse(rw, regions)
+}
+
+func (ocidx *OCIDatasource) GetQueryHandler(rw http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		respondWithError(rw, http.StatusMethodNotAllowed, "Invalid method", nil)
+		return
+	}
+
+	var rr queryRequest
+	if err := jsoniter.NewDecoder(req.Body).Decode(&rr); err != nil {
+		backend.Logger.Error("plugin.resource_handler", "GetQueryHandler", err)
+		respondWithError(rw, http.StatusBadRequest, "Failed to read request body", err)
+		return
+	}
+	resp, _ := ocidx.QueryData(req.Context(), rr.Query)
+	if resp == nil {
+		backend.Logger.Error("plugin.resource_handler", "query", "Could not read regions")
+		respondWithError(rw, http.StatusBadRequest, "Could not read regions", nil)
+		return
+	}
+	backend.Logger.Debug("plugin.resource_handler", "GetQueryHandler", resp)
+	writeResponse(rw, resp)
 }
 
 func writeResponse(rw http.ResponseWriter, resp interface{}) {

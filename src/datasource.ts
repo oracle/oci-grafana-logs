@@ -114,14 +114,18 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     const generalQuery = query.match(generalQueryRegex);
     if (generalQuery) {
       if (this.jsonData.tenancymode === "multitenancy") {
-        const tenancy = templateSrv.replace(regionQuery[1]);
+        const tenancy = templateSrv.replace(generalQuery[1]);
+        // const region = templateSrv.replace(generalQuery[2]);        
         const general = await this.getSubscribedRegions(tenancy);
         return general.map(n => {
+          console.log(generalQuery[3])
           return { text: n, value: n };
         });
       } else {
+        // const region = templateSrv.replace(generalQuery[1]);        
         const general = await this.getSubscribedRegions(DEFAULT_TENANCY);
         return general.map(n => {
+          console.log(generalQuery[2])
           return { text: n, value: n };
         });       
       }
