@@ -77,17 +77,14 @@ func (ocidx *OCIDatasource) GetQueryHandler(rw http.ResponseWriter, req *http.Re
 		return
 	}
 
-	resp, _ := ocidx.lb_get_logs(req.Context(), rr.Tenancy, rr.Region, rr.Query)
+	resp, _ := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query)
 	backend.Logger.Error("plugin.resource_handler", "PIPPACCIO", resp)
 
-	// resp := ocidx.getQuery(req.Context(), rr.Tenancy, rr.Region)
-	// backend.Logger.Error("plugin.resource_handler", "PIPPO", resp)
-
-	// if resp == nil {
-	// 	backend.Logger.Error("plugin.resource_handler", "query", "Could not get Qury Result")
-	// 	respondWithError(rw, http.StatusBadRequest, "Could not get Qury Result", nil)
-	// 	return
-	// }
+	if resp == nil {
+		backend.Logger.Error("plugin.resource_handler", "query", "Could not get Qury Result")
+		respondWithError(rw, http.StatusBadRequest, "Could not get Qury Result", nil)
+		return
+	}
 	backend.Logger.Debug("plugin.resource_handler", "GetQueryHandler", resp)
 	writeResponse(rw, resp)
 }

@@ -1053,9 +1053,16 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	return mFieldDefns, nil
 }
 
-func (o *OCIDatasource) lb_get_logs(ctx context.Context, tenancyOCID string, region string, QueryText string) ([]string, error) {
+func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string) ([]string, error) {
 	takey := o.GetTenancyAccessKey(tenancyOCID)
-	searchQuery := `search "ocid1.tenancy.oc1..aaaaaaaafuy5zangpjvelq5adgg4mtr4uu725r7p3gwoh4egzzkll4vdhpfa/ocid1.loggroup.oc1.eu-frankfurt-1.amaaaaaam2jpcsyafdmhkotuj2klzxx223vjw3myeau6257qlkoervvkuyea/ocid1.log.oc1.eu-frankfurt-1.amaaaaaam2jpcsyaueju3bmt4dfnr7mzjgwnd22uyhiqyzexactsosvcmbza"| sort by datetime desc | where data.destinationPort=22  | summarize count() by rounddown(datetime, '1m'), data.sourceAddress`
+
+	type Data struct {
+		Timestamp    string `json:"timestamp"`
+		ClientAddr   string `json:"clientAddr"`
+		ListenerName string `json:"listenerName"`
+	}
+	// searchQuery := `search "ocid1.tenancy.oc1..aaaaaaaafuy5zangpjvelq5adgg4mtr4uu725r7p3gwoh4egzzkll4vdhpfa/ocid1.loggroup.oc1.eu-frankfurt-1.amaaaaaam2jpcsyafdmhkotuj2klzxx223vjw3myeau6257qlkoervvkuyea/ocid1.log.oc1.eu-frankfurt-1.amaaaaaam2jpcsyaueju3bmt4dfnr7mzjgwnd22uyhiqyzexactsosvcmbza"| sort by datetime desc | where data.destinationPort=22  | summarize count() by rounddown(datetime, '1m'), data.sourceAddress`
+
 	o.logger.Debug("PAPEROGA", "tenancyOCID", tenancyOCID)
 	o.logger.Debug("PAPEROGA", "region", region)
 	o.logger.Debug("PAPEROGA", "QueryText", QueryText)
@@ -1073,22 +1080,16 @@ func (o *OCIDatasource) lb_get_logs(ctx context.Context, tenancyOCID string, reg
 	req1.TimeStart = &common.SDKTime{start}
 	req1.TimeEnd = &common.SDKTime{end}
 	// Directly use the query provided by the user
-	req1.SearchQuery = common.String(searchQuery)
+	req1.SearchQuery = common.String(QueryText)
 
 	var results []string
+	var data Data
 
 	// Construct the Logging service SearchLogs request structure
 	searchLogsRequest := loggingsearch.SearchLogsRequest{
 		SearchLogsDetails: req1,
 		Limit:             common.Int(constants.LimitPerPage),
 	}
-	// searchLogsRequest := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(searchQuery),
-	// 	TimeStart:         &common.SDKTime{Time: start},
-	// 	TimeEnd:           &common.SDKTime{Time: end},
-	// 	Limit:             common.Int(constants.LimitPerPage),
-	// 	IsReturnFieldInfo: common.Bool(false)}}
-	// searchLogsResponse, err := loggingSearchClient.SearchLogs(context.Background(), searchLogsRequest)
-	region = "eu-frankfurt-1"
 
 	reg := common.StringToRegion(region)
 	o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
@@ -1122,14 +1123,15 @@ func (o *OCIDatasource) lb_get_logs(ctx context.Context, tenancyOCID string, reg
 			// var fieldDefn map[string]*DataFieldElements
 			// if searchResultData, ok := (*searchLogsResponse.SearchResponse.Results[0].Data).(map[string]interface{}); ok {
 			if searchResultData, ok := (*logSearchResult.Data).(map[string]interface{}); ok {
+				o.logger.Debug("CLARABELLAsearchResultData", "searchResultData", searchResultData)
 
 				if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
 					o.logger.Debug("CLARABELLA", "logContent", logContent)
 
-					mLogContent, ok := logContent.(map[string]interface{})
-					if ok == true {
+					if mLogContent, ok := logContent.(map[string]interface{}); ok {
 						for key, value := range mLogContent {
 							if key == constants.LogSearchResultsField_Data {
+
 								var logData string = ""
 								logJSON, marerr := json.Marshal(value)
 								if marerr == nil {
@@ -1138,10 +1140,11 @@ func (o *OCIDatasource) lb_get_logs(ctx context.Context, tenancyOCID string, reg
 									fmt.Println("Error:", err)
 									return nil, err
 								}
-								// err := json.Unmarshal([]byte(logData), &data)
-								// if err != nil {
-								// 	log.Fatal(err)
-								// }
+								err := json.Unmarshal([]byte(logData), &data)
+								if err != nil {
+									o.logger.Debug("CLARABELLAQ", "Cannot unmarshal query results", err)
+									return nil, err
+								}
 								o.logger.Debug("CLARABELLAQ", "query", logData)
 							}
 						} // for each field key in the logContent field
@@ -1151,7 +1154,7 @@ func (o *OCIDatasource) lb_get_logs(ctx context.Context, tenancyOCID string, reg
 						return nil, err
 					}
 				} else {
-					result, err := extractDataValue(*logSearchResult.Data)
+					result, err := FilterMap(*logSearchResult.Data)
 					if err != nil {
 						o.logger.Debug("Error extracting data element: CLARABELLAMAREERROR", "error", err)
 						o.logger.Debug("CLARABELLADODICI", "error", err)
@@ -1173,38 +1176,36 @@ func (o *OCIDatasource) lb_get_logs(ctx context.Context, tenancyOCID string, reg
 	}
 
 	// Create a map to store unique entries
-	// uniqueEntries := make(map[string]string)
+	uniqueEntries := uniqueStrings(results)
 
-	// Create a new slice to store the unique entries
-	// var uniqueArray []string
-
-	// for _, entry := range results {
-	// 	// Convert the relevant part of the entry to a unique key
-	// 	key := entry[0]
-
-	// 	// Check if the entry is already in the map
-	// 	if _, exists := uniqueEntries[key]; !exists {
-	// 		// If not, add it to the map and the new slice
-	// 		uniqueEntries[key] = struct{}{}
-	// 		uniqueArray = append(uniqueArray, entry)
-	// 	}
-	// }
-
-	return results, nil
+	return uniqueEntries, nil
 }
 
-func extractDataValue(data interface{}) (string, error) {
-	// Type assert the interface{} to map[string]interface{}
-	m, ok := data.(map[string]interface{})
+// FilterMap filters out keys "datetime" and "count" and returns the remaining value as a string.
+func FilterMap(inputMap interface{}) (string, error) {
+	m, ok := inputMap.(map[string]interface{})
 	if !ok {
 		return "", fmt.Errorf("input is not a map[string]interface{}")
 	}
 
 	for key, value := range m {
-		if strings.HasPrefix(key, "data.") {
-			// Convert the value to a string
+		if key != "datetime" && key != "count" {
 			return fmt.Sprintf("%v", value), nil
 		}
 	}
-	return "", fmt.Errorf("no 'data.' key found")
+	return "", errors.New("no valid key found in the map")
+}
+
+func uniqueStrings(slice []string) []string {
+	seen := make(map[string]struct{})
+	unique := []string{}
+
+	for _, str := range slice {
+		if _, ok := seen[str]; !ok {
+			seen[str] = struct{}{}
+			unique = append(unique, str)
+		}
+	}
+
+	return unique
 }
