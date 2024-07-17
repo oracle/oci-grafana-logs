@@ -19,14 +19,15 @@ type rootRequest struct {
 }
 
 type queryRequest struct {
-	Tenancy     string `json:"tenancy"`
-	Compartment string `json:"compartment"`
-	Query       string `json:"query"`
+	Tenancy string `json:"tenancy"`
+	Region  string `json:"region"`
+	Query   string `json:"getquery"`
 }
 
 func (ocidx *OCIDatasource) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/tenancies", ocidx.GetTenanciesHandler)
 	mux.HandleFunc("/regions", ocidx.GetRegionsHandler)
+	mux.HandleFunc("/getquery", ocidx.GetQueryHandler)
 }
 
 func (ocidx *OCIDatasource) GetTenanciesHandler(rw http.ResponseWriter, req *http.Request) {
@@ -75,12 +76,18 @@ func (ocidx *OCIDatasource) GetQueryHandler(rw http.ResponseWriter, req *http.Re
 		respondWithError(rw, http.StatusBadRequest, "Failed to read request body", err)
 		return
 	}
-	resp, _ := ocidx.QueryData(req.Context(), rr.Query)
-	if resp == nil {
-		backend.Logger.Error("plugin.resource_handler", "query", "Could not read regions")
-		respondWithError(rw, http.StatusBadRequest, "Could not read regions", nil)
-		return
-	}
+
+	resp, _ := ocidx.lb_get_logs(req.Context(), rr.Tenancy, rr.Region, rr.Query)
+	backend.Logger.Error("plugin.resource_handler", "PIPPACCIO", resp)
+
+	// resp := ocidx.getQuery(req.Context(), rr.Tenancy, rr.Region)
+	// backend.Logger.Error("plugin.resource_handler", "PIPPO", resp)
+
+	// if resp == nil {
+	// 	backend.Logger.Error("plugin.resource_handler", "query", "Could not get Qury Result")
+	// 	respondWithError(rw, http.StatusBadRequest, "Could not get Qury Result", nil)
+	// 	return
+	// }
 	backend.Logger.Debug("plugin.resource_handler", "GetQueryHandler", resp)
 	writeResponse(rw, resp)
 }

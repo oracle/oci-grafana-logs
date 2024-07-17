@@ -15,7 +15,7 @@ import {
   OCIDataSourceOptions,
   OCIQuery,
   OCIResourceCall,
-  //QueryPlaceholder,
+  QueryPlaceholder,
   regionsQueryRegex,
   tenanciesQueryRegex,
   generalQueryRegex,
@@ -111,23 +111,25 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
       }
     }
 
+
     const generalQuery = query.match(generalQueryRegex);
     if (generalQuery) {
       if (this.jsonData.tenancymode === "multitenancy") {
         const tenancy = templateSrv.replace(generalQuery[1]);
-        // const region = templateSrv.replace(generalQuery[2]);        
-        const general = await this.getSubscribedRegions(tenancy);
-        return general.map(n => {
-          console.log(generalQuery[3])
+        const region = templateSrv.replace(generalQuery[2]);
+        const putquery = templateSrv.replace(generalQuery[3]);
+        const getquery = await this.getQuery(tenancy, region, putquery);
+        return getquery.map(n => {
           return { text: n, value: n };
-        });
+        });        
       } else {
-        // const region = templateSrv.replace(generalQuery[1]);        
-        const general = await this.getSubscribedRegions(DEFAULT_TENANCY);
-        return general.map(n => {
-          console.log(generalQuery[2])
+        const tenancy = DEFAULT_TENANCY;
+        const region = templateSrv.replace(generalQuery[1]);
+        const putquery = templateSrv.replace(generalQuery[2]);
+        const getquery = await this.getQuery(tenancy, region, putquery);
+        return getquery.map(n => {
           return { text: n, value: n };
-        });       
+        });      
       }
     }
 
@@ -204,5 +206,57 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return this.postResource(OCIResourceCall.Regions, reqBody).then((response) => {
       return new ResponseParser().parseRegions(response);
     });
-  }  
+  }
+
+
+  async getQuery(
+    tenancy: string,
+    region: any,
+    getquery: any
+  ): Promise<string[]>  {
+    if (this.isVariable(tenancy)) {
+      let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
+      if (var_tenancy !== "") { 
+        tenancy = var_tenancy
+      }      
+    }
+
+    if (this.isVariable(getquery)) {
+      let { getquery: var_getquery} = this.interpolateProps({getquery});
+      if (var_getquery !== "") { 
+        getquery = var_getquery
+      }      
+    }
+
+    if (this.isVariable(region)) {
+      let { region: var_region} = this.interpolateProps({region});
+      if (var_region !== "") { 
+        region = var_region
+      }      
+    }
+
+    if (tenancy === '') {
+      return [];
+    }
+    if (region === undefined || region === QueryPlaceholder.Region) {
+      return [];
+    }
+
+    if (getquery === undefined || getquery === QueryPlaceholder.Compartment) {
+      getquery = '';
+    }
+
+    const reqBody: JSON = {
+      tenancy: tenancy,
+      getquery: getquery,
+      region: region,
+    } as unknown as JSON;
+    return this.postResource(OCIResourceCall.getQuery, reqBody).then((response) => {
+      return new ResponseParser().parseGetQuery(response);
+    });
+  }
+
+
+
 }
+

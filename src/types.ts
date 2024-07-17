@@ -21,13 +21,22 @@ export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\
 export enum OCIResourceCall {
   Tenancies = 'tenancies',
   Regions = 'regions',
+  getQuery = 'getquery',
 }
 
 export enum QueryPlaceholder {
-  Tenancy = 'select tenancy',
-  Compartment = 'select compartment',
-  Region = 'select region',
-}
+	Tenancy = 'select tenancy',
+	Compartment = 'select compartment',
+	Region = 'select region',
+	Namespace = 'select namespace',
+	Metric = 'select metric',
+	Aggregation = 'select aggregation',
+	Interval = 'select interval',
+	Dimensions = 'select dimensions (optional)',
+	ResourceGroup = 'select resource group',
+	Tags = 'select resource tags (optional)',
+	GroupBy = 'select option (optional)',
+  }
 
 export interface OCIQuery extends DataQuery {
   searchQuery?: string;

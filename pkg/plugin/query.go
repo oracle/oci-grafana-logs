@@ -30,6 +30,8 @@ func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContex
 
 	logQueryType := ocidx.identifyQueryType(qm.QueryText)
 	backend.Logger.Debug("plugin.query", "logQueryType", logQueryType)
+	backend.Logger.Debug("plugin.query", "PIPPO", query)
+	backend.Logger.Debug("plugin.query", "PIPPO2", qm.QueryText)
 
 	var processErr error
 	fromMs := query.TimeRange.From.UnixNano() / int64(time.Millisecond)

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/identity"
@@ -1028,6 +1029,8 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 			numpage++
 		} else {
 			o.logger.Debug("Reducing data field values", "resultsCount", indexCountPag)
+			o.logger.Warn("Logging search query PIRLAs", "PIRLA", mFieldDefns)
+
 			for _, dataFieldDefn := range mFieldDefns {
 				if dataFieldDefn.Type == FieldValueType(constants.ValueType_Time) {
 					timeValuesSlice, _ := dataFieldDefn.Values.([]*time.Time)
@@ -1050,53 +1053,158 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	return mFieldDefns, nil
 }
 
-func (o *OCIDatasource) getQuery(ctx context.Context, tenancyOCID string, QueryText string) (map[string]*DataFieldElements, backend.DataResponse) {
-	backend.Logger.Debug("plugin.query", "query", "query initiated for "+QueryText)
-	// Creating the Data response for query
-	response := backend.DataResponse{}
+func (o *OCIDatasource) lb_get_logs(ctx context.Context, tenancyOCID string, region string, QueryText string) ([]string, error) {
 	takey := o.GetTenancyAccessKey(tenancyOCID)
+	searchQuery := `search "ocid1.tenancy.oc1..aaaaaaaafuy5zangpjvelq5adgg4mtr4uu725r7p3gwoh4egzzkll4vdhpfa/ocid1.loggroup.oc1.eu-frankfurt-1.amaaaaaam2jpcsyafdmhkotuj2klzxx223vjw3myeau6257qlkoervvkuyea/ocid1.log.oc1.eu-frankfurt-1.amaaaaaam2jpcsyaueju3bmt4dfnr7mzjgwnd22uyhiqyzexactsosvcmbza"| sort by datetime desc | where data.destinationPort=22  | summarize count() by rounddown(datetime, '1m'), data.sourceAddress`
+	o.logger.Debug("PAPEROGA", "tenancyOCID", tenancyOCID)
+	o.logger.Debug("PAPEROGA", "region", region)
+	o.logger.Debug("PAPEROGA", "QueryText", QueryText)
+	t := time.Now()
+	t2 := t.Add(-time.Minute * 35)
+	start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+	end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
 
-	if len(takey) == 0 {
-		backend.Logger.Error("client", "GetSubscribedRegions", "invalid takey")
-		return nil
+	req1 := loggingsearch.SearchLogsDetails{}
+
+	// hardcoded for now
+	req1.IsReturnFieldInfo = common.Bool(false)
+
+	// Set the current query time range start and end times for the current interval
+	req1.TimeStart = &common.SDKTime{start}
+	req1.TimeEnd = &common.SDKTime{end}
+	// Directly use the query provided by the user
+	req1.SearchQuery = common.String(searchQuery)
+
+	var results []string
+
+	// Construct the Logging service SearchLogs request structure
+	searchLogsRequest := loggingsearch.SearchLogsRequest{
+		SearchLogsDetails: req1,
+		Limit:             common.Int(constants.LimitPerPage),
 	}
-	tenancyocid, tenancyErr := o.FetchTenancyOCID(takey)
-	if tenancyErr != nil {
-		backend.Logger.Warn("client", "GetSubscribedRegions", tenancyErr)
-		return nil
+	// searchLogsRequest := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(searchQuery),
+	// 	TimeStart:         &common.SDKTime{Time: start},
+	// 	TimeEnd:           &common.SDKTime{Time: end},
+	// 	Limit:             common.Int(constants.LimitPerPage),
+	// 	IsReturnFieldInfo: common.Bool(false)}}
+	// searchLogsResponse, err := loggingSearchClient.SearchLogs(context.Background(), searchLogsRequest)
+	region = "eu-frankfurt-1"
+
+	reg := common.StringToRegion(region)
+	o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
+	// Perform the logs search operation
+	searchLogsResponse, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, searchLogsRequest)
+	if err != nil {
+		o.logger.Debug(fmt.Sprintf("Log search operation FAILED, query = %s, err = %s", searchLogsRequest, err))
+		return nil, errors.Wrap(err, "error fetching logs")
+	}
+	o.logger.Debug("CLARA Log search operation SUCCEEDED", "query", searchLogsRequest)
+
+	status := searchLogsResponse.RawResponse.StatusCode
+	if status <= 200 && status > 300 {
+		o.logger.Debug(fmt.Sprintf("CLARA Log search operation FAILED, err = %d", status))
+		return nil, errors.Wrap(err, fmt.Sprintf("list metrics failed %s %d", spew.Sdump(searchLogsResponse), status))
 	}
 
-	backend.Logger.Debug("client", "GetSubscribedRegionstakey", "fetching the subscribed region for tenancy OCID: "+*common.String(tenancyocid))
+	// re := regexp.MustCompile(":.*$")
+	o.logger.Debug(fmt.Sprintf("CLARA RES = %s", spew.Sdump(searchLogsResponse.SearchResponse.Results)))
 
-	req := identity.ListRegionSubscriptionsRequest{TenancyId: common.String(tenancyocid)}
+	// Determine how many rows were returned in the search results
+	resultCount := *searchLogsResponse.SearchResponse.Summary.ResultCount
+	o.logger.Debug(fmt.Sprintf("CLARA Count = %d", resultCount))
 
-	takey = o.GetTenancyAccessKey(tenancyOCID)
+	if resultCount > 0 {
 
-	logQueryType := o.identifyQueryType(QueryText)
-	backend.Logger.Debug("plugin.query", "logQueryType", logQueryType)
+		// Loop through each row of the results and add data values for each of encountered fields
+		for _, logSearchResult := range searchLogsResponse.SearchResponse.Results {
+			o.logger.Debug("CLARABELLA", "logSearchResult", logSearchResult.Data)
 
-	var processErr error
-	fromMs := query.TimeRange.From.UnixNano() / int64(time.Millisecond)
-	toMs := query.TimeRange.To.UnixNano() / int64(time.Millisecond)
-	var mFieldData = make(map[string]*DataFieldElements)
+			// var fieldDefn map[string]*DataFieldElements
+			// if searchResultData, ok := (*searchLogsResponse.SearchResponse.Results[0].Data).(map[string]interface{}); ok {
+			if searchResultData, ok := (*logSearchResult.Data).(map[string]interface{}); ok {
 
-	if logQueryType == QueryType_LogMetrics_TimeSeries {
-		ocidx.logger.Debug("Logging query WILL return numeric data over intervals", "refId", query.RefID)
-		// Call method that parses log metric results and produces the required field definitions
-		mFieldData, processErr = ocidx.processLogMetricTimeSeries(ctx, query, qm, fromMs, toMs, mFieldData, takey)
-	} else if logQueryType == QueryType_LogMetrics_NoInterval {
-		ocidx.logger.Debug("Logging query will NOT return numeric data over entire time range", "refId", query.RefID)
-		// Call method that parses log metric results and produces the required field definitions
-		mFieldData, processErr = ocidx.processLogMetrics(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+				if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
+					o.logger.Debug("CLARABELLA", "logContent", logContent)
 
-	} else { // QueryType_LogRecords
-		ocidx.logger.Debug("Logging query will return log records for the specified time interval", "refId", query.RefID)
-		// Call method that parses log record results and produces the required field definitions
-		mFieldData, processErr = ocidx.processLogRecords(ctx, query, qm, fromMs, toMs, mFieldData, takey)
+					mLogContent, ok := logContent.(map[string]interface{})
+					if ok == true {
+						for key, value := range mLogContent {
+							if key == constants.LogSearchResultsField_Data {
+								var logData string = ""
+								logJSON, marerr := json.Marshal(value)
+								if marerr == nil {
+									logData = string(logJSON)
+								} else {
+									fmt.Println("Error:", err)
+									return nil, err
+								}
+								// err := json.Unmarshal([]byte(logData), &data)
+								// if err != nil {
+								// 	log.Fatal(err)
+								// }
+								o.logger.Debug("CLARABELLAQ", "query", logData)
+							}
+						} // for each field key in the logContent field
+
+					} else {
+						o.logger.Debug("CLARABELLADIECI", "error", err)
+						return nil, err
+					}
+				} else {
+					result, err := extractDataValue(*logSearchResult.Data)
+					if err != nil {
+						o.logger.Debug("Error extracting data element: CLARABELLAMAREERROR", "error", err)
+						o.logger.Debug("CLARABELLADODICI", "error", err)
+						return nil, err
+					} else {
+						o.logger.Debug("CLARABELLAMAREERROR", "res", result)
+						results = append(results, result, result)
+					}
+				}
+			} else {
+				o.logger.Debug("CLARABELLAN15", "error", err)
+				return nil, err
+			}
+		}
+
+	} else {
+		o.logger.Debug("CLARABELLAFINAL", "error", err)
+		return nil, err
 	}
-	if processErr != nil {
-		return nil, response
+
+	// Create a map to store unique entries
+	// uniqueEntries := make(map[string]string)
+
+	// Create a new slice to store the unique entries
+	// var uniqueArray []string
+
+	// for _, entry := range results {
+	// 	// Convert the relevant part of the entry to a unique key
+	// 	key := entry[0]
+
+	// 	// Check if the entry is already in the map
+	// 	if _, exists := uniqueEntries[key]; !exists {
+	// 		// If not, add it to the map and the new slice
+	// 		uniqueEntries[key] = struct{}{}
+	// 		uniqueArray = append(uniqueArray, entry)
+	// 	}
+	// }
+
+	return results, nil
+}
+
+func extractDataValue(data interface{}) (string, error) {
+	// Type assert the interface{} to map[string]interface{}
+	m, ok := data.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("input is not a map[string]interface{}")
 	}
 
-	return mFieldData, response
+	for key, value := range m {
+		if strings.HasPrefix(key, "data.") {
+			// Convert the value to a string
+			return fmt.Sprintf("%v", value), nil
+		}
+	}
+	return "", fmt.Errorf("no 'data.' key found")
 }
