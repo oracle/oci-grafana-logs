@@ -1053,19 +1053,34 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	return mFieldDefns, nil
 }
 
-func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string, Field string) ([]string, error) {
+func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string, Field string, tstart int64, tend int64) ([]string, error) {
 	takey := o.GetTenancyAccessKey(tenancyOCID)
 
 	// searchQuery := `search "ocid1.tenancy.oc1..aaaaaaaafuy5zangpjvelq5adgg4mtr4uu725r7p3gwoh4egzzkll4vdhpfa/ocid1.loggroup.oc1.eu-frankfurt-1.amaaaaaam2jpcsyafdmhkotuj2klzxx223vjw3myeau6257qlkoervvkuyea/ocid1.log.oc1.eu-frankfurt-1.amaaaaaam2jpcsyaueju3bmt4dfnr7mzjgwnd22uyhiqyzexactsosvcmbza"| sort by datetime desc | where data.destinationPort=22  | summarize count() by rounddown(datetime, '1m'), data.sourceAddress`
 	o.logger.Debug("PAPEROGA", "Field", Field)
+	var t1 time.Time
+	var t2 time.Time
+
+	if tstart == 0 {
+		t1 = t1.Add(-time.Minute * 5)
+
+	} else {
+		t1 = time.Unix(tstart/1000, 0)
+	}
+	start, _ := time.Parse(time.RFC3339, t1.Format(time.RFC3339))
+
+	if tend == 0 {
+		t2 = time.Now()
+	} else {
+		t2 = time.Unix(tend/1000, 0)
+	}
+	end, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
 
 	o.logger.Debug("PAPEROGA", "tenancyOCID", tenancyOCID)
 	o.logger.Debug("PAPEROGA", "region", region)
 	o.logger.Debug("PAPEROGA", "QueryText", QueryText)
-	t := time.Now()
-	t2 := t.Add(-time.Minute * 35)
-	start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
-	end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+	o.logger.Debug("PAPEROGA", "tstart", start)
+	o.logger.Debug("PAPEROGA", "tend", end)
 
 	req1 := loggingsearch.SearchLogsDetails{}
 
@@ -1107,7 +1122,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 
 	// Determine how many rows were returned in the search results
 	resultCount := *searchLogsResponse.SearchResponse.Summary.ResultCount
-	o.logger.Debug(fmt.Sprintf("CLARA Count = %d", resultCount))
 
 	if resultCount > 0 {
 		// Loop through each row of the results and add data values for each of encountered fields
@@ -1115,7 +1129,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 			o.logger.Debug("CLARABELLA", "logSearchResult", logSearchResult.Data)
 
 			if searchResultData, ok := (*logSearchResult.Data).(map[string]interface{}); ok {
-				o.logger.Debug("CLARABELLAsearchResultData", "searchResultData", searchResultData)
 
 				if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
 					o.logger.Debug("CLARABELLA", "logContent", logContent)
@@ -1157,7 +1170,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 						o.logger.Debug("CLARABELLADODICI", "error", err)
 						return nil, err
 					} else {
-						o.logger.Debug("CLARABELLAMAREERROR", "res", result)
 						results = append(results, result, result)
 					}
 				}
@@ -1203,7 +1215,6 @@ func uniqueStrings(slice []string) []string {
 			unique = append(unique, str)
 		}
 	}
-
 	return unique
 }
 

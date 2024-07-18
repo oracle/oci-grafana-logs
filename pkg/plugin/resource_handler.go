@@ -19,10 +19,12 @@ type rootRequest struct {
 }
 
 type queryRequest struct {
-	Tenancy string `json:"tenancy"`
-	Region  string `json:"region"`
-	Query   string `json:"getquery"`
-	Field   string `json:"field"`
+	Tenancy   string `json:"tenancy"`
+	Region    string `json:"region"`
+	Query     string `json:"getquery"`
+	Field     string `json:"field"`
+	TimeStart int64  `json:"timeStart"`
+	TimeEnd   int64  `json:"timeEnd"`
 }
 
 func (ocidx *OCIDatasource) registerRoutes(mux *http.ServeMux) {
@@ -77,8 +79,9 @@ func (ocidx *OCIDatasource) GetQueryHandler(rw http.ResponseWriter, req *http.Re
 		respondWithError(rw, http.StatusBadRequest, "Failed to read request body", err)
 		return
 	}
+	backend.Logger.Error("plugin.resource_handler", "Tempaccio", rr.TimeStart, "Timestamp1", rr.TimeEnd)
 
-	resp, _ := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query, rr.Field)
+	resp, _ := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query, rr.Field, rr.TimeStart, rr.TimeEnd)
 	backend.Logger.Error("plugin.resource_handler", "PIPPACCIO", resp)
 
 	if resp == nil {

@@ -258,13 +258,22 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
 
     if (field === undefined || field === '') {
       field = '';
-    }    
+    }
+
+  // Check for special cases or undefined interval
+    let timeStart = parseInt(getTemplateSrv().replace("${__from}"), 10);
+    let timeEnd = parseInt(getTemplateSrv().replace("${__to}"), 10);
+
+    console.log("timeStart", timeStart);
+    console.log("timeEnd", timeEnd);
 
     const reqBody: JSON = {
       tenancy: tenancy,
       region: region,
       getquery: getquery,
       field: field,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
     } as unknown as JSON;
     return this.postResource(OCIResourceCall.getQuery, reqBody).then((response) => {
       return new ResponseParser().parseGetQuery(response);
