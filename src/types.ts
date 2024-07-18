@@ -14,8 +14,10 @@ export enum DefaultOCIOptions {
 export const DEFAULT_TENANCY = "DEFAULT/";
 export const regionsQueryRegex = /^regions\(\s*(\".+\"|\'.+\'|\$\w+)\s*\)|^regions\(\)\s*/;
 export const tenanciesQueryRegex = /^tenancies\(\)\s*/;
-// export const generalQueryRegex = /^search\s*/;
-export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+)\s*)?\)/;
+// export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+)\s*)?\)/;
+// export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+)\s*)?\)/;
+
+export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+))?\s*(?:,\s*(\".+\"|\'.+\'|\$\w+))?\)/;
 
 
 export enum OCIResourceCall {

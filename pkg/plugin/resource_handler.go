@@ -22,6 +22,7 @@ type queryRequest struct {
 	Tenancy string `json:"tenancy"`
 	Region  string `json:"region"`
 	Query   string `json:"getquery"`
+	Field   string `json:"field"`
 }
 
 func (ocidx *OCIDatasource) registerRoutes(mux *http.ServeMux) {
@@ -77,7 +78,7 @@ func (ocidx *OCIDatasource) GetQueryHandler(rw http.ResponseWriter, req *http.Re
 		return
 	}
 
-	resp, _ := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query)
+	resp, _ := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query, rr.Field)
 	backend.Logger.Error("plugin.resource_handler", "PIPPACCIO", resp)
 
 	if resp == nil {

@@ -1053,15 +1053,11 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	return mFieldDefns, nil
 }
 
-func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string) ([]string, error) {
+func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string, Field string) ([]string, error) {
 	takey := o.GetTenancyAccessKey(tenancyOCID)
 
-	type Data struct {
-		Timestamp    string `json:"timestamp"`
-		ClientAddr   string `json:"clientAddr"`
-		ListenerName string `json:"listenerName"`
-	}
 	// searchQuery := `search "ocid1.tenancy.oc1..aaaaaaaafuy5zangpjvelq5adgg4mtr4uu725r7p3gwoh4egzzkll4vdhpfa/ocid1.loggroup.oc1.eu-frankfurt-1.amaaaaaam2jpcsyafdmhkotuj2klzxx223vjw3myeau6257qlkoervvkuyea/ocid1.log.oc1.eu-frankfurt-1.amaaaaaam2jpcsyaueju3bmt4dfnr7mzjgwnd22uyhiqyzexactsosvcmbza"| sort by datetime desc | where data.destinationPort=22  | summarize count() by rounddown(datetime, '1m'), data.sourceAddress`
+	o.logger.Debug("PAPEROGA", "Field", Field)
 
 	o.logger.Debug("PAPEROGA", "tenancyOCID", tenancyOCID)
 	o.logger.Debug("PAPEROGA", "region", region)
@@ -1083,7 +1079,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	req1.SearchQuery = common.String(QueryText)
 
 	var results []string
-	var data Data
 
 	// Construct the Logging service SearchLogs request structure
 	searchLogsRequest := loggingsearch.SearchLogsRequest{
@@ -1115,13 +1110,10 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	o.logger.Debug(fmt.Sprintf("CLARA Count = %d", resultCount))
 
 	if resultCount > 0 {
-
 		// Loop through each row of the results and add data values for each of encountered fields
 		for _, logSearchResult := range searchLogsResponse.SearchResponse.Results {
 			o.logger.Debug("CLARABELLA", "logSearchResult", logSearchResult.Data)
 
-			// var fieldDefn map[string]*DataFieldElements
-			// if searchResultData, ok := (*searchLogsResponse.SearchResponse.Results[0].Data).(map[string]interface{}); ok {
 			if searchResultData, ok := (*logSearchResult.Data).(map[string]interface{}); ok {
 				o.logger.Debug("CLARABELLAsearchResultData", "searchResultData", searchResultData)
 
@@ -1131,7 +1123,8 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 					if mLogContent, ok := logContent.(map[string]interface{}); ok {
 						for key, value := range mLogContent {
 							if key == constants.LogSearchResultsField_Data {
-
+								// result, err := FilterMap(value, Field)
+								// o.logger.Debug("CLARABELLAQ", "result", result)}
 								var logData string = ""
 								logJSON, marerr := json.Marshal(value)
 								if marerr == nil {
@@ -1140,12 +1133,16 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 									fmt.Println("Error:", err)
 									return nil, err
 								}
-								err := json.Unmarshal([]byte(logData), &data)
-								if err != nil {
-									o.logger.Debug("CLARABELLAQ", "Cannot unmarshal query results", err)
-									return nil, err
-								}
 								o.logger.Debug("CLARABELLAQ", "query", logData)
+
+								result, err := extractField(logData, Field)
+								if err != nil {
+									o.logger.Debug("CLARABELLAQ", "error", err)
+									fmt.Printf("Error: %v\n", err)
+								} else {
+									results = append(results, result, result)
+									o.logger.Debug("CLARABELLAQ", "Value for field: ", Field, "with results: ", result)
+								}
 							}
 						} // for each field key in the logContent field
 
@@ -1208,4 +1205,20 @@ func uniqueStrings(slice []string) []string {
 	}
 
 	return unique
+}
+
+func extractField(jsonStr string, field string) (string, error) {
+	var data map[string]interface{}
+	field = strings.Trim(field, "\\\"")
+	err := json.Unmarshal([]byte(jsonStr), &data)
+	if err != nil {
+		return "", fmt.Errorf("error unmarshaling JSON: %v", err)
+	}
+
+	value, ok := data[field]
+	if !ok {
+		return "", errors.New("field not found in JSON " + field)
+	}
+
+	return fmt.Sprintf("%v", value), nil
 }

@@ -118,7 +118,8 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
         const tenancy = templateSrv.replace(generalQuery[1]);
         const region = templateSrv.replace(generalQuery[2]);
         const putquery = templateSrv.replace(generalQuery[3]);
-        const getquery = await this.getQuery(tenancy, region, putquery);
+        const field = templateSrv.replace(generalQuery[4]);
+        const getquery = await this.getQuery(tenancy, region, putquery, field);
         return getquery.map(n => {
           return { text: n, value: n };
         });        
@@ -126,7 +127,8 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
         const tenancy = DEFAULT_TENANCY;
         const region = templateSrv.replace(generalQuery[1]);
         const putquery = templateSrv.replace(generalQuery[2]);
-        const getquery = await this.getQuery(tenancy, region, putquery);
+        const field = templateSrv.replace(generalQuery[3]);
+        const getquery = await this.getQuery(tenancy, region, putquery, field);
         return getquery.map(n => {
           return { text: n, value: n };
         });      
@@ -212,7 +214,8 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
   async getQuery(
     tenancy: string,
     region: any,
-    getquery: any
+    getquery: any,
+    field: any
   ): Promise<string[]>  {
     if (this.isVariable(tenancy)) {
       let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
@@ -225,6 +228,13 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
       let { getquery: var_getquery} = this.interpolateProps({getquery});
       if (var_getquery !== "") { 
         getquery = var_getquery
+      }      
+    }
+
+    if (this.isVariable(field)) {
+      let { field: var_field} = this.interpolateProps({field});
+      if (var_field !== "") { 
+        field = var_field
       }      
     }
 
@@ -242,14 +252,19 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
       return [];
     }
 
-    if (getquery === undefined || getquery === QueryPlaceholder.Compartment) {
+    if (getquery === undefined || getquery === '') {
       getquery = '';
     }
 
+    if (field === undefined || field === '') {
+      field = '';
+    }    
+
     const reqBody: JSON = {
       tenancy: tenancy,
-      getquery: getquery,
       region: region,
+      getquery: getquery,
+      field: field,
     } as unknown as JSON;
     return this.postResource(OCIResourceCall.getQuery, reqBody).then((response) => {
       return new ResponseParser().parseGetQuery(response);
