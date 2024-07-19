@@ -1057,7 +1057,7 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	takey := o.GetTenancyAccessKey(tenancyOCID)
 
 	// searchQuery := `search "ocid1.tenancy.oc1..aaaaaaaafuy5zangpjvelq5adgg4mtr4uu725r7p3gwoh4egzzkll4vdhpfa/ocid1.loggroup.oc1.eu-frankfurt-1.amaaaaaam2jpcsyafdmhkotuj2klzxx223vjw3myeau6257qlkoervvkuyea/ocid1.log.oc1.eu-frankfurt-1.amaaaaaam2jpcsyaueju3bmt4dfnr7mzjgwnd22uyhiqyzexactsosvcmbza"| sort by datetime desc | where data.destinationPort=22  | summarize count() by rounddown(datetime, '1m'), data.sourceAddress`
-	o.logger.Debug("PAPEROGA", "Field", Field)
+	o.logger.Debug("QueryTemplateVar", "Field", Field)
 	var t1 time.Time
 	var t2 time.Time
 
@@ -1076,11 +1076,11 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	}
 	end, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
 
-	o.logger.Debug("PAPEROGA", "tenancyOCID", tenancyOCID)
-	o.logger.Debug("PAPEROGA", "region", region)
-	o.logger.Debug("PAPEROGA", "QueryText", QueryText)
-	o.logger.Debug("PAPEROGA", "tstart", start)
-	o.logger.Debug("PAPEROGA", "tend", end)
+	o.logger.Debug("QueryTemplateVar", "tenancyOCID", tenancyOCID)
+	o.logger.Debug("QueryTemplateVar", "region", region)
+	o.logger.Debug("QueryTemplateVar", "QueryText", QueryText)
+	o.logger.Debug("QueryTemplateVar", "tstart", start)
+	o.logger.Debug("QueryTemplateVar", "tend", end)
 
 	req1 := loggingsearch.SearchLogsDetails{}
 
@@ -1117,70 +1117,65 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 		return nil, errors.Wrap(err, fmt.Sprintf("list metrics failed %s %d", spew.Sdump(searchLogsResponse), status))
 	}
 
-	// re := regexp.MustCompile(":.*$")
-	o.logger.Debug(fmt.Sprintf("CLARA RES = %s", spew.Sdump(searchLogsResponse.SearchResponse.Results)))
-
 	// Determine how many rows were returned in the search results
 	resultCount := *searchLogsResponse.SearchResponse.Summary.ResultCount
 
 	if resultCount > 0 {
 		// Loop through each row of the results and add data values for each of encountered fields
 		for _, logSearchResult := range searchLogsResponse.SearchResponse.Results {
-			o.logger.Debug("CLARABELLA", "logSearchResult", logSearchResult.Data)
+			o.logger.Debug("QueryTemplateVar", "logSearchResult", logSearchResult.Data)
 
 			if searchResultData, ok := (*logSearchResult.Data).(map[string]interface{}); ok {
 
 				if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
-					o.logger.Debug("CLARABELLA", "logContent", logContent)
+					o.logger.Debug("QueryTemplateVar", "logContent: ", logContent)
 
 					if mLogContent, ok := logContent.(map[string]interface{}); ok {
 						for key, value := range mLogContent {
 							if key == constants.LogSearchResultsField_Data {
-								// result, err := FilterMap(value, Field)
-								// o.logger.Debug("CLARABELLAQ", "result", result)}
 								var logData string = ""
 								logJSON, marerr := json.Marshal(value)
 								if marerr == nil {
 									logData = string(logJSON)
 								} else {
-									fmt.Println("Error:", err)
+									o.logger.Debug("QueryTemplateVar", "Cannot marshal logJson: ", err)
 									return nil, err
 								}
 								o.logger.Debug("CLARABELLAQ", "query", logData)
 
 								result, err := extractField(logData, Field)
 								if err != nil {
-									o.logger.Debug("CLARABELLAQ", "error", err)
+									o.logger.Debug("QueryTemplateVar", "Error extracting Field: ", err)
 									fmt.Printf("Error: %v\n", err)
 								} else {
+									o.logger.Debug("QueryTemplateVar", "Getting logContent: ", result)
 									results = append(results, result, result)
-									o.logger.Debug("CLARABELLAQ", "Value for field: ", Field, "with results: ", result)
 								}
 							}
 						} // for each field key in the logContent field
 
 					} else {
-						o.logger.Debug("CLARABELLADIECI", "error", err)
+						o.logger.Debug("QueryTemplateVar", "Unable to get logContent map: ", err)
 						return nil, err
 					}
 				} else {
 					result, err := FilterMap(*logSearchResult.Data)
 					if err != nil {
-						o.logger.Debug("Error extracting data element: CLARABELLAMAREERROR", "error", err)
-						o.logger.Debug("CLARABELLADODICI", "error", err)
+						o.logger.Debug("QueryTemplateVar", "Error extracting data element: ", err)
 						return nil, err
 					} else {
+						o.logger.Debug("QueryTemplateVar", "Getting logContent: ", result)
 						results = append(results, result, result)
 					}
 				}
 			} else {
-				o.logger.Debug("CLARABELLAN15", "error", err)
+				o.logger.Debug("QueryTemplateVar", "Log Search Data Result error: ", err)
 				return nil, err
 			}
 		}
 
 	} else {
-		o.logger.Debug("CLARABELLAFINAL", "error", err)
+		o.logger.Debug("QueryTemplateVar", "SearchResponse.Summary.ResultCount is empty: ", resultCount)
 		return nil, err
 	}
 
