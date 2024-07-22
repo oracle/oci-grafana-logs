@@ -44,6 +44,14 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return true;
   }
 
+  getqueryVarFormatter = (value: string): string => {
+    if (typeof value === 'string') {
+      return "'"+value+"'";
+    } else {
+      return value
+    }
+  };
+
   /**
    * Override to apply template variables
    *
@@ -57,9 +65,12 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     if (query.tenancy) {
       query.tenancy = templateSrv.replace(query.tenancy, scopedVars);
     }
-    
     //const queryModel = new QueryModel(query, getTemplateSrv());
-    query.searchQuery = templateSrv.replace(query.searchQuery, scopedVars);
+    query.searchQuery = templateSrv.replace(query.searchQuery, scopedVars, this.getqueryVarFormatter);
+
+    console.log("templateSrv.getVariables(): "+this.getVariables());
+    console.log("searchQuery: "+query.searchQuery);    
+  
     return query;
   }
 

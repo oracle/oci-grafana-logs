@@ -1056,8 +1056,6 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string, Field string, tstart int64, tend int64) ([]string, error) {
 	takey := o.GetTenancyAccessKey(tenancyOCID)
 
-	// searchQuery := `search "ocid1.tenancy.oc1..aaaaaaaafuy5zangpjvelq5adgg4mtr4uu725r7p3gwoh4egzzkll4vdhpfa/ocid1.loggroup.oc1.eu-frankfurt-1.amaaaaaam2jpcsyafdmhkotuj2klzxx223vjw3myeau6257qlkoervvkuyea/ocid1.log.oc1.eu-frankfurt-1.amaaaaaam2jpcsyaueju3bmt4dfnr7mzjgwnd22uyhiqyzexactsosvcmbza"| sort by datetime desc | where data.destinationPort=22  | summarize count() by rounddown(datetime, '1m'), data.sourceAddress`
-	o.logger.Debug("QueryTemplateVar", "Field", Field)
 	var t1 time.Time
 	var t2 time.Time
 
@@ -1076,11 +1074,12 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	}
 	end, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
 
-	o.logger.Debug("QueryTemplateVar", "tenancyOCID", tenancyOCID)
-	o.logger.Debug("QueryTemplateVar", "region", region)
-	o.logger.Debug("QueryTemplateVar", "QueryText", QueryText)
-	o.logger.Debug("QueryTemplateVar", "tstart", start)
-	o.logger.Debug("QueryTemplateVar", "tend", end)
+	o.logger.Debug("Field", "QueryTemplateVar", Field)
+	o.logger.Debug("tenancyOCID", "QueryTemplateVar", tenancyOCID)
+	o.logger.Debug("region", region)
+	o.logger.Debug("QueryText", "QueryTemplateVar", QueryText)
+	o.logger.Debug("tstart", "QueryTemplateVar", start)
+	o.logger.Debug("tend", "QueryTemplateVar", end)
 
 	req1 := loggingsearch.SearchLogsDetails{}
 
@@ -1113,7 +1112,7 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 
 	status := searchLogsResponse.RawResponse.StatusCode
 	if status <= 200 && status > 300 {
-		o.logger.Debug(fmt.Sprintf("CLARA Log search operation FAILED, err = %d", status))
+		o.logger.Debug(fmt.Sprintf("Log search operation FAILED, err = %d", status))
 		return nil, errors.Wrap(err, fmt.Sprintf("list metrics failed %s %d", spew.Sdump(searchLogsResponse), status))
 	}
 
@@ -1123,12 +1122,12 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	if resultCount > 0 {
 		// Loop through each row of the results and add data values for each of encountered fields
 		for _, logSearchResult := range searchLogsResponse.SearchResponse.Results {
-			o.logger.Debug("QueryTemplateVar", "logSearchResult", logSearchResult.Data)
+			o.logger.Debug("logSearchResult", "QueryTemplateVar", logSearchResult.Data)
 
 			if searchResultData, ok := (*logSearchResult.Data).(map[string]interface{}); ok {
 
 				if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
-					o.logger.Debug("QueryTemplateVar", "logContent: ", logContent)
+					o.logger.Debug("logContent: ", "QueryTemplateVar", logContent)
 
 					if mLogContent, ok := logContent.(map[string]interface{}); ok {
 						for key, value := range mLogContent {
@@ -1138,44 +1137,44 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 								if marerr == nil {
 									logData = string(logJSON)
 								} else {
-									o.logger.Debug("QueryTemplateVar", "Cannot marshal logJson: ", err)
+									o.logger.Error("Cannot marshal logJson: ", "QueryTemplateVar", err)
 									return nil, err
 								}
 								o.logger.Debug("CLARABELLAQ", "query", logData)
 
 								result, err := extractField(logData, Field)
 								if err != nil {
-									o.logger.Debug("QueryTemplateVar", "Error extracting Field: ", err)
+									o.logger.Error("Error extracting Field: ", "QueryTemplateVar", err)
 									fmt.Printf("Error: %v\n", err)
 								} else {
-									o.logger.Debug("QueryTemplateVar", "Getting logContent: ", result)
+									o.logger.Error("Getting logContent: ", "QueryTemplateVar", result)
 									results = append(results, result, result)
 								}
 							}
 						} // for each field key in the logContent field
 
 					} else {
-						o.logger.Debug("QueryTemplateVar", "Unable to get logContent map: ", err)
+						o.logger.Error("Unable to get logContent map: ", "QueryTemplateVar", err)
 						return nil, err
 					}
 				} else {
 					result, err := FilterMap(*logSearchResult.Data)
 					if err != nil {
-						o.logger.Debug("QueryTemplateVar", "Error extracting data element: ", err)
+						o.logger.Error("Error extracting data element: ", "QueryTemplateVar", err)
 						return nil, err
 					} else {
-						o.logger.Debug("QueryTemplateVar", "Getting logContent: ", result)
+						o.logger.Error("Getting logContent: ", "QueryTemplateVar", result)
 						results = append(results, result, result)
 					}
 				}
 			} else {
-				o.logger.Debug("QueryTemplateVar", "Log Search Data Result error: ", err)
+				o.logger.Error("Log Search Data Result error: ", "QueryTemplateVar", err)
 				return nil, err
 			}
 		}
 
 	} else {
-		o.logger.Debug("QueryTemplateVar", "SearchResponse.Summary.ResultCount is empty: ", resultCount)
+		o.logger.Error("SearchResponse.Summary.ResultCount is empty: ", "QueryTemplateVar", resultCount)
 		return nil, err
 	}
 
@@ -1183,48 +1182,4 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	uniqueEntries := uniqueStrings(results)
 
 	return uniqueEntries, nil
-}
-
-// FilterMap filters out keys "datetime" and "count" and returns the remaining value as a string.
-func FilterMap(inputMap interface{}) (string, error) {
-	m, ok := inputMap.(map[string]interface{})
-	if !ok {
-		return "", fmt.Errorf("input is not a map[string]interface{}")
-	}
-
-	for key, value := range m {
-		if key != "datetime" && key != "count" {
-			return fmt.Sprintf("%v", value), nil
-		}
-	}
-	return "", errors.New("no valid key found in the map")
-}
-
-func uniqueStrings(slice []string) []string {
-	seen := make(map[string]struct{})
-	unique := []string{}
-
-	for _, str := range slice {
-		if _, ok := seen[str]; !ok {
-			seen[str] = struct{}{}
-			unique = append(unique, str)
-		}
-	}
-	return unique
-}
-
-func extractField(jsonStr string, field string) (string, error) {
-	var data map[string]interface{}
-	field = strings.Trim(field, "\\\"")
-	err := json.Unmarshal([]byte(jsonStr), &data)
-	if err != nil {
-		return "", fmt.Errorf("error unmarshaling JSON: %v", err)
-	}
-
-	value, ok := data[field]
-	if !ok {
-		return "", errors.New("field not found in JSON " + field)
-	}
-
-	return fmt.Sprintf("%v", value), nil
 }
