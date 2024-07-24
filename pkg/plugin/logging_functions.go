@@ -326,9 +326,9 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 	// Perform the logs search operation
 	res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
 	if err != nil {
-		o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
-			queryPanelId, queryRefId, err))
-		return nil, errors.Wrap(err, "error fetching logs")
+		errMessage := fmt.Sprintf("processLogMetricTimeSeries Log search operation FAILED, panelId = %s, refId = %s, err = %s, query = %s", queryPanelId, queryRefId, err, searchQuery)
+		o.logger.Error(errMessage)
+		return nil, errors.Wrap(err, errMessage)
 	}
 
 	// Determine how many rows were returned in the search results
@@ -720,9 +720,9 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 		// Perform the logs search operation
 		res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
 		if err != nil {
-			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
-				queryPanelId, queryRefId, err))
-			return nil, errors.Wrap(err, "error fetching logs")
+			errMessage := fmt.Sprintf("processLogMetrics Log search operation FAILED, panelId = %s, refId = %s, err = %s, query = %s", queryPanelId, queryRefId, err, searchQuery)
+			o.logger.Error(errMessage)
+			return nil, errors.Wrap(err, errMessage)
 		}
 		o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId,
 			"interval", intervalCnt)
@@ -927,9 +927,9 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	// Perform the logs search operation
 	for res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request); ; res, err = o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request) {
 		if err != nil {
-			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, queryPanelId = %s, refId = %s, err = %s",
-				queryPanelId, queryRefId, err))
-			return nil, errors.Wrap(err, "error fetching logs")
+			errMessage := fmt.Sprintf("processLogRecords Log search operation FAILED, panelId = %s, refId = %s, err = %s, query = %s", queryPanelId, queryRefId, err, searchQuery)
+			o.logger.Error(errMessage)
+			return nil, errors.Wrap(err, errMessage)
 		}
 		o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId)
 
@@ -1105,15 +1105,15 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	// Perform the logs search operation
 	searchLogsResponse, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, searchLogsRequest)
 	if err != nil {
-		o.logger.Debug(fmt.Sprintf("Log search operation FAILED, query = %s, err = %s", searchLogsRequest, err))
-		return nil, errors.Wrap(err, "error fetching logs")
+		errMessage := fmt.Sprintf("Template Var Log search operation FAILED, query = %s, err = %s", searchLogsRequest, err)
+		o.logger.Error(errMessage)
+		return nil, errors.Wrap(err, errMessage)
 	}
-	o.logger.Debug("CLARA Log search operation SUCCEEDED", "query", searchLogsRequest)
 
 	status := searchLogsResponse.RawResponse.StatusCode
 	if status <= 200 && status > 300 {
-		o.logger.Debug(fmt.Sprintf("Log search operation FAILED, err = %d", status))
-		return nil, errors.Wrap(err, fmt.Sprintf("list metrics failed %s %d", spew.Sdump(searchLogsResponse), status))
+		o.logger.Error(fmt.Sprintf("Template Var Log search operation FAILED, err = %d", status))
+		return nil, errors.Wrap(err, fmt.Sprintf("Template Var Log search operation FAILED %s %d", spew.Sdump(searchLogsResponse), status))
 	}
 
 	// Determine how many rows were returned in the search results

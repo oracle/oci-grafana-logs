@@ -79,14 +79,17 @@ func (ocidx *OCIDatasource) GetQueryHandler(rw http.ResponseWriter, req *http.Re
 		respondWithError(rw, http.StatusBadRequest, "Failed to read request body", err)
 		return
 	}
-	backend.Logger.Error("plugin.resource_handler", "Tempaccio", rr.TimeStart, "Timestamp1", rr.TimeEnd)
 
-	resp, _ := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query, rr.Field, rr.TimeStart, rr.TimeEnd)
-	backend.Logger.Error("plugin.resource_handler", "PIPPACCIO", resp)
+	resp, err := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query, rr.Field, rr.TimeStart, rr.TimeEnd)
+	if err != nil {
+		backend.Logger.Error("plugin.resource_handler", "GetQueryHandler", err)
+		respondWithError(rw, http.StatusBadRequest, "Could not run query", err)
+		return
+	}
 
 	if resp == nil {
-		backend.Logger.Error("plugin.resource_handler", "query", "Could not get Qury Result")
-		respondWithError(rw, http.StatusBadRequest, "Could not get Qury Result", nil)
+		backend.Logger.Error("plugin.resource_handler", "GetQueryHandler", "Query Result is empty")
+		respondWithError(rw, http.StatusBadRequest, "Query Result is empty", nil)
 		return
 	}
 	backend.Logger.Debug("plugin.resource_handler", "GetQueryHandler", resp)
