@@ -56,7 +56,7 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 	if len(o.tenancyAccess) == 0 {
 		return fmt.Errorf("TestConnectivity failed: cannot read o.tenancyAccess")
 	}
-	for key, _ := range o.tenancyAccess {
+	for key := range o.tenancyAccess {
 		tenancyocid, tenancyErr := o.FetchTenancyOCID(key)
 		if tenancyErr != nil {
 			return errors.Wrap(tenancyErr, "error fetching TenancyOCID")
@@ -164,7 +164,7 @@ func (o *OCIDatasource) GetTenancies(ctx context.Context) []models.OCIResource {
 	backend.Logger.Debug("client", "GetTenancies", "fetching the tenancies")
 
 	tenancyList := []models.OCIResource{}
-	for key, _ := range o.tenancyAccess {
+	for key := range o.tenancyAccess {
 		// frame.AppendRow(*(common.String(key)))
 
 		tenancyList = append(tenancyList, models.OCIResource{
@@ -259,17 +259,17 @@ func (o *OCIDatasource) identifyQueryType(loggingSearchQuery string) LogSearchQu
 
 	// Check if the logging search query includes any of the mathematical query
 	// functions represented in the regular expression objects
-	if reAvg.Match([]byte(loggingSearchQuery)) == true ||
-		reSum.Match([]byte(loggingSearchQuery)) == true ||
-		reCountWithParens.Match([]byte(loggingSearchQuery)) == true ||
-		reCountWithoutParens.Match([]byte(loggingSearchQuery)) == true ||
-		reMin.Match([]byte(loggingSearchQuery)) == true ||
-		reMax.Match([]byte(loggingSearchQuery)) == true {
+	if reAvg.Match([]byte(loggingSearchQuery)) ||
+		reSum.Match([]byte(loggingSearchQuery)) ||
+		reCountWithParens.Match([]byte(loggingSearchQuery)) ||
+		reCountWithoutParens.Match([]byte(loggingSearchQuery)) ||
+		reMin.Match([]byte(loggingSearchQuery)) ||
+		reMax.Match([]byte(loggingSearchQuery)) {
 
 		// Finally check whether the query includes the rounddown() function since the
 		// inclusion of this function in the query will cause the OCI Logging service
 		// to return time series data in a single query response
-		if reInterval.Match([]byte(loggingSearchQuery)) == true {
+		if reInterval.Match([]byte(loggingSearchQuery)) {
 			queryType = QueryType_LogMetrics_TimeSeries
 		} else {
 			queryType = QueryType_LogMetrics_NoInterval
@@ -344,7 +344,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 		var timestampMs int64
 
 		searchResultData, ok := (*res.SearchResponse.Results[0].Data).(map[string]interface{})
-		if ok == true {
+		if ok {
 			if _, ok := searchResultData[constants.LogSearchResultsField_LogContent]; !ok {
 
 				// Prepare regular expression filter once for processing all results, using
@@ -359,7 +359,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 				// default timestamp name: 'datetime'
 				timestampFieldKey = ""
 				reTimestampAlias, _ := regexp.Compile(`rounddown\s*\([^\)]+\)\s+as\s+(?P<alias>[^,\s]+)`)
-				if reTimestampAlias.Match([]byte(searchQuery)) == true {
+				if reTimestampAlias.Match([]byte(searchQuery)) {
 					matches := reTimestampAlias.FindStringSubmatch(searchQuery)
 					aliasIndex := reTimestampAlias.SubexpIndex("alias")
 					timestampFieldKey = matches[aliasIndex]
@@ -377,7 +377,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 				// includes an alias for the query function result, if it does then save that alias
 				// otherwise the existing logic for determining the numeric field name will apply
 				reFuncResultAlias, _ := regexp.Compile(`(count|sum|avg|min|max)\s*\([^\)]*\)\s+as\s+(?P<alias>[^\s]+)`)
-				if reFuncResultAlias.Match([]byte(searchQuery)) == true {
+				if reFuncResultAlias.Match([]byte(searchQuery)) {
 					matches := reFuncResultAlias.FindStringSubmatch(searchQuery)
 					aliasIndex := reFuncResultAlias.SubexpIndex("alias")
 
@@ -412,7 +412,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 
 				for rowCount, logSearchResult := range res.SearchResponse.Results {
 					searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-					if ok == true {
+					if ok {
 						if timestampFloat, ok := searchResultData[timestampFieldKey].(float64); ok {
 							timestampMs = int64(timestampFloat)
 
@@ -469,7 +469,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 								// If the numeric field key was not already identified from the search
 								// query and the current key contains one of the known query mathematical
 								// functions then this is the numeric field in the log search results
-							} else if numericFieldKey == "" && reFunc.Match([]byte(key)) == true {
+							} else if numericFieldKey == "" && reFunc.Match([]byte(key)) {
 								numericFieldKey = key
 								// The order of these checks is important since integer fields will likely
 								// be convertible as floating point values
@@ -656,7 +656,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 	// includes an alias for the query function result, if it does then save that alias
 	// otherwise the existing logic for determining the numeric field name will apply.
 	reFuncResultAlias, _ := regexp.Compile(`(count|sum|avg|min|max)\s*\([^\)]*\)\s+as\s+(?P<alias>[^\s]+)`)
-	if reFuncResultAlias.Match([]byte(searchQuery)) == true {
+	if reFuncResultAlias.Match([]byte(searchQuery)) {
 		matches := reFuncResultAlias.FindStringSubmatch(searchQuery)
 		aliasIndex := reFuncResultAlias.SubexpIndex("alias")
 
@@ -733,7 +733,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 		if resultCount > 0 {
 
 			searchResultData, ok := (*res.SearchResponse.Results[0].Data).(map[string]interface{})
-			if ok == true {
+			if ok {
 
 				if _, ok := searchResultData[constants.LogSearchResultsField_LogContent]; !ok {
 
@@ -757,7 +757,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 
 					for rowCount, logSearchResult := range res.SearchResponse.Results {
 						searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-						if ok == true {
+						if ok {
 							// If this is the first row for the first interval then inspect the
 							// values of the elements to speed up the processing of the remaining rows
 							// for all intervals. It is important to do this only for the first row of
@@ -774,7 +774,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 										// In the JSON content for the log record the count appears as an
 										// integer but when converted becomes a float value
 										numericFieldType = constants.ValueType_Float64
-									} else if numericFieldKey == "" && reFunc.Match([]byte(key)) == true {
+									} else if numericFieldKey == "" && reFunc.Match([]byte(key)) {
 										numericFieldKey = key
 										// The order of these checks is important since integer fields will likely
 										// be convertible as floating point values
@@ -941,10 +941,10 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 			for rowCount, logSearchResult := range res.SearchResponse.Results {
 				var fieldDefn *DataFieldElements
 				searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-				if ok == true {
+				if ok {
 					if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
 						mLogContent, ok := logContent.(map[string]interface{})
-						if ok == true {
+						if ok {
 							for key, value := range mLogContent {
 
 								// Only three special case fields within a log record: 1) time, 2) data, and 3) oracle
