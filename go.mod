@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.22.0
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/grafana/grafana-plugin-sdk-go v0.236.0
 	github.com/json-iterator/go v1.1.12

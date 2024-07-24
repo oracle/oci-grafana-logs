@@ -14,17 +14,27 @@ export enum DefaultOCIOptions {
 export const DEFAULT_TENANCY = "DEFAULT/";
 export const regionsQueryRegex = /^regions\(\s*(\".+\"|\'.+\'|\$\w+)\s*\)|^regions\(\)\s*/;
 export const tenanciesQueryRegex = /^tenancies\(\)\s*/;
+// export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+)\s*)?\)/;
+// export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+)\s*)?\)/;
+
+export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+))?\s*(?:,\s*(\".+\"|\'.+\'|\$\w+))?\)/;
+
 
 export enum OCIResourceCall {
   Tenancies = 'tenancies',
   Regions = 'regions',
+  getQuery = 'getquery',
 }
 
 export enum QueryPlaceholder {
-  Tenancy = 'select tenancy',
-  Compartment = 'select compartment',
-  Region = 'select region',
-}
+	Tenancy = 'select tenancy',
+	Compartment = 'select compartment',
+	Region = 'select region',
+	Interval = 'select interval',
+	ResourceGroup = 'select resource group',
+	Tags = 'select resource tags (optional)',
+	GroupBy = 'select option (optional)',
+  }
 
 export interface OCIQuery extends DataQuery {
   searchQuery?: string;

@@ -41,6 +41,16 @@ export class ResponseParser {
     return rList;
   }
 
+  parseGetQuery(results: any): string[] {
+    const getquery: string[] = [];
+    if (!results) {
+      return getquery;
+    }
+
+    let rList: string[] = JSON.parse(JSON.stringify(results));
+    return rList;
+  }
+
   parseTenancyMode(results: any): string[] {
     const tenancymodes: string[] = [];
     if (!results) {
