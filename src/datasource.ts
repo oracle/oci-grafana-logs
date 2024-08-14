@@ -67,9 +67,6 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     }
     //const queryModel = new QueryModel(query, getTemplateSrv());
     query.searchQuery = templateSrv.replace(query.searchQuery, scopedVars, this.getqueryVarFormatter);
-
-    console.log("templateSrv.getVariables(): "+this.getVariables());
-    console.log("searchQuery: "+query.searchQuery);    
   
     return query;
   }
@@ -274,9 +271,6 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
   // Check for special cases or undefined interval
     let timeStart = parseInt(getTemplateSrv().replace("${__from}"), 10);
     let timeEnd = parseInt(getTemplateSrv().replace("${__to}"), 10);
-
-    console.log("timeStart", timeStart);
-    console.log("timeEnd", timeEnd);
 
     const reqBody: JSON = {
       tenancy: tenancy,

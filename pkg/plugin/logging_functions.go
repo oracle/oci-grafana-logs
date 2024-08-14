@@ -1074,13 +1074,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 	}
 	end, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
 
-	o.logger.Debug("Field", "QueryTemplateVar", Field)
-	o.logger.Debug("tenancyOCID", "QueryTemplateVar", tenancyOCID)
-	o.logger.Debug("region", region)
-	o.logger.Debug("QueryText", "QueryTemplateVar", QueryText)
-	o.logger.Debug("tstart", "QueryTemplateVar", start)
-	o.logger.Debug("tend", "QueryTemplateVar", end)
-
 	req1 := loggingsearch.SearchLogsDetails{}
 
 	// hardcoded for now
@@ -1140,7 +1133,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 									o.logger.Error("Cannot marshal logJson: ", "QueryTemplateVar", err)
 									return nil, err
 								}
-								o.logger.Debug("CLARABELLAQ", "query", logData)
 
 								result, err := extractField(logData, Field)
 								if err != nil {
