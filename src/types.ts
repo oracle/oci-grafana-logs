@@ -30,10 +30,6 @@ export enum QueryPlaceholder {
 	Tenancy = 'select tenancy',
 	Compartment = 'select compartment',
 	Region = 'select region',
-	Interval = 'select interval',
-	ResourceGroup = 'select resource group',
-	Tags = 'select resource tags (optional)',
-	GroupBy = 'select option (optional)',
   }
 
 export interface OCIQuery extends DataQuery {
