@@ -25,11 +25,9 @@ func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContex
 		return nil, response
 	}
 
-	var takey string
-	takey = ocidx.GetTenancyAccessKey(qm.TenancyOCID)
+	takey := ocidx.GetTenancyAccessKey(qm.TenancyOCID)
 
 	logQueryType := ocidx.identifyQueryType(qm.QueryText)
-	backend.Logger.Debug("plugin.query", "logQueryType", logQueryType)
 
 	var processErr error
 	fromMs := query.TimeRange.From.UnixNano() / int64(time.Millisecond)
@@ -51,6 +49,7 @@ func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContex
 		mFieldData, processErr = ocidx.processLogRecords(ctx, query, qm, fromMs, toMs, mFieldData, takey)
 	}
 	if processErr != nil {
+		response.Error = processErr
 		return nil, response
 	}
 

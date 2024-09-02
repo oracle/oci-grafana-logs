@@ -15,9 +15,10 @@ import {
   OCIDataSourceOptions,
   OCIQuery,
   OCIResourceCall,
-  //QueryPlaceholder,
+  QueryPlaceholder,
   regionsQueryRegex,
   tenanciesQueryRegex,
+  generalQueryRegex,
   DEFAULT_TENANCY
 } from "./types";
 //import QueryModel from './query_model';
@@ -43,6 +44,14 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return true;
   }
 
+  getqueryVarFormatter = (value: string): string => {
+    if (typeof value === 'string') {
+      return "'"+value+"'";
+    } else {
+      return value
+    }
+  };
+
   /**
    * Override to apply template variables
    *
@@ -56,9 +65,9 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     if (query.tenancy) {
       query.tenancy = templateSrv.replace(query.tenancy, scopedVars);
     }
-    
     //const queryModel = new QueryModel(query, getTemplateSrv());
-    query.searchQuery = templateSrv.replace(query.searchQuery, scopedVars);
+    query.searchQuery = templateSrv.replace(query.searchQuery, scopedVars, this.getqueryVarFormatter);
+  
     return query;
   }
 
@@ -108,7 +117,32 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
           return { text: n, value: n };
         });       
       }
-    }   
+    }
+
+
+    const generalQuery = query.match(generalQueryRegex);
+    if (generalQuery) {
+      if (this.jsonData.tenancymode === "multitenancy") {
+        const tenancy = templateSrv.replace(generalQuery[1]);
+        const region = templateSrv.replace(generalQuery[2]);
+        const putquery = templateSrv.replace(generalQuery[3]);
+        const field = templateSrv.replace(generalQuery[4]);
+        const getquery = await this.getQuery(tenancy, region, putquery, field);
+        return getquery.map(n => {
+          return { text: n, value: n };
+        });        
+      } else {
+        const tenancy = DEFAULT_TENANCY;
+        const region = templateSrv.replace(generalQuery[1]);
+        const putquery = templateSrv.replace(generalQuery[2]);
+        const field = templateSrv.replace(generalQuery[3]);
+        const getquery = await this.getQuery(tenancy, region, putquery, field);
+        return getquery.map(n => {
+          return { text: n, value: n };
+        });      
+      }
+    }
+
     return [];
   }
 
@@ -182,5 +216,76 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return this.postResource(OCIResourceCall.Regions, reqBody).then((response) => {
       return new ResponseParser().parseRegions(response);
     });
-  }  
+  }
+
+
+  async getQuery(
+    tenancy: string,
+    region: any,
+    getquery: any,
+    field: any
+  ): Promise<string[]>  {
+    if (this.isVariable(tenancy)) {
+      let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
+      if (var_tenancy !== "") { 
+        tenancy = var_tenancy
+      }      
+    }
+
+    if (this.isVariable(getquery)) {
+      let { getquery: var_getquery} = this.interpolateProps({getquery});
+      if (var_getquery !== "") { 
+        getquery = var_getquery
+      }      
+    }
+
+    if (this.isVariable(field)) {
+      let { field: var_field} = this.interpolateProps({field});
+      if (var_field !== "") { 
+        field = var_field
+      }      
+    }
+
+    if (this.isVariable(region)) {
+      let { region: var_region} = this.interpolateProps({region});
+      if (var_region !== "") { 
+        region = var_region
+      }      
+    }
+
+    if (tenancy === '') {
+      return [];
+    }
+    if (region === undefined || region === QueryPlaceholder.Region) {
+      return [];
+    }
+
+    if (getquery === undefined || getquery === '') {
+      getquery = '';
+    }
+
+    if (field === undefined || field === '') {
+      field = '';
+    }
+
+  // Check for special cases or undefined interval
+    let timeStart = parseInt(getTemplateSrv().replace("${__from}"), 10);
+    let timeEnd = parseInt(getTemplateSrv().replace("${__to}"), 10);
+
+    const reqBody: JSON = {
+      tenancy: tenancy,
+      region: region,
+      getquery: getquery,
+      field: field,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+    } as unknown as JSON;
+    return this.postResource(OCIResourceCall.getQuery, reqBody).then((response) => {
+      return new ResponseParser().parseGetQuery(response);
+    });
+  }
+
+
+
 }
+

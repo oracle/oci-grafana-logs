@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/identity"
@@ -55,7 +56,7 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 	if len(o.tenancyAccess) == 0 {
 		return fmt.Errorf("TestConnectivity failed: cannot read o.tenancyAccess")
 	}
-	for key, _ := range o.tenancyAccess {
+	for key := range o.tenancyAccess {
 		tenancyocid, tenancyErr := o.FetchTenancyOCID(key)
 		if tenancyErr != nil {
 			return errors.Wrap(tenancyErr, "error fetching TenancyOCID")
@@ -163,7 +164,7 @@ func (o *OCIDatasource) GetTenancies(ctx context.Context) []models.OCIResource {
 	backend.Logger.Debug("client", "GetTenancies", "fetching the tenancies")
 
 	tenancyList := []models.OCIResource{}
-	for key, _ := range o.tenancyAccess {
+	for key := range o.tenancyAccess {
 		// frame.AppendRow(*(common.String(key)))
 
 		tenancyList = append(tenancyList, models.OCIResource{
@@ -258,17 +259,17 @@ func (o *OCIDatasource) identifyQueryType(loggingSearchQuery string) LogSearchQu
 
 	// Check if the logging search query includes any of the mathematical query
 	// functions represented in the regular expression objects
-	if reAvg.Match([]byte(loggingSearchQuery)) == true ||
-		reSum.Match([]byte(loggingSearchQuery)) == true ||
-		reCountWithParens.Match([]byte(loggingSearchQuery)) == true ||
-		reCountWithoutParens.Match([]byte(loggingSearchQuery)) == true ||
-		reMin.Match([]byte(loggingSearchQuery)) == true ||
-		reMax.Match([]byte(loggingSearchQuery)) == true {
+	if reAvg.Match([]byte(loggingSearchQuery)) ||
+		reSum.Match([]byte(loggingSearchQuery)) ||
+		reCountWithParens.Match([]byte(loggingSearchQuery)) ||
+		reCountWithoutParens.Match([]byte(loggingSearchQuery)) ||
+		reMin.Match([]byte(loggingSearchQuery)) ||
+		reMax.Match([]byte(loggingSearchQuery)) {
 
 		// Finally check whether the query includes the rounddown() function since the
 		// inclusion of this function in the query will cause the OCI Logging service
 		// to return time series data in a single query response
-		if reInterval.Match([]byte(loggingSearchQuery)) == true {
+		if reInterval.Match([]byte(loggingSearchQuery)) {
 			queryType = QueryType_LogMetrics_TimeSeries
 		} else {
 			queryType = QueryType_LogMetrics_NoInterval
@@ -325,9 +326,9 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 	// Perform the logs search operation
 	res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
 	if err != nil {
-		o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
-			queryPanelId, queryRefId, err))
-		return nil, errors.Wrap(err, "error fetching logs")
+		errMessage := fmt.Sprintf("processLogMetricTimeSeries Log search operation FAILED, panelId = %s, refId = %s, err = %s, query = %s", queryPanelId, queryRefId, err, searchQuery)
+		o.logger.Error(errMessage)
+		return nil, errors.Wrap(err, errMessage)
 	}
 
 	// Determine how many rows were returned in the search results
@@ -343,7 +344,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 		var timestampMs int64
 
 		searchResultData, ok := (*res.SearchResponse.Results[0].Data).(map[string]interface{})
-		if ok == true {
+		if ok {
 			if _, ok := searchResultData[constants.LogSearchResultsField_LogContent]; !ok {
 
 				// Prepare regular expression filter once for processing all results, using
@@ -358,7 +359,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 				// default timestamp name: 'datetime'
 				timestampFieldKey = ""
 				reTimestampAlias, _ := regexp.Compile(`rounddown\s*\([^\)]+\)\s+as\s+(?P<alias>[^,\s]+)`)
-				if reTimestampAlias.Match([]byte(searchQuery)) == true {
+				if reTimestampAlias.Match([]byte(searchQuery)) {
 					matches := reTimestampAlias.FindStringSubmatch(searchQuery)
 					aliasIndex := reTimestampAlias.SubexpIndex("alias")
 					timestampFieldKey = matches[aliasIndex]
@@ -376,7 +377,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 				// includes an alias for the query function result, if it does then save that alias
 				// otherwise the existing logic for determining the numeric field name will apply
 				reFuncResultAlias, _ := regexp.Compile(`(count|sum|avg|min|max)\s*\([^\)]*\)\s+as\s+(?P<alias>[^\s]+)`)
-				if reFuncResultAlias.Match([]byte(searchQuery)) == true {
+				if reFuncResultAlias.Match([]byte(searchQuery)) {
 					matches := reFuncResultAlias.FindStringSubmatch(searchQuery)
 					aliasIndex := reFuncResultAlias.SubexpIndex("alias")
 
@@ -411,7 +412,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 
 				for rowCount, logSearchResult := range res.SearchResponse.Results {
 					searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-					if ok == true {
+					if ok {
 						if timestampFloat, ok := searchResultData[timestampFieldKey].(float64); ok {
 							timestampMs = int64(timestampFloat)
 
@@ -468,7 +469,7 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 								// If the numeric field key was not already identified from the search
 								// query and the current key contains one of the known query mathematical
 								// functions then this is the numeric field in the log search results
-							} else if numericFieldKey == "" && reFunc.Match([]byte(key)) == true {
+							} else if numericFieldKey == "" && reFunc.Match([]byte(key)) {
 								numericFieldKey = key
 								// The order of these checks is important since integer fields will likely
 								// be convertible as floating point values
@@ -655,7 +656,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 	// includes an alias for the query function result, if it does then save that alias
 	// otherwise the existing logic for determining the numeric field name will apply.
 	reFuncResultAlias, _ := regexp.Compile(`(count|sum|avg|min|max)\s*\([^\)]*\)\s+as\s+(?P<alias>[^\s]+)`)
-	if reFuncResultAlias.Match([]byte(searchQuery)) == true {
+	if reFuncResultAlias.Match([]byte(searchQuery)) {
 		matches := reFuncResultAlias.FindStringSubmatch(searchQuery)
 		aliasIndex := reFuncResultAlias.SubexpIndex("alias")
 
@@ -719,9 +720,9 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 		// Perform the logs search operation
 		res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
 		if err != nil {
-			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, panelId = %s, refId = %s, err = %s",
-				queryPanelId, queryRefId, err))
-			return nil, errors.Wrap(err, "error fetching logs")
+			errMessage := fmt.Sprintf("processLogMetrics Log search operation FAILED, panelId = %s, refId = %s, err = %s, query = %s", queryPanelId, queryRefId, err, searchQuery)
+			o.logger.Error(errMessage)
+			return nil, errors.Wrap(err, errMessage)
 		}
 		o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId,
 			"interval", intervalCnt)
@@ -732,7 +733,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 		if resultCount > 0 {
 
 			searchResultData, ok := (*res.SearchResponse.Results[0].Data).(map[string]interface{})
-			if ok == true {
+			if ok {
 
 				if _, ok := searchResultData[constants.LogSearchResultsField_LogContent]; !ok {
 
@@ -756,7 +757,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 
 					for rowCount, logSearchResult := range res.SearchResponse.Results {
 						searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-						if ok == true {
+						if ok {
 							// If this is the first row for the first interval then inspect the
 							// values of the elements to speed up the processing of the remaining rows
 							// for all intervals. It is important to do this only for the first row of
@@ -773,7 +774,7 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 										// In the JSON content for the log record the count appears as an
 										// integer but when converted becomes a float value
 										numericFieldType = constants.ValueType_Float64
-									} else if numericFieldKey == "" && reFunc.Match([]byte(key)) == true {
+									} else if numericFieldKey == "" && reFunc.Match([]byte(key)) {
 										numericFieldKey = key
 										// The order of these checks is important since integer fields will likely
 										// be convertible as floating point values
@@ -926,9 +927,9 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	// Perform the logs search operation
 	for res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request); ; res, err = o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request) {
 		if err != nil {
-			o.logger.Debug(fmt.Sprintf("Log search operation FAILED, queryPanelId = %s, refId = %s, err = %s",
-				queryPanelId, queryRefId, err))
-			return nil, errors.Wrap(err, "error fetching logs")
+			errMessage := fmt.Sprintf("processLogRecords Log search operation FAILED, panelId = %s, refId = %s, err = %s, query = %s", queryPanelId, queryRefId, err, searchQuery)
+			o.logger.Error(errMessage)
+			return nil, errors.Wrap(err, errMessage)
 		}
 		o.logger.Debug("Log search operation SUCCEEDED", "panelId", queryPanelId, "refId", queryRefId)
 
@@ -940,10 +941,10 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 			for rowCount, logSearchResult := range res.SearchResponse.Results {
 				var fieldDefn *DataFieldElements
 				searchResultData, ok := (*logSearchResult.Data).(map[string]interface{})
-				if ok == true {
+				if ok {
 					if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
 						mLogContent, ok := logContent.(map[string]interface{})
-						if ok == true {
+						if ok {
 							for key, value := range mLogContent {
 
 								// Only three special case fields within a log record: 1) time, 2) data, and 3) oracle
@@ -1028,6 +1029,8 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 			numpage++
 		} else {
 			o.logger.Debug("Reducing data field values", "resultsCount", indexCountPag)
+			o.logger.Warn("Logging search query PIRLAs", "PIRLA", mFieldDefns)
+
 			for _, dataFieldDefn := range mFieldDefns {
 				if dataFieldDefn.Type == FieldValueType(constants.ValueType_Time) {
 					timeValuesSlice, _ := dataFieldDefn.Values.([]*time.Time)
@@ -1048,4 +1051,127 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 		}
 	}
 	return mFieldDefns, nil
+}
+
+func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string, Field string, tstart int64, tend int64) ([]string, error) {
+	takey := o.GetTenancyAccessKey(tenancyOCID)
+
+	var t1 time.Time
+	var t2 time.Time
+
+	if tstart == 0 {
+		t1 = t1.Add(-time.Minute * 5)
+
+	} else {
+		t1 = time.Unix(tstart/1000, 0)
+	}
+	start, _ := time.Parse(time.RFC3339, t1.Format(time.RFC3339))
+
+	if tend == 0 {
+		t2 = time.Now()
+	} else {
+		t2 = time.Unix(tend/1000, 0)
+	}
+	end, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
+
+	req1 := loggingsearch.SearchLogsDetails{}
+
+	// hardcoded for now
+	req1.IsReturnFieldInfo = common.Bool(false)
+
+	// Set the current query time range start and end times for the current interval
+	req1.TimeStart = &common.SDKTime{start}
+	req1.TimeEnd = &common.SDKTime{end}
+	// Directly use the query provided by the user
+	req1.SearchQuery = common.String(QueryText)
+
+	var results []string
+
+	// Construct the Logging service SearchLogs request structure
+	searchLogsRequest := loggingsearch.SearchLogsRequest{
+		SearchLogsDetails: req1,
+		Limit:             common.Int(constants.LimitPerPage),
+	}
+
+	reg := common.StringToRegion(region)
+	o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
+	// Perform the logs search operation
+	searchLogsResponse, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, searchLogsRequest)
+	if err != nil {
+		errMessage := fmt.Sprintf("Template Var Log search operation FAILED, query = %s, err = %s", searchLogsRequest, err)
+		o.logger.Error(errMessage)
+		return nil, errors.Wrap(err, errMessage)
+	}
+
+	status := searchLogsResponse.RawResponse.StatusCode
+	if status <= 200 && status > 300 {
+		o.logger.Error(fmt.Sprintf("Template Var Log search operation FAILED, err = %d", status))
+		return nil, errors.Wrap(err, fmt.Sprintf("Template Var Log search operation FAILED %s %d", spew.Sdump(searchLogsResponse), status))
+	}
+
+	// Determine how many rows were returned in the search results
+	resultCount := *searchLogsResponse.SearchResponse.Summary.ResultCount
+
+	if resultCount > 0 {
+		// Loop through each row of the results and add data values for each of encountered fields
+		for _, logSearchResult := range searchLogsResponse.SearchResponse.Results {
+			o.logger.Debug("logSearchResult", "QueryTemplateVar", logSearchResult.Data)
+
+			if searchResultData, ok := (*logSearchResult.Data).(map[string]interface{}); ok {
+
+				if logContent, ok := searchResultData[constants.LogSearchResultsField_LogContent]; ok {
+					o.logger.Debug("logContent: ", "QueryTemplateVar", logContent)
+
+					if mLogContent, ok := logContent.(map[string]interface{}); ok {
+						for key, value := range mLogContent {
+							if key == constants.LogSearchResultsField_Data {
+								var logData string = ""
+								logJSON, marerr := json.Marshal(value)
+								if marerr == nil {
+									logData = string(logJSON)
+								} else {
+									o.logger.Error("Cannot marshal logJson: ", "QueryTemplateVar", err)
+									return nil, err
+								}
+
+								result, err := extractField(logData, Field)
+								if err != nil {
+									o.logger.Error("Error extracting Field: ", "QueryTemplateVar", err)
+									fmt.Printf("Error: %v\n", err)
+								} else {
+									o.logger.Error("Getting logContent: ", "QueryTemplateVar", result)
+									results = append(results, result, result)
+								}
+							}
+						} // for each field key in the logContent field
+
+					} else {
+						o.logger.Error("Unable to get logContent map: ", "QueryTemplateVar", err)
+						return nil, err
+					}
+				} else {
+					result, err := FilterMap(*logSearchResult.Data)
+					if err != nil {
+						o.logger.Error("Error extracting data element: ", "QueryTemplateVar", err)
+						return nil, err
+					} else {
+						o.logger.Error("Getting logContent: ", "QueryTemplateVar", result)
+						results = append(results, result, result)
+					}
+				}
+			} else {
+				o.logger.Error("Log Search Data Result error: ", "QueryTemplateVar", err)
+				return nil, err
+			}
+		}
+
+	} else {
+		o.logger.Error("SearchResponse.Summary.ResultCount is empty: ", "QueryTemplateVar", resultCount)
+		return nil, err
+	}
+
+	// Create a map to store unique entries
+	uniqueEntries := uniqueStrings(results)
+
+	return uniqueEntries, nil
 }

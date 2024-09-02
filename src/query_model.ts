@@ -20,6 +20,7 @@ export default class QueryModel {
 
     this.target.tenancy = incomingQuery.tenancy || QueryPlaceholder.Tenancy;
     this.target.region = incomingQuery.region || QueryPlaceholder.Region;
+    this.target.searchQuery = incomingQuery.searchQuery || '';
 
     this.target.hide = incomingQuery.hide ?? false;
     if (this.target.tenancy === QueryPlaceholder.Tenancy) {
