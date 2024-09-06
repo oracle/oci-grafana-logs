@@ -1,3 +1,16 @@
+<a name="v5.0.0"></a>
+# [Grafana 11 support and free query template vars (v5.0.0)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.0) - 03 Sep 2024
+
+This release includes:
+- Grafana 11 Support, drop support for Grafana 8.x
+- React 18 library upgraded
+- Support for free query template variable
+- Enhanced debug logs
+- Libraries upgrades and minor bug and security fixes
+
+[Changes][v5.0.0]
+
+
 <a name="v4.0.2"></a>
 # [Sovereign cloud support and minor fixes (v4.0.2)](https://github.com/oracle/oci-grafana-logs/releases/tag/v4.0.2) - 28 Mar 2024
 
@@ -88,7 +101,7 @@ Update plugin.json, update screenshots
 
 [Changes][v1.1.3-beta]
 
-
+[v5.0.0]: https://github.com/oracle/oci-grafana-logs/compare/v4.0.2...v5.0.0
 [v4.0.2]: https://github.com/oracle/oci-grafana-logs/compare/v4.0.1...v4.0.2
 [v4.0.1]: https://github.com/oracle/oci-grafana-logs/compare/v4.0.0...v4.0.1
 [v4.0.0]: https://github.com/oracle/oci-grafana-logs/compare/v3.0.0...v4.0.0
