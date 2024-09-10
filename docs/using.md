@@ -290,28 +290,28 @@ This template variable can be useful to dynamically control the time interval us
 
 ### Using logquery Template variable
 
-Users should construct queries using the `search()` function in the following format:
+Logquery template variable was introduced in version 5.0 of the logs plugin to return an arbitrary list of elements out of a log query.  Users should construct queries using the `search()` function in the following format:
 
 ```javascript
-search(parameter1, parameter2, [optionalParameter3], [optionalParameter4])
+search(Template, Region, Query, Filter)
 ```
 
-### Parameter Guidelines
+#### Parameter Guidelines
 1. **Parameter Types**:
-   - Each parameter must be a string enclosed in double quotes (`"value"`), single quotes (`'value'`), or a variable prefixed with a dollar sign (`$variable`).
+   - Each parameter must be a string enclosed in double quotes (`"value"`), single quotes (`'value'`), or a variable prefixed with a dollar sign (`$variable`). It is recommended that Query parameter will be written in a separate constant variable to avoid syntax errors.
    
 2. **Required Parameters**:
-   - **First Parameter (`parameter1`)**: Represents the tenancy value. In a multitenancy mode, this value is dynamically replaced using the service (`templateSrv.replace`). In single tenancy, a default value (`DEFAULT_TENANCY`) is used instead.
-   - **Second Parameter (`parameter2`)**: Represents the region. This value is always dynamically replaced.
+   - **Tenancy (`tenancy`)**: Represents the tenancy value. This is mandatory in multitenancy mode only. Not required in single-tenancy mode.
+   - **Region (`region`)**: Represents the region.
+   - **Query (`query`)**: Represents the `query` value. This value is a valid Oracle log query which must return a list of string elements. n-dimensional arrays are not supported. More information on Oracle Cloud log format specifications are available here: [text](https://docs.oracle.com/en-us/iaas/Content/Logging/Reference/query_language_specification.htm)
 
 3. **Optional Parameters**:
-   - **Third Parameter (`optionalParameter3`)**: Represents the `putquery` value. This value is dynamically replaced if provided; otherwise, it remains undefined.
    - **Fourth Parameter (`optionalParameter4`)**: Represents the `field` value. This value is dynamically replaced if provided; otherwise, it remains undefined.
 
 4. **Parameter Separation**:
    - Parameters should be separated by commas and can have optional spaces around them.
 
-### Example Usages
+#### Example Usages
 
 1. **Multitenancy Mode with Required Parameters**:
    ```javascript
