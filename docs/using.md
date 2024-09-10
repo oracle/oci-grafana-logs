@@ -237,7 +237,7 @@ Repeat the process for the following OCI variables:
 | Name            | Query                                                                     |
 | --------------- | ------------------------------------------------------------------------- |
 | region          | `regions()`                                                               |
-| compartment     | `compartments()`                                                          |
+| logquery        | `search($region, 'customQuery', "customField")`                           |
 
 **NOTE**: The use of a compartment template variable within the logging query in a logs data panel is not currently supported.
 
@@ -269,10 +269,10 @@ Repeat the process for the following OCI variables:
 
 
 | Name           | Query                                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------------------- |
+| ---------------| --------------------------------------------------------------------------------------------------- |
 | tenancy        | `tenancies()`                                                                                     |
 | region         | `regions($tenancy)`                                                                               |
-| compartment    | `compartments($tenancy)`                                                                  |
+| logquery       | `search($tenancy, $region, 'customQuery', "customField")`                                        |
 
 **NOTE**: The use of a compartment template variable within the logging query in a logs data panel is not currently supported.
 
@@ -287,6 +287,67 @@ If you plan to visualize log-based time series logs using the `rounddown() funct
 
 This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example, the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
 
+
+### Using logquery Template variable
+
+Users should construct queries using the `search()` function in the following format:
+
+```javascript
+search(parameter1, parameter2, [optionalParameter3], [optionalParameter4])
+```
+
+### Parameter Guidelines
+1. **Parameter Types**:
+   - Each parameter must be a string enclosed in double quotes (`"value"`), single quotes (`'value'`), or a variable prefixed with a dollar sign (`$variable`).
+   
+2. **Required Parameters**:
+   - **First Parameter (`parameter1`)**: Represents the tenancy value. In a multitenancy mode, this value is dynamically replaced using the service (`templateSrv.replace`). In single tenancy, a default value (`DEFAULT_TENANCY`) is used instead.
+   - **Second Parameter (`parameter2`)**: Represents the region. This value is always dynamically replaced.
+
+3. **Optional Parameters**:
+   - **Third Parameter (`optionalParameter3`)**: Represents the `putquery` value. This value is dynamically replaced if provided; otherwise, it remains undefined.
+   - **Fourth Parameter (`optionalParameter4`)**: Represents the `field` value. This value is dynamically replaced if provided; otherwise, it remains undefined.
+
+4. **Parameter Separation**:
+   - Parameters should be separated by commas and can have optional spaces around them.
+
+### Example Usages
+
+1. **Multitenancy Mode with Required Parameters**:
+   ```javascript
+   search("myTenancy", "us-west-1")
+   ```
+   - `tenancy` will be replaced with `"myTenancy"`.
+   - `region` will be replaced with `"us-west-1"`.
+
+2. **Single Tenancy Mode**:
+   ```javascript
+   search($regionVariable, 'somePutQuery')
+   ```
+   - `tenancy` will default to the `DEFAULT_TENANCY` value.
+   - `region` will be replaced with the value of `$regionVariable`.
+   - `putquery` will be replaced with `'somePutQuery'`.
+
+3. **Including Optional Parameters**:
+   ```javascript
+   search($tenancyVar, "eu-central-1", 'customPutQuery', "customField")
+   ```
+   - `tenancy` will be replaced with the value of `$tenancyVar`.
+   - `region` will be replaced with `"eu-central-1"`.
+   - `putquery` will be replaced with `'customPutQuery'`.
+   - `field` will be replaced with `"customField"`.
+
+### Handling and Output
+- In **multitenancy mode**, the `tenancy` parameter is replaced dynamically, while in **single tenancy mode**, it defaults to `DEFAULT_TENANCY`.
+- The function processes these parameters through `templateSrv.replace` and constructs a query using `this.getQuery(tenancy, region, putquery, field)`.
+- The result is formatted into an array of objects with `text` and `value` keys, reflecting each query result.
+
+### Common Pitfalls
+- Make sure that at least the first two required parameters are provided and correctly formatted.
+- Optional parameters (`putquery` and `field`) should be included in order but can be omitted if not needed.
+- Pay attention to correct quotation and variable prefixing to avoid query mismatches.
+
+This guide should help users correctly format their queries according to the expected schema and understand how the parameters are handled in the backend code.
 
 ### Using Template Variables with OCI Logs Data Panels
 
