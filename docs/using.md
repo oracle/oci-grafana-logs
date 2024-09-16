@@ -306,7 +306,7 @@ search(Template, Region, Query, Filter)
    - **Query (`query`)**: Represents the `query` value. This value is a valid Oracle log query which must return a list of string elements. n-dimensional arrays are not supported. More information on Oracle Cloud log format specifications are available here: [text](https://docs.oracle.com/en-us/iaas/Content/Logging/Reference/query_language_specification.htm)
 
 3. **Optional Parameters**:
-   - **Fourth Parameter (`optionalParameter4`)**: Represents the `field` value. This value is dynamically replaced if provided; otherwise, it remains undefined.
+   - **Field (`field`)**: Represents the `field` value. This value is used to filter the results of the query, and will return all the values from a query which contain the specific dimension defined by the value of the field.
 
 4. **Parameter Separation**:
    - Parameters should be separated by commas and can have optional spaces around them.
@@ -315,27 +315,43 @@ search(Template, Region, Query, Filter)
 
 1. **Multitenancy Mode with Required Parameters**:
    ```javascript
-   search("myTenancy", "us-west-1")
+   search($tenancy, $region, $query)
    ```
-   - `tenancy` will be replaced with `"myTenancy"`.
-   - `region` will be replaced with `"us-west-1"`.
-
-2. **Single Tenancy Mode**:
+   where: 
+   - `$tenancy` is defined as:  `"SWEDEN`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+  
+ 2. **Multitenancy Mode with Optional Field Parameter**:
    ```javascript
-   search($regionVariable, 'somePutQuery')
+   search($tenancy, $region, $query, "sourceAddress")
    ```
-   - `tenancy` will default to the `DEFAULT_TENANCY` value.
-   - `region` will be replaced with the value of `$regionVariable`.
-   - `putquery` will be replaced with `'somePutQuery'`.
+   where: 
+   - `$tenancy` is defined as:  `"SWEDEN`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+   - `"sourceAddress"` is the field whose values must be returned.
 
-3. **Including Optional Parameters**:
+3. **Single Tenancy Mode with Required Parameters**:
    ```javascript
-   search($tenancyVar, "eu-central-1", 'customPutQuery', "customField")
+   search($region, $query)
    ```
-   - `tenancy` will be replaced with the value of `$tenancyVar`.
-   - `region` will be replaced with `"eu-central-1"`.
-   - `putquery` will be replaced with `'customPutQuery'`.
-   - `field` will be replaced with `"customField"`.
+   where: 
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+  
+4. **Single Tenancy Mode with Optional Field Parameter**:
+   ```javascript
+   search($region, $query, "sourceAddress")
+   ```
+   where:    
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+   - `"sourceAddress"` is the field whose values must be returned.
+
+![Custom variable](images/log_var_custom.png)
+![Query variable](images/custom_var.png)
+
 
 ### Handling and Output
 - In **multitenancy mode**, the `tenancy` parameter is replaced dynamically, while in **single tenancy mode**, it defaults to `DEFAULT_TENANCY`.
@@ -371,7 +387,7 @@ Support for template variables that can have multiple values or a wildcard for '
  
 
 ## Alerting
-Version 4.5 of the logs plugin introduces the Alerting capability.
+Version 4.x of the logs plugin introduces the Alerting capability.
 For detailed instruction how to work with alerts in Grafana, you may reference to the official documentation available at [Grafana Alerting](https://grafana.com/docs/grafana/latest/alerting/) web page.
 
 The overall procedure is like the following (in Grafana 10):
