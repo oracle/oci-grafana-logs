@@ -353,11 +353,6 @@ search(Template, Region, Query, Filter)
 ![Query variable](images/custom_var.png)
 
 
-### Handling and Output
-- In **multitenancy mode**, the `tenancy` parameter is replaced dynamically, while in **single tenancy mode**, it defaults to `DEFAULT_TENANCY`.
-- The function processes these parameters through `templateSrv.replace` and constructs a query using `this.getQuery(tenancy, region, putquery, field)`.
-- The result is formatted into an array of objects with `text` and `value` keys, reflecting each query result.
-
 ### Common Pitfalls
 - In case you are not using the `field` parameter, make sure that the query will return a single dimensional array. Multi-dimensionals array are not supported
 - It is recommended to filter the query using parameter ( `field`).
