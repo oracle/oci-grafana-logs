@@ -237,7 +237,7 @@ Repeat the process for the following OCI variables:
 | Name            | Query                                                                     |
 | --------------- | ------------------------------------------------------------------------- |
 | region          | `regions()`                                                               |
-| compartment     | `compartments()`                                                          |
+| logquery        | `search($region, 'customQuery', "customField")`                           |
 
 **NOTE**: The use of a compartment template variable within the logging query in a logs data panel is not currently supported.
 
@@ -269,10 +269,10 @@ Repeat the process for the following OCI variables:
 
 
 | Name           | Query                                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------------------- |
+| ---------------| --------------------------------------------------------------------------------------------------- |
 | tenancy        | `tenancies()`                                                                                     |
 | region         | `regions($tenancy)`                                                                               |
-| compartment    | `compartments($tenancy)`                                                                  |
+| logquery       | `search($tenancy, $region, 'customQuery', "customField")`                                        |
 
 **NOTE**: The use of a compartment template variable within the logging query in a logs data panel is not currently supported.
 
@@ -286,6 +286,77 @@ If you plan to visualize log-based time series logs using the `rounddown() funct
 ![Grafana-TemplateVars-IntervalVarConfig-Screenshot](images/Grafana-TemplateVars-IntervalVarConfig-Screenshot.png)
 
 This template variable can be useful to dynamically control the time interval used when performing the logging search queries in the data panels on the dashboard. If for example, the user changes the time period for the dashboard to be for the last 24 hours, they can change the interval template variable selection to say `1h` since a very granular time interval such as `5m` would lead to too many data points being generated.
+
+
+### Using logquery Template variable
+
+Logquery template variable was introduced in version 5.0 of the logs plugin to return an arbitrary list of elements out of a log query.  Users should construct queries using the `search()` function in the following format:
+
+```javascript
+search(Template, Region, Query, Filter)
+```
+
+#### Parameter Guidelines
+1. **Parameter Types**:
+   - Each parameter must be a string enclosed in double quotes (`"value"`), single quotes (`'value'`), or a variable prefixed with a dollar sign (`$variable`). It is recommended that Query parameter will be written in a separate constant variable to avoid syntax errors.
+   
+2. **Required Parameters**:
+   - **Tenancy (`tenancy`)**: Represents the tenancy value. This is mandatory in multitenancy mode only. Not required in single-tenancy mode.
+   - **Region (`region`)**: Represents the region.
+   - **Query (`query`)**: Represents the `query` value. This value is a valid Oracle log query which must return a list of string elements. n-dimensional arrays are not supported. More information on Oracle Cloud log format specifications are available here: [text](https://docs.oracle.com/en-us/iaas/Content/Logging/Reference/query_language_specification.htm)
+
+3. **Optional Parameters**:
+   - **Field (`field`)**: Represents the `field` value. This value is used to filter the results of the query, and will return all the values from a query which contain the specific dimension defined by the value of the field.
+
+4. **Parameter Separation**:
+   - Parameters should be separated by commas and can have optional spaces around them.
+
+#### Example Usages
+
+1. **Multitenancy Mode with Required Parameters**:
+   ```javascript
+   search($tenancy, $region, $query)
+   ```
+   where: 
+   - `$tenancy` is defined as:  `"SWEDEN`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+  
+ 2. **Multitenancy Mode with Optional Field Parameter**:
+   ```javascript
+   search($tenancy, $region, $query, "sourceAddress")
+   ```
+   where: 
+   - `$tenancy` is defined as:  `"SWEDEN`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+   - `"sourceAddress"` is the field whose values must be returned.
+
+3. **Single Tenancy Mode with Required Parameters**:
+   ```javascript
+   search($region, $query)
+   ```
+   where: 
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+  
+4. **Single Tenancy Mode with Optional Field Parameter**:
+   ```javascript
+   search($region, $query, "sourceAddress")
+   ```
+   where:    
+   - `$region` is defined as:  `"eu-zurich-1"`, variable type query and Datasource chosen from the list of OCI Logs data sources.
+   - `$query` is defined as:  `search "ocid1.compartment.oc1..XXX/ocid1.loggroup.oc1.eu-zurich-1.XXX/ocid1.log.oc1.eu-zurich-1.XXX"`, variable type Custom.
+   - `"sourceAddress"` is the field whose values must be returned.
+
+![Custom variable](images/log_var_custom.png)
+![Query variable](images/custom_var.png)
+
+
+### Common Pitfalls
+- In case you are not using the `field` parameter, make sure that the query will return a single dimensional array. Multi-dimensionals array are not supported
+- It is recommended to filter the query using parameter ( `field`).
+- Pay attention to correct quotation and variable prefixing to avoid query mismatches. It is highly recommended to save the query in a Costant or Custom variable type in Grafana.
 
 
 ### Using Template Variables with OCI Logs Data Panels
@@ -310,7 +381,7 @@ Support for template variables that can have multiple values or a wildcard for '
  
 
 ## Alerting
-Version 4.5 of the logs plugin introduces the Alerting capability.
+Version 4.x of the logs plugin introduces the Alerting capability.
 For detailed instruction how to work with alerts in Grafana, you may reference to the official documentation available at [Grafana Alerting](https://grafana.com/docs/grafana/latest/alerting/) web page.
 
 The overall procedure is like the following (in Grafana 10):
