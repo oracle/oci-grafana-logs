@@ -359,11 +359,10 @@ search(Template, Region, Query, Filter)
 - The result is formatted into an array of objects with `text` and `value` keys, reflecting each query result.
 
 ### Common Pitfalls
-- Make sure that at least the first two required parameters are provided and correctly formatted.
-- Optional parameters (`putquery` and `field`) should be included in order but can be omitted if not needed.
-- Pay attention to correct quotation and variable prefixing to avoid query mismatches.
+- In case you are not using the `field` parameter, make sure that the query will return a single dimensional array. Multi-dimensionals array are not supported
+- It is recommended to filter the query using parameter ( `field`).
+- Pay attention to correct quotation and variable prefixing to avoid query mismatches. It is highly recommended to save the query in a Costant or Custom variable type in Grafana.
 
-This guide should help users correctly format their queries according to the expected schema and understand how the parameters are handled in the backend code.
 
 ### Using Template Variables with OCI Logs Data Panels
 
