@@ -41,10 +41,10 @@ export class ConfigEditor extends PureComponent<Props, State> {
         },
       });
     }
-  }  
+  }
   render() {
     const { options } = this.props;
-    options.jsonData.profile0 = 'DEFAULT';
+
     return (
       <FieldSet label="Connection Details">
         <InlineField
@@ -76,9 +76,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
         />
       </InlineField>
             </>
-        )}        
+        )}
 
-        {options.jsonData.environment === AuthProviders.OCI_USER  && (
+      {options.jsonData.environment === AuthProviders.OCI_USER  && (
               <>
         <InlineField              
               label="Tenancy Mode"
@@ -96,7 +96,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
               />
             </InlineField>
             </>
-        )}
+        )}   
             <br></br>
 
 
