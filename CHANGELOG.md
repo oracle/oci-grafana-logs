@@ -1,3 +1,23 @@
+<a name="v5.0.2"></a>
+# [Security Maintenance release (v5.0.2)](https://github.com/oracle/oci-grafana-metrics/releases/tag/v5.0.2) - 26 Nov 2024
+
+This release includes:
+
+- security patches
+- bug fixes
+
+[Changes][v5.0.2]
+
+<a name="v5.0.1"></a>
+# [Grafana 11 support and free query template vars (v5.0.0)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.0) - 03 Sep 2024
+
+This release includes:
+- Grafana 11 Support, drop support for Grafana 8.x
+- React 18 library upgraded
+- Support for free query template variable
+- Enhanced debug logs
+- Libraries upgrades and minor bug and security fixes
+
 <a name="v5.0.1"></a>
 # [Security Maintenance release (v5.0.1)](https://github.com/oracle/oci-grafana-metrics/releases/tag/v5.0.1) - 14 Oct 2024
 
