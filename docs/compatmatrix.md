@@ -12,7 +12,7 @@ Please refer to the table below for details on which OCI Logging Grafana Plugin 
 | 1.1.x                     | 7.x.x - 7.5.x                |
 | 2.0.x                     | 8.0.0 - 8.4.x                |
 | 3.0.x                     | 8.5.0 - 9.5.x                |
-| 4.0.x                     | 8.5.0 - Latest               |
+| 4.0.x                     | 8.5.0 - 10.x.x               |
 | 5.0.x                     | 9.x.x - Latest               |
 
 
