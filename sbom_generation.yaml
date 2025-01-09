@@ -1,0 +1,60 @@
+# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+
+# This OCI DevOps build specification file [1] generates a Software Bill of Materials (SBOM) of the repository.
+# The file is needed to run checks for third-party vulnerabilities and business approval according to Oracle’s GitHub policies.
+# [1] https://docs.oracle.com/en-us/iaas/Content/devops/using/build_specs.htm
+
+version: 0.1
+component: build
+timeoutInSeconds: 1000
+shell: bash
+
+steps:
+  - type: Command
+    name: "Install dependencies & cyclonedx-node-npm package"
+    command: |
+      npm install && npm install --save-dev @cyclonedx/cyclonedx-npm@1.19.3
+  - type: Command
+    name: "Run cyclonedx-node-npm package"
+    command: |
+      # For more details, visit https://github.com/CycloneDX/cyclonedx-node-npm/blob/main/README.md
+      npx @cyclonedx/cyclonedx-npm --omit dev --output-format JSON --output-file npm_artifactSBOM.json --spec-version 1.4 --flatten-components
+  - type: Command
+    name: "Download the version 10.10.0 of cdxgen globally"
+    command: |
+      npm install -g @cyclonedx/cdxgen@10.10.0
+  - type: Command
+    name: "Workaround to let cdxgen run on nodejs 16"
+    command: |
+      # cdxgen relies on a fourth-party dependency that cannot be executed in a Node.js environment running version 16
+      # (as installed on the build runner instance)
+      # This is a workaround to ensure cdxgen functions correctly, even in an older Node.js environment.
+      cd /node/node-v16.14.2-linux-x64/lib/node_modules/@cyclonedx/cdxgen && \
+      npm install cheerio@v1.0.0-rc.12
+  - type: Command
+    name: "Generate SBOM for Golang "
+    command: |
+      # the version of go should be the same in go.mod or greater
+      GO_VERSION="1.22.3" && \
+      INSTALL_DIR="${OCI_PRIMARY_SOURCE_DIR}" && \
+      curl -L -o go-${GO_VERSION}.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
+      tar -C ${INSTALL_DIR} -xzf go-${GO_VERSION}.tar.gz && \
+      export GOROOT=${INSTALL_DIR}/go && \
+      export PATH=${GOROOT}/bin:${PATH} && \
+      go mod tidy && \
+      cdxgen -t golang -o golang_artifactSBOM.json --spec-version 1.4 --project-name "$(basename $OCI_PRIMARY_SOURCE_URL)" --no-recurse && \
+  - type: Command
+    name: "Download CycloneDx-cli executable and install dependencies"
+    command: |
+      wget https://github.com/CycloneDX/cyclonedx-cli/releases/download/v0.24.2/cyclonedx-linux-x64
+      yum install -y libicu
+  - type: Command
+    name: "Merge multiple SBOMs using CycloneDX-cli"
+    command: |
+      # For more details, visit https://github.com/CycloneDX/cyclonedx-cli/blob/main/README.md
+      chmod +x cyclonedx-linux-x64
+      ./cyclonedx-linux-x64 merge --input-files npm_artifactSBOM.json,golang_artifactSBOM.json --output-file merged-bom.json         
+outputArtifacts:
+  - name: artifactSBOM
+    type: BINARY
+    location: ${OCI_PRIMARY_SOURCE_DIR}/merged-bom.json
