@@ -80,7 +80,7 @@ func (ocidx *OCIDatasource) GetQueryHandler(rw http.ResponseWriter, req *http.Re
 		return
 	}
 
-	resp, err := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Region, rr.Query, rr.Field, rr.TimeStart, rr.TimeEnd)
+	resp, err := ocidx.getLogs(req.Context(), rr.Tenancy, rr.Query, rr.Field, rr.TimeStart, rr.TimeEnd)
 	if err != nil {
 		backend.Logger.Error("plugin.resource_handler", "GetQueryHandler", err)
 		respondWithError(rw, http.StatusBadRequest, "Could not run query", err)

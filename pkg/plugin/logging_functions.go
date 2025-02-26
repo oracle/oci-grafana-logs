@@ -49,9 +49,6 @@ const numMaxResults = (constants.MaxPagesToFetch * constants.LimitPerPage) + 1
 func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 	backend.Logger.Debug("client", "TestConnectivity", "testing the OCI connectivity")
 
-	var reg common.Region
-	//var errAllComp error
-
 	tenv := o.settings.Environment
 	if len(o.tenancyAccess) == 0 {
 		return fmt.Errorf("TestConnectivity failed: cannot read o.tenancyAccess")
@@ -62,13 +59,6 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 			return errors.Wrap(tenancyErr, "error fetching TenancyOCID")
 		}
 
-		regio, regErr := o.tenancyAccess[key].config.Region()
-		if regErr != nil {
-			return errors.Wrap(regErr, "error fetching Region")
-		}
-		reg = common.StringToRegion(regio)
-		//perfect till above
-		o.tenancyAccess[key].loggingSearchClient.SetRegion(string(reg))
 		backend.Logger.Debug("TestConnectivity", "Config Key", key, "Testing Tenancy OCID", tenancyocid)
 		if tenv == "local" {
 			queri := `search "` + tenancyocid + `" | sort by datetime desc`
@@ -315,13 +305,6 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 		SearchLogsDetails: req1,
 		Limit:             common.Int(constants.LimitPerPage),
 	}
-	reg := common.StringToRegion(queryModel.Region)
-	// ensures it catch always the correct tenancy when computing dashboards with data coming from multiple tenancies
-	if searchLogsReq.TenancyMode == "multitenancy" {
-		takey = searchLogsReq.Tenancy
-	}
-
-	o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
 
 	// Perform the logs search operation
 	res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
@@ -709,13 +692,6 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 			SearchLogsDetails: req1,
 			Limit:             common.Int(constants.LimitPerPage),
 		}
-		reg := common.StringToRegion(queryModel.Region)
-		// ensures it catch always the correct tenancy when computing dashboards with data coming from multiple tenancies
-		if searchLogsReq.TenancyMode == "multitenancy" {
-			takey = searchLogsReq.Tenancy
-		}
-
-		o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
 
 		// Perform the logs search operation
 		res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request)
@@ -922,8 +898,7 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 		SearchLogsDetails: req1,
 		Limit:             common.Int(constants.LimitPerPage),
 	}
-	reg := common.StringToRegion(queryModel.Region)
-	o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
+
 	// Perform the logs search operation
 	for res, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request); ; res, err = o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, request) {
 		if err != nil {
@@ -1053,7 +1028,7 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	return mFieldDefns, nil
 }
 
-func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region string, QueryText string, Field string, tstart int64, tend int64) ([]string, error) {
+func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, QueryText string, Field string, tstart int64, tend int64) ([]string, error) {
 	takey := o.GetTenancyAccessKey(tenancyOCID)
 
 	var t1 time.Time
@@ -1093,8 +1068,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, region 
 		Limit:             common.Int(constants.LimitPerPage),
 	}
 
-	reg := common.StringToRegion(region)
-	o.tenancyAccess[takey].loggingSearchClient.SetRegion(string(reg))
 	// Perform the logs search operation
 	searchLogsResponse, err := o.tenancyAccess[takey].loggingSearchClient.SearchLogs(ctx, searchLogsRequest)
 	if err != nil {
