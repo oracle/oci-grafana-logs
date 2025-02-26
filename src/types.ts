@@ -46,15 +46,29 @@ export interface OCIQuery extends DataQuery {
  * These are options configured for each DataSource instance
  */
 export interface OCIDataSourceOptions extends DataSourceJsonData {
-  tenancyName: string; // name of the base tenancy
-  environment?: string; // oci-cli, oci-instance
-  tenancymode?: string; // multi-profile, cross-tenancy-policy
-  xtenancy0: string;
+	tenancyName: string; // name of the base tenancy
+	environment?: string; // oci-cli, oci-instance
+	tenancymode?: string; // multi-profile, cross-tenancy-policy
+	xtenancy0: string;
 
-  addon1: boolean;
-  addon2: boolean;
-  addon3: boolean;
-  addon4: boolean;
+	addon1: boolean;
+	addon2: boolean;
+	addon3: boolean;
+	addon4: boolean;
+
+	customregionbool0: boolean;
+	customregionbool1: boolean;
+	customregionbool2: boolean;
+	customregionbool3: boolean;
+	customregionbool4: boolean;
+	customregionbool5: boolean;
+
+	customregion0: string
+	customregion1: string
+	customregion2: string
+	customregion3: string
+	customregion4: string	
+	customregion5: string 
 
 	profile0: string;
 	region0: string;
@@ -83,29 +97,35 @@ export interface OCISecureJsonData {
 	user0: string;
 	privkey0: string;
 	fingerprint0: string;
+	customdomain0: string
 
 	tenancy1: string;
 	user1: string;
 	fingerprint1: string;
 	privkey1: string;
+	customdomain1: string
 
 	tenancy2: string;
 	user2: string;
 	fingerprint2: string;
 	privkey2: string;
+	customdomain2: string
 
 	tenancy3: string;
 	user3: string;
 	fingerprint3: string;
 	privkey3: string;
+	customdomain3: string
 
 	tenancy4: string;
 	user4: string;
 	fingerprint4: string;
 	privkey4: string;
+	customdomain4: string
 
 	tenancy5: string;
 	user5: string;
 	fingerprint5: string;
 	privkey5: string;
+	customdomain5: string
 }
