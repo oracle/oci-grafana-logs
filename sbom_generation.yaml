@@ -11,15 +11,6 @@ shell: bash
 
 steps:
   - type: Command
-    name: "Install dependencies & cyclonedx-node-npm package"
-    command: |
-      npm install && npm install --save-dev @cyclonedx/cyclonedx-npm@1.19.3
-  - type: Command
-    name: "Run cyclonedx-node-npm package"
-    command: |
-      # For more details, visit https://github.com/CycloneDX/cyclonedx-node-npm/blob/main/README.md
-      npx @cyclonedx/cyclonedx-npm --omit dev --output-format JSON --output-file npm_artifactSBOM.json --spec-version 1.4 --flatten-components
-  - type: Command
     name: "Download the version 10.10.0 of cdxgen globally"
     command: |
       npm install -g @cyclonedx/cdxgen@10.10.0
@@ -42,19 +33,8 @@ steps:
       export GOROOT=${INSTALL_DIR}/go && \
       export PATH=${GOROOT}/bin:${PATH} && \
       go mod tidy && \
-      cdxgen -t golang -o golang_artifactSBOM.json --spec-version 1.4 --project-name "$(basename $OCI_PRIMARY_SOURCE_URL)" --no-recurse && \
-  - type: Command
-    name: "Download CycloneDx-cli executable and install dependencies"
-    command: |
-      wget https://github.com/CycloneDX/cyclonedx-cli/releases/download/v0.24.2/cyclonedx-linux-x64
-      yum install -y libicu
-  - type: Command
-    name: "Merge multiple SBOMs using CycloneDX-cli"
-    command: |
-      # For more details, visit https://github.com/CycloneDX/cyclonedx-cli/blob/main/README.md
-      chmod +x cyclonedx-linux-x64
-      ./cyclonedx-linux-x64 merge --input-files npm_artifactSBOM.json,golang_artifactSBOM.json --output-file merged-bom.json         
+      cdxgen -t golang -o artifactSBOM.json --spec-version 1.4 --project-name "$(basename $OCI_PRIMARY_SOURCE_URL)" --no-recurse && \
 outputArtifacts:
   - name: artifactSBOM
     type: BINARY
-    location: ${OCI_PRIMARY_SOURCE_DIR}/merged-bom.json
+    location: ${OCI_PRIMARY_SOURCE_DIR}/artifactSBOM.json
