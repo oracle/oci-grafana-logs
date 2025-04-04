@@ -7,12 +7,25 @@ import { OCIQuery, QueryPlaceholder } from './types';
 import { ScopedVars } from '@grafana/data';
 import { TemplateSrv } from '@grafana/runtime';
 
+/**
+ * QueryModel is responsible for managing and processing an OCI query.
+ *
+ * This class initializes query parameters, applies template variable substitution,
+ * and provides utility methods to determine if a query is ready to execute.
+*/
 export default class QueryModel {
   target: OCIQuery;
   templateSrv: any;
   scopedVars: any;
   refId?: string;
 
+  /**
+   * Constructs a new QueryModel instance.
+   *
+   * @param {OCIQuery} incomingQuery - The query object containing user-defined parameters.
+   * @param {TemplateSrv} [templateSrv] - Grafana's template service for handling template variables.
+   * @param {ScopedVars} [scopedVars] - Scoped variables used for dynamic substitutions.
+  */
   constructor(incomingQuery: OCIQuery, templateSrv?: TemplateSrv, scopedVars?: ScopedVars) {
     this.target = incomingQuery;
     this.templateSrv = templateSrv;
@@ -28,6 +41,13 @@ export default class QueryModel {
     }
   }
 
+  /**
+   * Determines if the query is ready to be executed.
+   *
+   * A query is considered ready if it has valid tenancy and region values.
+   *
+   * @returns {boolean} True if the query is ready, otherwise false.
+  */
   isQueryReady() {
     // check if the query is ready to be built
     if (
