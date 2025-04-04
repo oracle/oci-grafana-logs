@@ -152,6 +152,15 @@ func NewOCIDatasourceConstructor() *OCIDatasource {
 	}
 }
 
+// NewOCIDatasource creates a new instance of OCIDatasource with the provided settings.
+// It initializes the datasource settings, config provider, and cache, and registers HTTP routes.
+//
+// Parameters:
+//   - settings: backend.DataSourceInstanceSettings containing the datasource instance settings.
+//
+// Returns:
+//   - instancemgmt.Instance: The created OCIDatasource instance.
+//   - error: An error if the datasource creation fails.
 func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	o := NewOCIDatasourceConstructor()
 	dsSettings := &models.OCIDatasourceSettings{}
@@ -188,6 +197,30 @@ func NewOCIDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt
 	return o, nil
 }
 
+// getCreateDataFieldElemsForField retrieves an existing DataFieldElements object for the specified field key
+// or creates a new one if it does not exist.
+//
+// Parameters:
+// - dataFieldDefns (map[string]*DataFieldElements): A map storing field definitions, indexed by a unique key.
+// - totalSamples (int): The total number of samples to preallocate in the Values array.
+// - uniqueFieldKey (string): A unique identifier for the field within the data map.
+// - fieldName (string): The display name of the field.
+// - fieldType (FieldValueType): The type of data stored in the field (e.g., Time, Float64, Int, String).
+//
+// Returns:
+// - (*DataFieldElements): A pointer to the existing or newly created DataFieldElements object.
+//
+// Function Behavior:
+// - If a DataFieldElements object for the given unique key exists, it is returned.
+// - If it does not exist, a new DataFieldElements object is created with the specified field name and type.
+// - Labels are initialized as an empty map.
+// - The Values array is preallocated based on the field type and `totalSamples` count:
+//   - Time fields: []*time.Time
+//   - Float fields: []*float64
+//   - Integer fields: []*int
+//   - String fields: []*string
+//
+// - The new DataFieldElements object is added to the `dataFieldDefns` map and returned.
 func (o *OCIDatasource) getCreateDataFieldElemsForField(dataFieldDefns map[string]*DataFieldElements,
 	totalSamples int, uniqueFieldKey string, fieldName string, fieldType FieldValueType) *DataFieldElements {
 	var dataFieldDefn *DataFieldElements
@@ -226,6 +259,23 @@ func (o *OCIDatasource) getCreateDataFieldElemsForField(dataFieldDefns map[strin
 
 	return dataFieldDefn
 }
+
+// QueryData processes a batch of queries, executes them, and returns the corresponding response in the form of data frames.
+//
+// Parameters:
+// - ctx (context.Context): The context for the query request, which can be used for cancellation or timeouts.
+// - req (*backend.QueryDataRequest): The request containing multiple queries to be executed.
+//
+// Returns:
+// - (*backend.QueryDataResponse): The response containing the results of all executed queries, represented as data frames.
+// - error: Returns an error if any issue occurs during the execution of the queries; nil if successful.
+//
+// Function Behavior:
+// - Loops over each query in the provided request.
+// - For each query, it processes the query by calling the `query` function and stores the results in `mFieldData`.
+// - For each query's result, it creates data fields (columns) for the frame, associating them with the `RefID` of the query.
+// - Each query's data frame is created using the data fields and added to the response object.
+// - The response is returned with all the processed data frames for each query.
 func (o *OCIDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	// create response struct
 	response := backend.NewQueryDataResponse()
@@ -280,7 +330,29 @@ func (o *OCIDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealt
 	}, nil
 }
 
-// OCILoadSettings will read and validate Settings from the DataSourceConfig
+// OCILoadSettings loads and processes OCI configuration settings from the Grafana data source instance settings.
+//
+// This function handles both secured and non-secured settings, merging them to create a comprehensive
+// configuration. It iterates through the settings, parsing and storing them in an OCIConfigFile struct.
+// The function supports multiple tenancy configurations, identified by a numerical suffix (e.g., _0, _1).
+//
+// Parameters:
+//   - req: backend.DataSourceInstanceSettings - The data source instance settings from Grafana.
+//
+// Returns:
+//   - *OCIConfigFile: A pointer to an OCIConfigFile struct containing the parsed settings.
+//   - error: An error if any issues occur during the loading or parsing of settings.
+//
+// The function performs the following steps:
+//  1. Initializes an empty OCIConfigFile.
+//  2. Unmarshals the JSON data from req.JSONData into both OCISecuredSettings and OCIDatasourceSettings structs.
+//  3. Merges the non-secured settings into the secured settings.
+//  4. Iterates through the fields of the OCISecuredSettings struct using reflection.
+//  5. Parses the field names to determine the tenancy block index (e.g., _0, _1).
+//  6. Extracts the profile name as the key for each tenancy block.
+//  7. Stores the tenancy OCID, region, user, private key, fingerprint, private key passphrase, custom region, and custom domain in the OCIConfigFile.
+//  8. Handles multiple tenancy blocks by incrementing the TenancySettingsBlock index.
+//  9. Returns the populated OCIConfigFile or an error if any step fails.
 func OCILoadSettings(req backend.DataSourceInstanceSettings) (*OCIConfigFile, error) {
 	q := NewOCIConfigFile()
 
@@ -370,6 +442,25 @@ func OCILoadSettings(req backend.DataSourceInstanceSettings) (*OCIConfigFile, er
 	return q, nil
 }
 
+// getConfigProvider configures the necessary clients and providers based on the specified environment and tenancy mode.
+// It supports both "local" and "OCI Instance" environments and handles single and multi-tenancy configurations.
+//
+// Parameters:
+// - environment (string): Specifies the environment type. Valid values are "local" and "OCI Instance".
+// - tenancymode (string): Specifies the tenancy mode. Valid values are "multitenancy" and "single tenancy".
+// - req (backend.DataSourceInstanceSettings): Contains the data source settings for the configuration.
+//
+// Returns:
+// - error: Returns an error if the configuration fails for any of the specified environments or conditions.
+//
+// Function Behavior:
+// - In "local" environment mode, it loads configuration settings from a file and sets up clients based on the user principal and the given configuration.
+//   - If the tenancy mode is "multitenancy", it creates separate configuration for each tenancy.
+//   - If the tenancy mode is "single tenancy", it uses the default configuration.
+//   - It validates the private key and handles any custom regions and domains specified in the configuration.
+//
+// - In "OCI Instance" environment mode, it configures using Instance Principal, including handling cross-tenancy configuration if provided.
+// - The function returns an error if any of the required steps, such as loading configuration or creating clients, fails.
 func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string, req backend.DataSourceInstanceSettings) error {
 
 	switch environment {

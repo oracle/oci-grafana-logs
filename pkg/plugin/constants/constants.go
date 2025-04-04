@@ -26,7 +26,7 @@ const LimitPerPage = 1000
 const numMaxResults = (MaxPagesToFetch * LimitPerPage) + 1
 const numMax1 = (MaxPagesToFetch * LimitPerPage) + 1
 
-// Constants for the log query data response field namess
+// Constants for the log query data response field names
 const LogSearchResponseField_timestamp = "timestamp"
 
 const MaxLogMetricsDataPoints = 10

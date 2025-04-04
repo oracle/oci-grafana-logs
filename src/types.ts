@@ -19,19 +19,55 @@ export const tenanciesQueryRegex = /^tenancies\(\)\s*/;
 
 export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\"|\'.+\'|\$\w+)\s*(?:,\s*(\".+\"|\'.+\'|\$\w+))?\s*(?:,\s*(\".+\"|\'.+\'|\$\w+))?\)/;
 
-
+/**
+ * Enum representing the different OCI resource API calls.
+ */
 export enum OCIResourceCall {
+  /**
+  * Represents the API call to list tenancies.
+  */
   Tenancies = 'tenancies',
+  /**
+  * Represents the API call to list regions.
+  */
   Regions = 'regions',
+  /**
+  * Represents the API call to get log query.
+  */
   getQuery = 'getquery',
 }
 
+/**
+* Enum representing the different query placeholders used in the UI.
+*/
 export enum QueryPlaceholder {
+    /**
+    * Placeholder for the tenancy selection.
+    */
 	Tenancy = 'select tenancy',
+	/**
+    * Placeholder for the compartment selection.
+    */
 	Compartment = 'select compartment',
+	/**
+    * Placeholder for the region selection.
+    */
 	Region = 'select region',
   }
 
+/**
+ * The OCIQuery interface represents a query object for Oracle Cloud Infrastructure (OCI) data queries.
+ * It extends the DataQuery interface and includes additional properties specific to OCI query execution.
+ * 
+ * Properties:
+ * - searchQuery (optional): A string representing a search query that can be used to filter the data.
+ * - query (optional): A string representing the actual query to be executed.
+ * - tenancyName: A string representing the name of the tenancy in OCI.
+ * - tenancy: A string representing the OCID of the tenancy in OCI.
+ * - tenancymode: A string that indicates the mode of tenancy (e.g., "single" or "multi").
+ * - regions (optional): An array or object that contains information about available regions in OCI.
+ * - region (optional): A string representing a specific region in OCI.
+ */
 export interface OCIQuery extends DataQuery {
   searchQuery?: string;
   query?: string;
@@ -43,8 +79,8 @@ export interface OCIQuery extends DataQuery {
 }
 
 /**
- * These are options configured for each DataSource instance
- */
+* These are options configured for each DataSource instance
+*/
 export interface OCIDataSourceOptions extends DataSourceJsonData {
 	tenancyName: string; // name of the base tenancy
 	environment?: string; // oci-cli, oci-instance

@@ -23,10 +23,21 @@ import {
 } from "./types";
 //import QueryModel from './query_model';
 
-
+/**
+ * The OCIDataSource class extends `DataSourceWithBackend` to integrate OCI as a data source for Grafana, 
+ * allowing users to query OCI resources using Grafana's UI and templating system.
+ * It supports querying OCI tenancies, subscribed regions, and running custom queries.
+ * 
+ * @extends DataSourceWithBackend<OCIQuery, OCIDataSourceOptions>
+*/
 export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSourceOptions> {
   private jsonData: any;
 
+  /**
+   * Constructor for the OCIDataSource class.
+   *
+   * @param {DataSourceInstanceSettings<OCIDataSourceOptions>} instanceSettings - The settings for the data source instance.
+  */
   constructor(instanceSettings: DataSourceInstanceSettings<OCIDataSourceOptions>) {
     super(instanceSettings);
     this.jsonData = instanceSettings.jsonData;
@@ -35,7 +46,8 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
   /**
    * Filters disabled/hidden queries
    *
-   * @param {string} query Query
+   * @param {OCIQuery} query - The query to filter.
+   * @returns {boolean} True if the query is not hidden, false otherwise.
    */
   filterQuery(query: OCIQuery): boolean {
     if (query.hide) {
@@ -44,6 +56,15 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return true;
   }
 
+  /**
+   * Formats query variable values by wrapping them in single quotes if they are strings.
+   *
+   * This function is primarily used to ensure that string-based query parameters 
+   * are properly formatted when substituted into OCI queries, preventing syntax errors.
+   *
+   * @param {string} value - The query variable value to be formatted.
+   * @returns {string} - The formatted string, enclosed in single quotes if it is a string.
+  */
   getqueryVarFormatter = (value: string): string => {
     if (typeof value === 'string') {
       return "'"+value+"'";
@@ -53,11 +74,16 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
   };
 
   /**
-   * Override to apply template variables
+   * Replaces template variables in the given OCIQuery object with their actual values.
    *
-   * @param {string} query Query
-   * @param {ScopedVars} scopedVars Scoped variables
-   */
+   * This function ensures that any Grafana template variables used in the query are
+   * substituted with the correct values before execution. It applies template substitution
+   * to the region, tenancy, and search query fields.
+   *
+   * @param {OCIQuery} query - The query object containing template variables.
+   * @param {ScopedVars} scopedVars - The scoped variables that may contain overrides.
+   * @returns {OCIQuery} - The updated query object with template variables replaced.
+  */
   applyTemplateVariables(query: OCIQuery, scopedVars: ScopedVars) {
     const templateSrv = getTemplateSrv();  
     query.region = templateSrv.replace(query.region, scopedVars);
@@ -71,7 +97,18 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return query;
   }
 
-
+  /**
+   * Replaces template variables in an object's string properties with their actual values.
+   *
+   * This function iterates over all key-value pairs in the provided object and replaces 
+   * any string values containing Grafana template variables with their resolved values. 
+   * It ensures that only string values are processed, leaving other data types unchanged.
+   *
+   * @template T - A generic type representing an object with key-value pairs.
+   * @param {T} object - The object containing properties that may include template variables.
+   * @param {ScopedVars} [scopedVars={}] - The scoped variables that may contain overrides for template values.
+   * @returns {T} - A new object with all string properties updated with resolved template values.
+  */
   interpolateProps<T extends Record<string, any>>(object: T, scopedVars: ScopedVars = {}): T {
     const templateSrv = getTemplateSrv();
     return Object.entries(object).reduce((acc, [key, value]) => {
@@ -82,15 +119,15 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     }, {} as T);
   }
 
-  // // **************************** Template variable helpers ****************************
+  // **************************** Template variable helpers ****************************
 
-  // /**
-  //  * Matches the regex from creating template variables and returns options for the corresponding variable.
-  //  * Example:
-  //  * template variable with the query "regions()" will be matched with the regionsQueryRegex and list of available regions will be returned.
-  //  */
-  // metricFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
-
+  /**
+   * Executes a query for template variable values and returns the results.
+   *
+   * @param {any} query - The query string or object.
+   * @param {any} [options] - Optional query options.
+   * @returns {Promise<MetricFindValue[]>} A promise that resolves to an array of MetricFindValue objects.
+  */
   async metricFindQuery?(query: any, options?: any): Promise<MetricFindValue[]> {
     const templateSrv = getTemplateSrv();
     // const tmode = this.getJsonData().tenancymode;
@@ -146,16 +183,30 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return [];
   }
 
-
+  /**
+   * Gets the JSON data associated with this data source.
+   *
+   * @returns {any} The JSON data.
+  */
   getJsonData() {
     return this.jsonData;
   }
   
+  /**
+   * Gets the list of variable names.
+   *
+   * @returns {string[]} An array of variable names with '$' at the beginning.
+  */
   getVariables() {
     const templateSrv = getTemplateSrv();
     return templateSrv.getVariables().map((v) => `$${v.name}`);
   }
 
+  /**
+   * Gets the raw list of variables.
+   *
+   * @returns {any[]} An array of raw variable objects.
+  */
   getVariablesRaw() {
     const templateSrv = getTemplateSrv();
     return templateSrv.getVariables();
@@ -183,23 +234,46 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     return !!varNames.find((item) => item === varName);
   }
 
-
-  // main caller to call resource handler for get call
+  /**
+   * Calls the backend to fetch a resource.
+   *
+   * @param {string} path - The path of the resource to fetch.
+   * @returns {Promise<any>} A promise that resolves to the resource data.
+  */
   async getResource(path: string): Promise<any> {
     return super.getResource(path);
   }
-  // main caller to call resource handler for post call
+
+  /**
+   * Calls the backend to post data to a resource.
+   *
+   * @param {string} path - The path of the resource.
+   * @param {any} body - The request body.
+   * @returns {Promise<any>} A promise that resolves to the response data.
+  */
   async postResource(path: string, body: any): Promise<any> {
     return super.postResource(path, body);
   }
 
-
+  /**
+   * Retrieves a list of tenancies from the OCI (Oracle Cloud Infrastructure).
+   *
+   * @returns {Promise<OCIResourceItem[]>} A promise that resolves to an array of OCIResourceItem objects representing the tenancies.
+  */
   async getTenancies(): Promise<OCIResourceItem[]> {
     return this.getResource(OCIResourceCall.Tenancies).then((response) => {
       return new ResponseParser().parseTenancies(response);
     });
   }
 
+  /**
+   * Retrieves the list of subscribed regions for a given tenancy.
+   *
+   * @param tenancy - The tenancy identifier. If the tenancy is a variable, it will be interpolated.
+   * @returns A promise that resolves to an array of subscribed region names.
+   *
+   * @throws Will return an empty array if the tenancy is an empty string.
+  */
   async getSubscribedRegions(tenancy: string): Promise<string[]> {
     if (this.isVariable(tenancy)) {
       let { tenancy: var_tenancy} = this.interpolateProps({tenancy});
@@ -218,7 +292,20 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
     });
   }
 
-
+  /**
+   * Executes a query against OCI resources, resolving template variables where necessary.
+   *
+   * This function takes a query request containing tenancy, region, and filtering options.
+   * It first resolves any template variables in the provided parameters, ensuring that 
+   * dynamic values are correctly substituted before making the API request. The query 
+   * then executes an HTTP request to fetch the data and returns the parsed response.
+   *
+   * @param {string} tenancy - The tenancy OCID or variable representing the tenancy.
+   * @param {any} region - The OCI region where the query is executed.
+   * @param {any} getquery - The specific query string to be executed.
+   * @param {any} field - The field or resource type to filter the query results.
+   * @returns {Promise<string[]>} - A promise resolving to an array of query results.
+  */
   async getQuery(
     tenancy: string,
     region: any,
@@ -284,8 +371,4 @@ export class OCIDataSource extends DataSourceWithBackend<OCIQuery, OCIDataSource
       return new ResponseParser().parseGetQuery(response);
     });
   }
-
-
-
 }
-

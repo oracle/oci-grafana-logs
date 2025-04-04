@@ -45,37 +45,76 @@ const (
 
 const numMaxResults = (constants.MaxPagesToFetch * constants.LimitPerPage) + 1
 
-// TestConnectivity Check the OCI data source test request in Grafana's Datasource configuration UI.
+// TestConnectivity checks the OCI data source test request in Grafana's Datasource configuration UI.
+//
+// This function performs a connectivity test to the Oracle Cloud Infrastructure (OCI) Logging service.
+// It validates the configured credentials and permissions by attempting to search logs or list log groups,
+//
+//	depending on the environment.
+//
+// The function iterates through each configured tenancy access key and follows these steps:
+// 1. Fetches the tenancy OCID using the `FetchTenancyOCID` method.
+// 2. Checks if the environment is set to "local":
+//   - Constructs and executes a log search query for recent logs (last 30 minutes).
+//   - Validates the response status to determine success.
+//
+// 3. If the environment is not "local":
+//   - Lists log groups in the given tenancy.
+//   - Validates the response status to determine success.
+//
+// 4. Logs success or failure messages at each step.
+//
+// Parameters:
+//   - ctx: The context.Context for the request.
+//
+// Returns:
+//   - error: Returns an error if connectivity checks fail; otherwise, returns nil on success.
 func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 	backend.Logger.Debug("client", "TestConnectivity", "testing the OCI connectivity")
 
+	// Retrieve the environment setting.
 	tenv := o.settings.Environment
+
+	// Ensure tenancy access map is not empty.
 	if len(o.tenancyAccess) == 0 {
 		return fmt.Errorf("TestConnectivity failed: cannot read o.tenancyAccess")
 	}
+
+	// Iterate through each configured tenancy.
 	for key := range o.tenancyAccess {
+		// Fetch the Tenancy OCID using the key.
 		tenancyocid, tenancyErr := o.FetchTenancyOCID(key)
 		if tenancyErr != nil {
 			return errors.Wrap(tenancyErr, "error fetching TenancyOCID")
 		}
 
 		backend.Logger.Debug("TestConnectivity", "Config Key", key, "Testing Tenancy OCID", tenancyocid)
+		// If running in "local" environment, perform a log search.
 		if tenv == "local" {
+			// Construct a log search query for the given tenancy OCID.
 			queri := `search "` + tenancyocid + `" | sort by datetime desc`
+
+			// Define a time range (last 30 minutes).
 			t := time.Now()
 			t2 := t.Add(-time.Minute * 30)
 			start, _ := time.Parse(time.RFC3339, t2.Format(time.RFC3339))
 			end, _ := time.Parse(time.RFC3339, t.Format(time.RFC3339))
+
+			// Create a log search request.
 			request := loggingsearch.SearchLogsRequest{SearchLogsDetails: loggingsearch.SearchLogsDetails{SearchQuery: common.String(queri),
 				TimeStart:         &common.SDKTime{Time: start},
 				TimeEnd:           &common.SDKTime{Time: end},
 				IsReturnFieldInfo: common.Bool(false)},
 				Limit: common.Int(10)}
+
+			// Execute the log search query.
 			res, err := o.tenancyAccess[key].loggingSearchClient.SearchLogs(ctx, request)
 			if err != nil {
 				backend.Logger.Error("TestConnectivity", "Config Key", key, "SKIPPED", err)
 				return fmt.Errorf("ListLogGroupsRequest failed in each Compartments in profile %v", err)
 			}
+
+			// Validate HTTP response status.
 			status := res.RawResponse.StatusCode
 			if status >= 200 && status < 300 {
 				backend.Logger.Debug("TestConnectivity", "Config Key", key, "OK", status)
@@ -85,14 +124,18 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed: %s", key))
 			}
 		} else {
+			// For non-local environments, list log groups for the given tenancy OCID.
 			request := logging.ListLogGroupsRequest{Limit: common.Int(69),
 				CompartmentId:            common.String(tenancyocid),
 				IsCompartmentIdInSubtree: common.Bool(true)}
+
+			// Execute the log group listing request.
 			res, err := o.tenancyAccess[key].loggingManagementClient.ListLogGroups(ctx, request)
 			if err != nil {
 				o.logger.Debug(key, "FAILED", err)
 				return errors.Wrap(err, fmt.Sprintf("ListLogGroupsRequest failed:%s", key))
 			}
+			// Validate HTTP response status.
 			status := res.RawResponse.StatusCode
 			if status >= 200 && status < 300 {
 				backend.Logger.Debug("TestConnectivity", "Config Key", key, "OK", status)
@@ -108,7 +151,17 @@ func (o *OCIDatasource) TestConnectivity(ctx context.Context) error {
 }
 
 /*
-Fetch TenancyOcid function
+FetchTenancyOCID retrieves the tenancy OCID based on the provided tenancy access key (takey).
+
+This function handles different tenancy modes (single vs. multi-tenancy) and environments (local vs. OCI Instance).
+It fetches the tenancy OCID from the appropriate configuration provider.
+
+Parameters:
+  - takey: The tenancy access key.
+
+Returns:
+  - string: The tenancy OCID.
+  - error: An error if the tenancy OCID cannot be fetched.
 */
 func (o *OCIDatasource) FetchTenancyOCID(takey string) (string, error) {
 	tenv := o.settings.Environment
@@ -121,15 +174,19 @@ func (o *OCIDatasource) FetchTenancyOCID(takey string) (string, error) {
 		return "", errors.New("Multitenancy mode using instance principals is not implemented yet.")
 	}
 
+	// Handle multitenancy mode
 	if tenancymode == "multitenancy" {
+		// Ensure the tenancy key is valid
 		if len(takey) <= 0 || takey == NoTenancy {
 			o.logger.Error("Unable to get Multi-tenancy OCID")
 			return "", errors.Wrap(tenancyErr, "error fetching TenancyOCID")
 		} else {
+			// Extract the OCID assuming format "<configfile entry name/tenancyOCID>"
 			res := strings.Split(takey, "/")
 			tenancyocid = res[1]
 		}
 	} else {
+		// Handle single tenancy with possible cross-tenancy instance principal
 		if xtenancy != "" && tenv == "OCI Instance" {
 			o.logger.Debug("Cross Tenancy Instance Principal detected")
 			tocid, _ := o.tenancyAccess[takey].config.TenancyOCID()
@@ -137,6 +194,7 @@ func (o *OCIDatasource) FetchTenancyOCID(takey string) (string, error) {
 			o.logger.Debug("Target Tenancy OCID: " + o.settings.Xtenancy_0)
 			tenancyocid = xtenancy
 		} else {
+			// Retrieve the tenancy OCID from the configuration
 			tenancyocid, tenancyErr = o.tenancyAccess[takey].config.TenancyOCID()
 			if tenancyErr != nil {
 				return "", errors.Wrap(tenancyErr, "error fetching TenancyOCID")
@@ -147,8 +205,18 @@ func (o *OCIDatasource) FetchTenancyOCID(takey string) (string, error) {
 }
 
 /*
-Function generates an array  containing OCI tenancy list in the following format:
+GetTenancies function
+
+Generates an array containing OCI tenancy list in the following format:
 <Label/TenancyOCID>
+
+This function retrieves the list of tenancies available in the OCI environment.
+
+Parameters:
+  - ctx: The context.Context for the request.
+
+Returns:
+  - []models.OCIResource: A slice of OCIResource containing tenancy information.
 */
 func (o *OCIDatasource) GetTenancies(ctx context.Context) []models.OCIResource {
 	backend.Logger.Debug("client", "GetTenancies", "fetching the tenancies")
@@ -173,6 +241,17 @@ func (o *OCIDatasource) GetTenancies(ctx context.Context) []models.OCIResource {
 // https://docs.oracle.com/en-us/iaas/Content/Identity/Reference/iampolicyreference.htm
 // https://docs.oracle.com/en-us/iaas/Content/Identity/Tasks/managingregions.htm
 // https://docs.oracle.com/en-us/iaas/api/#/en/identity/20160918/RegionSubscription/ListRegionSubscriptions
+//
+// This function retrieves the list of regions subscribed to by a specific tenancy in Oracle Cloud Infrastructure.
+// It queries the Identity service to obtain the list of subscribed regions.
+//
+// Parameters:
+//   - ctx: The context.Context for the request.
+//   - tenancyOCID: The OCID of the tenancy for which to list subscribed regions.
+//
+// Returns:
+//   - []string: A slice of strings, where each string represents a subscribed region.
+//     Returns nil if any error occurred during the process.
 func (o *OCIDatasource) GetSubscribedRegions(ctx context.Context, tenancyOCID string) []string {
 	backend.Logger.Debug("client", "GetSubscribedRegions", "fetching the subscribed region for tenancy: "+tenancyOCID)
 
@@ -219,6 +298,26 @@ func (o *OCIDatasource) GetSubscribedRegions(ctx context.Context, tenancyOCID st
 	return subscribedRegions
 }
 
+// identifyQueryType classifies a given OCI Logging search query into a specific query type.
+//
+// This function analyzes the structure of the provided logging query string to determine
+// if it includes mathematical aggregation functions such as `avg()`, `sum()`, `min()`, `max()`,
+// or `count()`. If the query contains these functions, it is further checked for the presence
+// of the `rounddown()` function, which is used to group results into time intervals.
+//
+// The query is classified into one of the following types:
+//  1. **QueryType_LogMetrics_TimeSeries** – If the query includes an aggregation function and `rounddown()`,
+//     indicating a time-series metric query.
+//  2. **QueryType_LogMetrics_NoInterval** – If the query includes an aggregation function but does *not*
+//     include `rounddown()`, meaning it lacks explicit time interval grouping.
+//  3. **QueryType_LogRecords** – If the query does not contain any aggregation functions, meaning it retrieves raw log records.
+//  4. **QueryType_Undefined** – Default value if the query does not match any known patterns.
+//
+// Parameters:
+//   - loggingSearchQuery: The log search query string to be analyzed.
+//
+// Returns:
+//   - LogSearchQueryType: The determined query type.
 func (o *OCIDatasource) identifyQueryType(loggingSearchQuery string) LogSearchQueryType {
 	var queryType LogSearchQueryType = QueryType_Undefined
 
@@ -266,12 +365,33 @@ func (o *OCIDatasource) identifyQueryType(loggingSearchQuery string) LogSearchQu
 		}
 
 	} else {
+		// If no aggregation functions are detected, classify as a log records query.
 		queryType = QueryType_LogRecords
 	}
 	return queryType
 
 }
 
+// processLogMetricTimeSeries processes log search results into a time series format for Grafana visualization.
+//
+// It performs the following operations:
+// - Constructs a search request based on the query model and time range.
+// - Executes the OCI Logging Search API call.
+// - Extracts relevant metric and timestamp data from search results.
+// - Organizes the results into a structured time series format.
+//
+// Parameters:
+//   - ctx: The context for the request execution.
+//   - query: The backend DataQuery containing the request details.
+//   - queryModel: The query model with user-defined parameters.
+//   - fromMs: The start time in milliseconds since Unix epoch.
+//   - toMs: The end time in milliseconds since Unix epoch.
+//   - mFieldDefns: A map to store extracted field definitions.
+//   - takey: The tenancy key for accessing the appropriate OCI client.
+//
+// Returns:
+//   - Updated field definitions containing time series data.
+//   - An error if the log search operation fails or processing encounters issues.
 func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 	query backend.DataQuery, queryModel *models.QueryModel, fromMs int64, toMs int64, mFieldDefns map[string]*DataFieldElements, takey string) (map[string]*DataFieldElements, error) {
 
@@ -571,6 +691,35 @@ func (o *OCIDatasource) processLogMetricTimeSeries(ctx context.Context,
 	return mFieldDefns, nil
 }
 
+/*
+processLogMetrics processes log metrics by executing a logging search query
+within the specified time range, aggregating results over intervals, and
+returning structured data for visualization.
+
+Parameters:
+- ctx (context.Context): The execution context for handling timeouts and cancellations.
+- query (backend.DataQuery): The query object containing details such as time range and reference ID.
+- queryModel (*models.QueryModel): The parsed query model containing the search query text.
+- fromMs (int64): The start time of the query range in milliseconds.
+- toMs (int64): The end time of the query range in milliseconds.
+- mFieldDefns (map[string]*DataFieldElements): A mapping of field names to data field structures.
+- takey (string): The key to access tenancy-specific resources.
+
+Returns:
+- (map[string]*DataFieldElements, error): A mapping of data fields to their values, or an error if the query fails.
+
+Functionality:
+1. Extracts and validates query parameters.
+2. Determines the optimal number of data points for aggregation.
+3. Iteratively executes log search queries over time intervals.
+4. Parses search results, identifying numeric fields and labels.
+5. Aggregates data into structured field definitions for visualization.
+6. Returns the final dataset or an error if the operation fails.
+
+Logs:
+- Debug logs capture query execution, intermediate results, and potential anomalies.
+- Error logs are generated when unexpected conditions occur, such as query failures or data parsing issues.
+*/
 func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 	query backend.DataQuery, queryModel *models.QueryModel, fromMs int64, toMs int64, mFieldDefns map[string]*DataFieldElements, takey string) (map[string]*DataFieldElements, error) {
 
@@ -862,6 +1011,27 @@ func (o *OCIDatasource) processLogMetrics(ctx context.Context,
 	return mFieldDefns, nil
 }
 
+// processLogRecords retrieves and processes log records from OCI Logging service based on the provided query parameters.
+// It executes a log search request, extracts relevant fields, and structures the results for further processing.
+//
+// Parameters:
+// - ctx (context.Context): The execution context for the API request.
+// - query (backend.DataQuery): The query details from Grafana, including time range and reference ID.
+// - queryModel (*models.QueryModel): The structured query model containing the search query text.
+// - fromMs (int64): The start time for the log search in milliseconds since the Unix epoch.
+// - toMs (int64): The end time for the log search in milliseconds since the Unix epoch.
+// - mFieldDefns (map[string]*DataFieldElements): A map to store extracted log data fields and their definitions.
+// - takey (string): A key to access the appropriate tenancy logging client.
+//
+// Returns:
+// - (map[string]*DataFieldElements, error): A map containing processed log data fields and an error (if any).
+//
+// The function performs the following:
+// - Converts the provided time range into the required OCI format.
+// - Constructs and executes a SearchLogs API request.
+// - Iterates through paginated results, extracting relevant log fields.
+// - Processes special fields like timestamps separately.
+// - Logs debug and error messages for tracking query execution and potential issues.
 func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	query backend.DataQuery, queryModel *models.QueryModel, fromMs int64, toMs int64, mFieldDefns map[string]*DataFieldElements, takey string) (map[string]*DataFieldElements, error) {
 
@@ -1028,6 +1198,26 @@ func (o *OCIDatasource) processLogRecords(ctx context.Context,
 	return mFieldDefns, nil
 }
 
+// getLogs retrieves log records from the OCI Logging service based on the specified query parameters.
+//
+// Parameters:
+// - ctx (context.Context): The execution context for the API request.
+// - tenancyOCID (string): The OCID of the tenancy from which logs should be fetched.
+// - QueryText (string): The log query string to be used for searching logs.
+// - Field (string): The specific field to extract from the log records.
+// - tstart (int64): The start time for the log search in milliseconds since the Unix epoch (0 for default: last 5 minutes).
+// - tend (int64): The end time for the log search in milliseconds since the Unix epoch (0 for default: current time).
+//
+// Returns:
+// - ([]string, error): A list of unique extracted field values from the log records and an error (if any).
+//
+// The function performs the following steps:
+// - Determines the time range for the query, defaulting to the last 5 minutes if no start time is provided.
+// - Constructs and executes a SearchLogs API request.
+// - Iterates through the returned log search results, extracting relevant fields from log data.
+// - Uses `extractField` to extract the specified field from each log record.
+// - Handles errors and logs failures at various stages of processing.
+// - Ensures unique results before returning the final list of extracted field values.
 func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, QueryText string, Field string, tstart int64, tend int64) ([]string, error) {
 	takey := o.GetTenancyAccessKey(tenancyOCID)
 
