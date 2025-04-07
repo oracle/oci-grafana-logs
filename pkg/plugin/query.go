@@ -13,6 +13,23 @@ import (
 	"github.com/oracle/oci-grafana-logs/pkg/plugin/models"
 )
 
+// query processes a data query for the OCIDatasource, executing the necessary operations based on the query type and time range.
+// It identifies the query type (Log Metrics or Log Records) and invokes the corresponding method to process the data.
+//
+// Parameters:
+// - ctx (context.Context): The context for the query execution, typically used for cancellation or deadlines.
+// - pCtx (backend.PluginContext): The plugin context, providing access to the plugin environment and configuration.
+// - query (backend.DataQuery): The data query to be executed, which contains the query text and time range.
+//
+// Returns:
+// - map[string]*DataFieldElements: A map containing the processed data field elements, which will be included in the query response.
+// - backend.DataResponse: A response struct containing any errors encountered during query processing.
+//
+// Function Behavior:
+// - The function begins by unmarshalling the query's JSON into a QueryModel object.
+// - It identifies the query type (Log Metrics Time Series, Log Metrics No Interval, or Log Records) based on the query text.
+// - Depending on the query type, it calls the appropriate method to process the log data (e.g., `processLogMetricTimeSeries`, `processLogMetrics`, or `processLogRecords`).
+// - If an error occurs during processing, it is returned in the response. The function ensures proper handling of different query types to return the correct data format for the client.
 func (ocidx *OCIDatasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) (map[string]*DataFieldElements, backend.DataResponse) {
 	backend.Logger.Debug("plugin.query", "query", "query initiated for "+query.RefID)
 	// Creating the Data response for query

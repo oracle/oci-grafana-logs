@@ -22,7 +22,18 @@ func transcode(in, out interface{}) {
 	json.NewDecoder(buf).Decode(out)
 }
 
-// GetTenancyAccessKey returns the tenancy access key for the given tenancy OCID.
+// GetTenancyAccessKey retrieves the tenancy access key based on the tenancy mode.
+// If the tenancy mode is "multitenancy", it uses the provided tenancyOCID as the key.
+// Otherwise, it uses a predefined SingleTenancyKey.
+// It logs an error if the key is invalid and returns an empty string in that case.
+//
+// Parameters:
+//
+//	tenancyOCID (string): The OCID of the tenancy.
+//
+// Returns:
+//
+//	string: The tenancy access key if valid, otherwise an empty string.
 func (o *OCIDatasource) GetTenancyAccessKey(tenancyOCID string) string {
 
 	// Determine the tenancy access key based on the tenancy mode.
@@ -47,7 +58,17 @@ func (o *OCIDatasource) GetTenancyAccessKey(tenancyOCID string) string {
 	return takey
 }
 
-// FilterMap filters out keys "datetime" and "count" and returns the remaining value as a string.
+// FilterMap filters through a map of type map[string]interface{} and returns the first value
+// found that is not associated with the keys "datetime" or "count". If a valid key-value pair
+// is found, the value is returned as a string. If no such valid key is found, an error is returned.
+//
+// Parameters:
+//   - inputMap: An interface{} that is expected to be a map of type map[string]interface{}.
+//
+// Returns:
+//   - A string representing the first value found in the map that is not associated with
+//     the keys "datetime" or "count".
+//   - An error if the input is not of type map[string]interface{} or if no valid key is found.
 func FilterMap(inputMap interface{}) (string, error) {
 	// Check if the input is a map[string]interface{}.
 	m, ok := inputMap.(map[string]interface{})
@@ -67,7 +88,15 @@ func FilterMap(inputMap interface{}) (string, error) {
 	return "", errors.New("no valid key found in the map")
 }
 
-// uniqueStrings returns a list of unique strings from a slice.
+// uniqueStrings removes duplicate strings from a slice, returning a new slice
+// containing only unique strings in the order they first appear.
+//
+// Parameters:
+//   - slice: A slice of strings where duplicates will be removed.
+//
+// Returns:
+//   - A new slice containing only the unique strings from the input slice,
+//     in the order they first appeared.
 func uniqueStrings(slice []string) []string {
 	// Create a map to keep track of seen strings.
 	seen := make(map[string]struct{})
@@ -91,7 +120,19 @@ func uniqueStrings(slice []string) []string {
 	return unique
 }
 
-// ExtractField extracts a field from a JSON string.
+// extractField extracts the value of a specified field from a JSON string.
+// It unmarshals the JSON string into a map and returns the value of the specified field.
+//
+// Parameters:
+//   - jsonStr: A string containing the JSON data.
+//   - field: The name of the field whose value should be extracted from the JSON.
+//
+// Returns:
+//   - A string containing the value of the specified field, or an error if the field is not found
+//     or if there is an issue with unmarshaling the JSON.
+//
+// Errors:
+//   - If the JSON string cannot be unmarshaled, or if the field is not found in the JSON, an error is returned.
 func extractField(jsonStr string, field string) (string, error) {
 	// Unmarshal the JSON string into a map.
 	var data map[string]interface{}

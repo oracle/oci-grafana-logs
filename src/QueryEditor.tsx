@@ -14,6 +14,28 @@ import { TenancyChoices } from './config.options';
 
 type Props = QueryEditorProps<OCIDataSource, OCIQuery, OCIDataSourceOptions>;
 
+/**
+ * QueryEditor component.
+ * 
+ * This component allows users to configure and execute queries by selecting
+ * tenancy, region, and entering a search query.
+ *
+ * Features:
+ * - Supports both single-tenancy and multi-tenancy modes.
+ * - Fetches available tenancies and subscribed regions dynamically.
+ * - Provides an input field for query entry.
+ * - Allows execution of queries with keyboard shortcuts (Shift+Enter or Ctrl+Enter).
+ *
+ * Props:
+ * @param {Props} props - The component properties.
+ * @param {OCIQuery} props.query - The current query object.
+ * @param {OCIDataSource} props.datasource - The OCI data source instance.
+ * @param {Function} props.onChange - Callback for updating the query state.
+ * @param {Function} props.onRunQuery - Callback for executing the query.
+ *
+ * Returns:
+ * A React component that renders the query editor UI for the OCI data source.
+ */
 
 export const QueryEditor: React.FC<Props> = (props) => {
   const { query, datasource, onChange, onRunQuery } = props;
@@ -23,6 +45,15 @@ export const QueryEditor: React.FC<Props> = (props) => {
   const [regionValue, setRegionValue] = useState(query.region);
   const [hasCalledGetTenancyDefault, setHasCalledGetTenancyDefault] = useState(false);  
   
+  /**
+   * Handles keydown events in the query input field.
+   * 
+   * Triggers the query execution when the user presses "Enter" while holding 
+   * the "Shift" or "Ctrl" key. Prevents the default behavior to avoid unintended 
+   * newlines in the input field.
+   *
+   * @param {KeyboardEvent<HTMLTextAreaElement>} event - The keydown event object.
+  */
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && (event.shiftKey || event.ctrlKey)) {
       event.preventDefault();
@@ -30,6 +61,16 @@ export const QueryEditor: React.FC<Props> = (props) => {
     }
   };
 
+  /**
+   * Updates the query state and optionally triggers the query execution.
+   *
+   * If `runQuery` is `true`, additional logic can be added to process or validate 
+   * the query before running it. If `runQuery` is `false`, the function only updates 
+   * the query state without executing it.
+   *
+   * @param {OCIQuery} changedQuery - The modified query object.
+   * @param {boolean} [runQuery=true] - Whether to trigger query execution after applying changes.
+  */
   const onApplyQueryChange = (changedQuery: OCIQuery, runQuery = true) => {
     if (runQuery) {  
       /* TODO: Add some logic*/      
@@ -37,7 +78,14 @@ export const QueryEditor: React.FC<Props> = (props) => {
       onChange({ ...changedQuery });
     }
   };
-  // Appends all available template variables to options used by dropdowns
+  /**
+   * addTemplateVariablesToOptions
+   *
+   * Appends all available template variables to options used by dropdowns.
+   *
+   * @param options - The array of SelectableValue options to which template variables will be added.
+   * @returns The updated array of SelectableValue options.
+  */
   const addTemplateVariablesToOptions = (options: Array<SelectableValue<string>>) => {
     getTemplateSrv()
       .getVariables()
@@ -50,7 +98,11 @@ export const QueryEditor: React.FC<Props> = (props) => {
     return options;
   }
 
-  // Custom input field for Single Tenancy Mode
+  /**
+   * CustomInput Component
+   *
+   * A custom input field for Single Tenancy Mode, pre-filling the tenancy with "DEFAULT/".
+  */
   const CustomInput = ({ ...props }) => {
     const [isReady, setIsReady] = useState(false);
   
@@ -73,7 +125,13 @@ export const QueryEditor: React.FC<Props> = (props) => {
     return <Input {...props} />;
   };
 
-  // fetch the tenancies, with name as key and ocid as value
+  /**
+   * getTenancyOptions
+   *
+   * Fetches the available tenancies from the data source.
+   *
+   * @returns A promise that resolves to an array of SelectableValue options representing the tenancies.
+  */
   const getTenancyOptions = async () => {
     let options: Array<SelectableValue<string>> = [];
     options = addTemplateVariablesToOptions(options)
@@ -90,8 +148,13 @@ export const QueryEditor: React.FC<Props> = (props) => {
     return options;
   };
 
-  
-
+  /**
+   * getSubscribedRegionOptions
+   *
+   * Fetches the subscribed regions for the selected tenancy from the data source.
+   *
+   * @returns A promise that resolves to an array of SelectableValue options representing the regions.
+  */
   const getSubscribedRegionOptions = async () => {
       let options: Array<SelectableValue<string>> = [];
       options = addTemplateVariablesToOptions(options)
@@ -108,7 +171,13 @@ export const QueryEditor: React.FC<Props> = (props) => {
       return options;
   };
   
-
+  /**
+   * onTenancyChange
+   *
+   * Handles changes to the selected tenancy.
+   *
+   * @param data - The selected tenancy data.
+  */
   const onTenancyChange = async (data: any) => {
     setTenancyValue(data);
     onApplyQueryChange(
@@ -122,6 +191,13 @@ export const QueryEditor: React.FC<Props> = (props) => {
     );
   };
 
+  /**
+   * onRegionChange 
+   * 
+   * Handles the change of the region selection.
+   *
+   * @param {SelectableValue} data - The selected region data.
+  */
   const onRegionChange = (data: SelectableValue) => {
     setRegionValue(data.value);   
     onApplyQueryChange({ ...query, region: data.value}, false);
