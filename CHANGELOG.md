@@ -1,9 +1,19 @@
-<a name="v5.0.2"></a>
-# [Security Maintenance release (v5.0.2)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.2) - 16 Jul 2025
+<a name="v5.0.3"></a>
+# [Security Maintenance release (v5.0.3)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.3) - 16 Jul 2025
 
 This release includes:
 
 - security patches
+
+[Changes][v5.0.3]
+
+<a name="v5.0.2"></a>
+# [Security Maintenance release (v5.0.2)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.2) - 26 Nov 2024
+
+This release includes:
+
+- Bug fix for github issue 117
+- Bump cross-spawn from 7.0.3 to 7.0.6
 
 [Changes][v5.0.2]
 
