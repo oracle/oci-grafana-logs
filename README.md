@@ -104,7 +104,7 @@ Depending on your installation scenario you can use the following guides:
 
 ## Note 1
 
-The OCI Logs plugin supports the integration with Grafana Cloud with Data Source **Authentication Provider** configured as **local**. See [this document](https://github.com/oracle/oci-grafana-logs/blob/master/docs/grafanacloud.md) for additional information.
+The OCI Logs plugin supports the integration with Grafana Cloud with Data Source **Authentication Provider** configured as **local**. See [this document](https://github.com/oracle/oci-grafana-logs/blob/main/docs/grafanacloud.md) for additional information.
 
 ## Documentation
 
@@ -117,7 +117,7 @@ Issues and questions about this plugin can be posted
 
 ## Contributing
 
-This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md)
+This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](https://github.com/oracle/oci-grafana-logs/blob/main/CONTRIBUTING.md)
 
 ## Security
 
