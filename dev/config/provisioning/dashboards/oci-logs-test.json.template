@@ -1,0 +1,103 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "pluginVersion": "9.5.21",
+      "targets": [
+        {
+          "refId": "A",
+          "searchQuery": "search \"${OCI_COMPARTMENT_OCID}\" | sort by datetime desc",
+          "tenancy": "DEFAULT/",
+          "tenancyName": "DEFAULT/",
+          "region": "${OCI_REGION_1}"
+        }
+      ],
+      "title": "IAD — Recent logs",
+      "type": "logs"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "pluginVersion": "9.5.21",
+      "targets": [
+        {
+          "refId": "A",
+          "searchQuery": "search \"${OCI_COMPARTMENT_OCID}\" | sort by datetime desc",
+          "tenancy": "DEFAULT/",
+          "tenancyName": "DEFAULT/",
+          "region": "${OCI_REGION_2}"
+        }
+      ],
+      "title": "PHX — Recent logs",
+      "type": "logs"
+    }
+  ],
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": ["oci", "logs", "test"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "OCI Logs Plugin Test",
+  "uid": "oci-logs-test",
+  "version": 1
+}

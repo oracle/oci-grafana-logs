@@ -110,6 +110,13 @@ The OCI Logs plugin supports the integration with Grafana Cloud with Data Source
 
 Please refer to the [docs folder in this GitHub repository](https://github.com/oracle/oci-grafana-logs/tree/main/docs) for more information on installing and using the OCI Logging data source.
 
+## Local Validation
+
+The repository includes a local development harness under [`dev/`](./dev) for
+validating plugin load, datasource health, and real OCI Logging queries across
+multiple Grafana versions. See [`dev/README.md`](./dev/README.md) for setup,
+Instance Principal tunnel usage, expected results, and OCI CLI comparison steps.
+
 ## Help
 
 Issues and questions about this plugin can be posted

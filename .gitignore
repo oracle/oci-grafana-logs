@@ -77,3 +77,8 @@ e2e-results/
 
 
 .codegpt
+
+# dev/ harness — local-only runtime artifacts
+.env
+dev/.env
+dev/.tunnel.pid
