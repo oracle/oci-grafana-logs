@@ -26,7 +26,7 @@ steps:
     name: "Generate SBOM for Golang "
     command: |
       # the version of go should be the same in go.mod or greater
-      GO_VERSION="1.22.3" && \
+      GO_VERSION="1.25.0" && \
       INSTALL_DIR="${OCI_PRIMARY_SOURCE_DIR}" && \
       curl -L -o go-${GO_VERSION}.tar.gz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
       tar -C ${INSTALL_DIR} -xzf go-${GO_VERSION}.tar.gz && \
