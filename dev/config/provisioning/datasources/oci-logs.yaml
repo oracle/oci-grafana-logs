@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: Oracle Cloud Infrastructure Logs
+    type: oci-logs-datasource
+    access: proxy
+    isDefault: true
+    editable: true
+    jsonData:
+      environment: "OCI Instance"
+      tenancymode: "single"
