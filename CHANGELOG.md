@@ -1,3 +1,13 @@
+<a name="v5.0.4"></a>
+# [Security Maintenance release (v5.0.4)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.4) - 15 May 2026
+
+This release includes:
+
+- vulnerability fixes and security patches
+- Local OCI Logging plugin validation harness for Grafana version coverage
+
+[Changes][v5.0.4]
+
 <a name="v5.0.3"></a>
 # [Security Maintenance release (v5.0.3)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.3) - 16 Jul 2025
 
@@ -130,6 +140,7 @@ Update plugin.json, update screenshots
 
 [Changes][v1.1.3-beta]
 
+[v5.0.4]: https://github.com/oracle/oci-grafana-logs/compare/v5.0.3...v5.0.4
 [v5.0.2]: https://github.com/oracle/oci-grafana-logs/compare/v5.0.1...v5.0.2
 [v5.0.1]: https://github.com/oracle/oci-grafana-logs/compare/v5.0.0...v5.0.1
 [v5.0.0]: https://github.com/oracle/oci-grafana-logs/compare/v4.0.2...v5.0.0
