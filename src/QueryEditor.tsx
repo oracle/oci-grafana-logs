@@ -53,7 +53,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    * newlines in the input field.
    *
    * @param {KeyboardEvent<HTMLTextAreaElement>} event - The keydown event object.
-  */
+   */
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && (event.shiftKey || event.ctrlKey)) {
       event.preventDefault();
@@ -70,7 +70,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    *
    * @param {OCIQuery} changedQuery - The modified query object.
    * @param {boolean} [runQuery=true] - Whether to trigger query execution after applying changes.
-  */
+   */
   const onApplyQueryChange = (changedQuery: OCIQuery, runQuery = true) => {
     if (runQuery) {  
       /* TODO: Add some logic*/      
@@ -85,7 +85,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    *
    * @param options - The array of SelectableValue options to which template variables will be added.
    * @returns The updated array of SelectableValue options.
-  */
+   */
   const addTemplateVariablesToOptions = (options: Array<SelectableValue<string>>) => {
     getTemplateSrv()
       .getVariables()
@@ -102,7 +102,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    * CustomInput Component
    *
    * A custom input field for Single Tenancy Mode, pre-filling the tenancy with "DEFAULT/".
-  */
+   */
   const CustomInput = ({ ...props }) => {
     const [isReady, setIsReady] = useState(false);
   
@@ -131,7 +131,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    * Fetches the available tenancies from the data source.
    *
    * @returns A promise that resolves to an array of SelectableValue options representing the tenancies.
-  */
+   */
   const getTenancyOptions = async () => {
     let options: Array<SelectableValue<string>> = [];
     options = addTemplateVariablesToOptions(options)
@@ -154,7 +154,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    * Fetches the subscribed regions for the selected tenancy from the data source.
    *
    * @returns A promise that resolves to an array of SelectableValue options representing the regions.
-  */
+   */
   const getSubscribedRegionOptions = async () => {
       let options: Array<SelectableValue<string>> = [];
       options = addTemplateVariablesToOptions(options)
@@ -177,7 +177,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    * Handles changes to the selected tenancy.
    *
    * @param data - The selected tenancy data.
-  */
+   */
   const onTenancyChange = async (data: any) => {
     setTenancyValue(data);
     onApplyQueryChange(
@@ -197,7 +197,7 @@ export const QueryEditor: React.FC<Props> = (props) => {
    * Handles the change of the region selection.
    *
    * @param {SelectableValue} data - The selected region data.
-  */
+   */
   const onRegionChange = (data: SelectableValue) => {
     setRegionValue(data.value);   
     onApplyQueryChange({ ...query, region: data.value}, false);

@@ -11,7 +11,7 @@ import { SelectableValue } from '@grafana/data';
  * This module defines the configuration options and enums used within the OCI (Oracle Cloud Infrastructure)
  * data source plugin for Grafana. It includes authentication providers, tenancy choices, and selectable
  * value options for configuring the plugin's behavior.
-*/
+ */
 
 /**
  * @enum AuthProviders
@@ -20,7 +20,7 @@ import { SelectableValue } from '@grafana/data';
  *
  * @property {string} OCI_USER - Represents the 'local' authentication method, where OCI user credentials are used.
  * @property {string} OCI_INSTANCE - Represents the 'OCI Instance' authentication method, where the Grafana instance is running within an OCI environment and uses instance principals.
-*/
+ */
 export enum AuthProviders {
   OCI_USER = 'local',
   OCI_INSTANCE = 'OCI Instance',
@@ -35,7 +35,7 @@ export enum AuthProviders {
  * @example
  * // Example usage:
  * // const myNamespace = namespaces[0]; // 'oci_computeagent'
-*/
+ */
 export const namespaces = ['oci_computeagent', 'oci_blockstore', 'oci_lbaas', 'oci_telemetry'];
 
 /**
@@ -47,7 +47,7 @@ export const namespaces = ['oci_computeagent', 'oci_blockstore', 'oci_lbaas', 'o
  * @example
  * // Example usage:
  * // const myEnvironment = environments[1]; // 'OCI Instance'
-*/
+ */
 export const environments = ['local', 'OCI Instance'];
 
 /**
@@ -57,7 +57,7 @@ export const environments = ['local', 'OCI Instance'];
  *
  * @property {string} multitenancy - Represents the 'multitenancy' mode, where the plugin can fetch logs across multiple OCI tenancies.
  * @property {string} single - Represents the 'single' tenancy mode, where the plugin is configured for a single OCI tenancy.
-*/
+ */
 export enum TenancyChoices {
   multitenancy = 'multitenancy',
   single = 'single',
@@ -72,7 +72,7 @@ export enum TenancyChoices {
  * @example
  * // Example usage:
  * // <Select options={TenancyChoiceOptions} />
-*/
+ */
 export const TenancyChoiceOptions = [
   {
     label: 'Multi Tenancy',
@@ -93,7 +93,7 @@ export const TenancyChoiceOptions = [
  * @example
  * // Example usage:
  * // <Select options={AuthProviderOptions} />
-*/
+ */
 export const AuthProviderOptions = [
   {
     label: 'OCI User',

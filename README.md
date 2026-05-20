@@ -112,9 +112,9 @@ Please refer to the [docs folder in this GitHub repository](https://github.com/o
 
 ## Local Validation
 
-The repository includes a local development harness under [`dev/`](./dev) for
+The repository includes a local development harness under [`dev/`](https://github.com/oracle/oci-grafana-logs/tree/main/dev) for
 validating plugin load, datasource health, and real OCI Logging queries across
-multiple Grafana versions. See [`dev/README.md`](./dev/README.md) for setup,
+multiple Grafana versions. See [`dev/README.md`](https://github.com/oracle/oci-grafana-logs/blob/main/dev/README.md) for setup,
 Instance Principal tunnel usage, expected results, and OCI CLI comparison steps.
 
 ## Help

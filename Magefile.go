@@ -6,7 +6,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	// mage:import
@@ -18,10 +18,10 @@ var Default = build.BuildAll
 
 // Cleans up local folder
 func CleanLocal() error {
-	fmt.Println("Cleans the local folder")
+	log.Println("Cleans the local folder")
 	err := os.RemoveAll("oci-logs-datasource/")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return err
 
