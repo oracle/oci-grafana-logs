@@ -24,34 +24,34 @@ export const generalQueryRegex = /^search\(\s*(\".+\"|\'.+\'|\$\w+)\s*,\s*(\".+\
  */
 export enum OCIResourceCall {
   /**
-  * Represents the API call to list tenancies.
-  */
+   * Represents the API call to list tenancies.
+   */
   Tenancies = 'tenancies',
   /**
-  * Represents the API call to list regions.
-  */
+   * Represents the API call to list regions.
+   */
   Regions = 'regions',
   /**
-  * Represents the API call to get log query.
-  */
+   * Represents the API call to get log query.
+   */
   getQuery = 'getquery',
 }
 
 /**
-* Enum representing the different query placeholders used in the UI.
-*/
+ * Enum representing the different query placeholders used in the UI.
+ */
 export enum QueryPlaceholder {
     /**
-    * Placeholder for the tenancy selection.
-    */
+     * Placeholder for the tenancy selection.
+     */
 	Tenancy = 'select tenancy',
 	/**
-    * Placeholder for the compartment selection.
-    */
+	 * Placeholder for the compartment selection.
+	 */
 	Compartment = 'select compartment',
 	/**
-    * Placeholder for the region selection.
-    */
+	 * Placeholder for the region selection.
+	 */
 	Region = 'select region',
   }
 
@@ -79,8 +79,8 @@ export interface OCIQuery extends DataQuery {
 }
 
 /**
-* These are options configured for each DataSource instance
-*/
+ * These are options configured for each DataSource instance
+ */
 export interface OCIDataSourceOptions extends DataSourceJsonData {
 	tenancyName: string; // name of the base tenancy
 	environment?: string; // oci-cli, oci-instance

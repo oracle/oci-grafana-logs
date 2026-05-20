@@ -11,7 +11,7 @@ import { OCIQuery, OCIDataSourceOptions } from './types';
  * and query OCI data within Grafana.
  *
  * The plugin initializes the data source and sets up configuration and query editors.
-*/
+ */
 export const plugin = new DataSourcePlugin<OCIDataSource, OCIQuery, OCIDataSourceOptions>(OCIDataSource)
   .setConfigEditor(ConfigEditor) // Assigns the configuration editor component.
   .setQueryEditor(QueryEditor) // Assigns the query editor component.

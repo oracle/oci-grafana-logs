@@ -12,7 +12,7 @@ import { TemplateSrv } from '@grafana/runtime';
  *
  * This class initializes query parameters, applies template variable substitution,
  * and provides utility methods to determine if a query is ready to execute.
-*/
+ */
 export default class QueryModel {
   target: OCIQuery;
   templateSrv: any;
@@ -25,7 +25,7 @@ export default class QueryModel {
    * @param {OCIQuery} incomingQuery - The query object containing user-defined parameters.
    * @param {TemplateSrv} [templateSrv] - Grafana's template service for handling template variables.
    * @param {ScopedVars} [scopedVars] - Scoped variables used for dynamic substitutions.
-  */
+   */
   constructor(incomingQuery: OCIQuery, templateSrv?: TemplateSrv, scopedVars?: ScopedVars) {
     this.target = incomingQuery;
     this.templateSrv = templateSrv;
@@ -47,7 +47,7 @@ export default class QueryModel {
    * A query is considered ready if it has valid tenancy and region values.
    *
    * @returns {boolean} True if the query is ready, otherwise false.
-  */
+   */
   isQueryReady() {
     // check if the query is ready to be built
     if (

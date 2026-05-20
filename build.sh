@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #Do grunt work
-# nvm install 12.20
-# nvm use 12.20
+# nvm install 20
+# nvm use 20
 
 if [[ ! -d ./node_modules ]]; then
   echo "dependencies not installed try running: yarn"
@@ -38,9 +38,9 @@ zip -r oci-logs-datasource ./oci-logs-datasource
 
 # Instructions for signing
 # Please make sure
-# nvm install 12.20
+# nvm install 20
 
-# nvm use 12.20
+# nvm use 20
 
 # yarn
 # For grafana publishing
@@ -50,4 +50,3 @@ zip -r oci-logs-datasource ./oci-logs-datasource
 # Note : Please make sure that you are running the commands in a non-proxy env and without vpn, else grafana signing might fail"
 # yarn  global add @grafana/toolkit
 # grafana-toolkit plugin:sign
-

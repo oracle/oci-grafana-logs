@@ -1300,7 +1300,6 @@ func (o *OCIDatasource) getLogs(ctx context.Context, tenancyOCID string, QueryTe
 								result, err := extractField(logData, Field)
 								if err != nil {
 									o.logger.Error("Error extracting Field: ", "QueryTemplateVar", err)
-									fmt.Printf("Error: %v\n", err)
 								} else {
 									o.logger.Error("Getting logContent: ", "QueryTemplateVar", result)
 									results = append(results, result, result)

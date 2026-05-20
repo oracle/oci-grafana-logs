@@ -24,9 +24,7 @@ import {
   regions,
 } from './regionlist';
 
-interface Props extends DataSourcePluginOptionsEditorProps<OCIDataSourceOptions> {
-  onUpdateDatasourceJsonDataOptionSelect: (props: Props, field: string) => (option: SelectableValue<string>) => void;
-}
+type Props = DataSourcePluginOptionsEditorProps<OCIDataSourceOptions>;
 
 interface State {
   dynamicRegion0: string[];
@@ -43,7 +41,7 @@ interface State {
  * This component provides an editor for configuring the OCI data source. It allows
  * users to specify connection details, authentication providers, tenancy modes, regions,
  * and credentials for accessing OCI resources.
-*/
+ */
 export class ConfigEditor extends PureComponent<Props, State> {
     // Initialize state with a default empty value
     state: State = {
@@ -114,7 +112,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
    * - User OCIDs, Tenancy OCIDs, Fingerprints, and Private Keys.
    *
    * @returns {JSX.Element} The JSX to render.
-  */
+   */
   render() {
     const { options } = this.props;
 
@@ -151,11 +149,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
             </>
         )}
 
-{/**
- * --------------------------------------------------------------------------
- *                          User Principals
- * --------------------------------------------------------------------------
- */}   
+{/* --------------------------------------------------------------------------
+                            User Principals
+   -------------------------------------------------------------------------- */}
 
       {options.jsonData.environment === AuthProviders.OCI_USER  && (
               <>
@@ -178,11 +174,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
         )}        
             <br></br>
 
-{/**
- * --------------------------------------------------------------------------
- *                          DEFAULT Tenancy
- * --------------------------------------------------------------------------
- */}
+{/* --------------------------------------------------------------------------
+                            DEFAULT Tenancy
+   -------------------------------------------------------------------------- */}
 
 {/* User Principals - Default tenancy */}
   {options.jsonData.environment === AuthProviders.OCI_USER && (
@@ -341,11 +335,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
       )}
 
 
-{/**
- * --------------------------------------------------------------------------
- *                          Multitenancy 1
- * --------------------------------------------------------------------------
- */}
+{/* --------------------------------------------------------------------------
+                            Multitenancy 1
+   -------------------------------------------------------------------------- */}
 
 {/* User Principals - Multitenancy Tenancy 1*/}
 <br/>
@@ -515,11 +507,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
         )}      
 
 
-{/**
- * --------------------------------------------------------------------------
- *                          Multitenancy 2
- * --------------------------------------------------------------------------
- */}
+{/* --------------------------------------------------------------------------
+                            Multitenancy 2
+   -------------------------------------------------------------------------- */}
 
 {/* User Principals - Multitenancy Tenancy 2*/}
 <br/>
@@ -690,11 +680,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
 
 
 
-{/**
- * --------------------------------------------------------------------------
- *                          Multitenancy 3
- * --------------------------------------------------------------------------
- */}
+{/* --------------------------------------------------------------------------
+                            Multitenancy 3
+   -------------------------------------------------------------------------- */}
 
 {/* User Principals - Multitenancy Tenancy 3*/}
 <br/>
@@ -863,11 +851,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
         </>
         )}
 
-{/**
- * --------------------------------------------------------------------------
- *                          Multitenancy 4
- * --------------------------------------------------------------------------
- */}
+{/* --------------------------------------------------------------------------
+                            Multitenancy 4
+   -------------------------------------------------------------------------- */}
 
 {/* User Principals - Multitenancy Tenancy 4 */}
 <br/>
@@ -1037,11 +1023,9 @@ export class ConfigEditor extends PureComponent<Props, State> {
         )}
         
 
-{/**
- * --------------------------------------------------------------------------
- *                          Multitenancy 5
- * --------------------------------------------------------------------------
- */}
+{/* --------------------------------------------------------------------------
+                            Multitenancy 5
+   -------------------------------------------------------------------------- */}
 
 {/* User Principals - Multitenancy Tenancy 5 */}
 <br/>
