@@ -39,6 +39,10 @@ const NoTenancy = "NoTenancy"
 var EmptyString string = ""
 var EmptyKeyPass *string = &EmptyString
 
+func customEndpoint(service, region, domain string) string {
+	return fmt.Sprintf("https://%s.%s.%s", service, region, domain)
+}
+
 type logTenancyAccess struct {
 	loggingSearchClient     loggingsearch.LogSearchClient
 	loggingManagementClient logging.LoggingManagementClient
@@ -506,13 +510,11 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 				return errors.Wrap(err, "Error creating identity client")
 			}
 
-			// Override Identity and Telemetry EndPoint region and domain in case a Custom region is configured
+			// Override service endpoints when a custom domain is configured.
 			if q.customdomain[key] != "" {
-				host_custom_telemetry := common.StringToRegion(q.customregion[key]).EndpointForTemplate("telemetry", "https://telemetry."+q.customregion[key]+"."+q.customdomain[key])
-				host_custom_identity := common.StringToRegion(q.customregion[key]).EndpointForTemplate("identity", "https://identity."+q.customregion[key]+"."+q.customdomain[key])
-				loggingSearchClient.Host = host_custom_telemetry
-				loggingManagementClient.Host = host_custom_telemetry
-				identityClient.Host = host_custom_identity
+				loggingSearchClient.Host = customEndpoint("logging-search", q.customregion[key], q.customdomain[key])
+				loggingManagementClient.Host = customEndpoint("logging", q.customregion[key], q.customdomain[key])
+				identityClient.Host = customEndpoint("identity", q.customregion[key], q.customdomain[key])
 				backend.Logger.Debug("getConfigProvider", "loggingSearchClient.Host", loggingSearchClient.Host)
 				backend.Logger.Debug("getConfigProvider", "loggingManagementClient.Host", loggingManagementClient.Host)
 				backend.Logger.Debug("getConfigProvider", "identityClient.Host", identityClient.Host)

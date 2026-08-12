@@ -1,3 +1,12 @@
+<a name="v5.0.5"></a>
+# [Bug fix release (v5.0.5)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.5) - 12 Aug 2026
+
+This release includes:
+
+- Fix custom OCI Logging endpoints for dedicated regions and custom domains
+
+[Changes][v5.0.5]
+
 <a name="v5.0.4"></a>
 # [Security Maintenance release (v5.0.4)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.4) - 15 May 2026
 
@@ -140,6 +149,7 @@ Update plugin.json, update screenshots
 
 [Changes][v1.1.3-beta]
 
+[v5.0.5]: https://github.com/oracle/oci-grafana-logs/compare/v5.0.4...v5.0.5
 [v5.0.4]: https://github.com/oracle/oci-grafana-logs/compare/v5.0.3...v5.0.4
 [v5.0.2]: https://github.com/oracle/oci-grafana-logs/compare/v5.0.1...v5.0.2
 [v5.0.1]: https://github.com/oracle/oci-grafana-logs/compare/v5.0.0...v5.0.1
