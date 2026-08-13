@@ -40,7 +40,8 @@ var EmptyString string = ""
 var EmptyKeyPass *string = &EmptyString
 
 func customEndpoint(service, region, domain string) string {
-	return fmt.Sprintf("https://%s.%s.%s", service, region, domain)
+	template := "https://{serviceEndpointPrefix}.{region}." + domain
+	return common.StringToRegion(region).EndpointForTemplate(service, template)
 }
 
 type logTenancyAccess struct {
@@ -512,7 +513,7 @@ func (o *OCIDatasource) getConfigProvider(environment string, tenancymode string
 
 			// Override service endpoints when a custom domain is configured.
 			if q.customdomain[key] != "" {
-				loggingSearchClient.Host = customEndpoint("logging-search", q.customregion[key], q.customdomain[key])
+				loggingSearchClient.Host = customEndpoint("logging", q.customregion[key], q.customdomain[key])
 				loggingManagementClient.Host = customEndpoint("logging", q.customregion[key], q.customdomain[key])
 				identityClient.Host = customEndpoint("identity", q.customregion[key], q.customdomain[key])
 				backend.Logger.Debug("getConfigProvider", "loggingSearchClient.Host", loggingSearchClient.Host)
