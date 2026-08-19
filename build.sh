@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+export GOPROXY="https://proxy.golang.org,direct"
+
 PLUGIN_ID="oci-logs-datasource"
 VERSION=$(node -p "require('./package.json').version")
 ARCHIVE="${PLUGIN_ID}-${VERSION}.zip"
