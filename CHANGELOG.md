@@ -1,9 +1,12 @@
 <a name="v5.0.5"></a>
-# [Bug fix release (v5.0.5)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.5) - 12 Aug 2026
+# [Bug fix and security maintenance release (v5.0.5)](https://github.com/oracle/oci-grafana-logs/releases/tag/v5.0.5) - 12 Aug 2026
 
 This release includes:
 
 - Fix custom OCI Logging endpoints for dedicated regions and custom domains
+- Upgrade the Go toolchain and Grafana Plugin SDK
+- Update Go and frontend dependencies to resolve high and critical vulnerabilities
+- Use public registries for Yarn and Go dependencies
 
 [Changes][v5.0.5]
 
